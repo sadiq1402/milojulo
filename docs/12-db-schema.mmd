@@ -1,0 +1,288 @@
+erDiagram
+    %% V1 schema, see docs/12-db-schema.md. auth.users 1:1 profiles; all user FKs point at profiles.
+
+    areas {
+        text id PK
+        text name
+        geography center
+        bool is_active
+    }
+    tags {
+        smallint id PK
+        text slug UK
+        text label
+        tag_kind kind
+        smallint sort_order
+        bool is_active
+    }
+    industries {
+        smallint id PK
+        text slug UK
+        text label
+        smallint sort_order
+        bool is_active
+    }
+    prompt_questions {
+        smallint id PK
+        text text
+        smallint sort_order
+        bool is_active
+    }
+    consent_documents {
+        uuid id PK
+        consent_kind kind
+        text version
+        text url
+        timestamptz effective_at
+    }
+    banned_terms {
+        text term PK
+    }
+    blocked_email_domains {
+        text domain PK
+    }
+
+    profiles {
+        uuid id PK "auth.users.id"
+        varchar display_name
+        date date_of_birth "never exposed"
+        gender gender "nullable"
+        text area_id FK
+        mode_array modes
+        availability_slot_array availability
+        varchar profession "display-only"
+        smallint industry_id FK
+        career_stage career_stage
+        smallint pref_age_min
+        smallint pref_age_max
+        gender_array pref_genders
+        smallint pref_max_km
+        bool notify_messages
+        bool notify_activities
+        account_status status "active, banned"
+        timestamptz submitted_at
+        timestamptz paused_at
+        timestamptz hidden_at "auto-hide"
+        timestamptz banned_at
+        text banned_reason
+        timestamptz deleted_at
+    }
+    profile_prompts {
+        uuid user_id PK, FK
+        smallint position PK "1..2"
+        smallint question_id FK
+        varchar answer "140"
+    }
+    profile_tags {
+        uuid user_id PK, FK
+        smallint tag_id PK, FK
+    }
+    photos {
+        uuid id PK
+        uuid user_id FK
+        text provider "r2"
+        text object_key
+        smallint position "1..4, 1 = cover"
+        int width
+        int height
+        timestamptz uploaded_at "null until confirmed"
+        timestamptz hidden_at
+        timestamptz removed_at
+        uuid removed_by FK
+    }
+    consents {
+        uuid user_id PK, FK
+        uuid document_id PK, FK
+        timestamptz accepted_at
+        timestamptz withdrawn_at
+    }
+    invite_codes {
+        text code PK
+        uuid issued_by FK
+        text event_tag
+        int uses_left
+        timestamptz expires_at
+    }
+    invite_redemptions {
+        uuid user_id PK, FK
+        text code FK
+        timestamptz redeemed_at
+    }
+    device_tokens {
+        text token PK
+        uuid user_id FK
+        text platform
+        timestamptz last_seen_at
+    }
+
+    connections {
+        uuid id PK
+        uuid requester_id FK
+        uuid addressee_id FK
+        mode mode
+        uuid activity_id FK "nullable, Activity Connection"
+        varchar note "200"
+        connection_status status "partial unique pair while active"
+        timestamptz responded_at
+        timestamptz closed_at
+        uuid closed_by FK
+    }
+    connection_members {
+        uuid connection_id PK, FK
+        uuid user_id PK, FK
+        timestamptz last_read_at
+        bool muted
+        bool allows_media "Casual media consent"
+    }
+    connection_mode_changes {
+        uuid id PK
+        uuid connection_id FK
+        uuid proposed_by FK
+        mode from_mode
+        mode to_mode
+        timestamptz proposed_at
+        mode_change_outcome outcome "null while open"
+        timestamptz decided_at
+    }
+    messages {
+        uuid id PK "client-generated"
+        uuid connection_id FK
+        uuid sender_id FK
+        message_type type
+        text body
+        text media_key
+        text media_mime
+        int media_width
+        int media_height
+        int media_duration_ms
+        timestamptz media_deleted_at "90-day expiry"
+        uuid activity_id FK "activity_card"
+        timestamptz removed_at
+        timestamptz created_at
+    }
+
+    activities {
+        uuid id PK
+        uuid host_id FK
+        uuid circle_id FK "nullable"
+        varchar title
+        activity_type type
+        text area_id FK
+        timestamptz starts_at
+        timestamptz ends_at
+        smallint capacity "joiners only"
+        varchar description
+        activity_status status
+        timestamptz hidden_at
+    }
+    activity_venues {
+        uuid activity_id PK, FK
+        text venue_detail "participants only"
+    }
+    activity_requests {
+        uuid id PK
+        uuid activity_id FK
+        uuid requester_id FK
+        request_status status
+        timestamptz responded_at
+        timestamptz withdrawn_at
+    }
+    circles {
+        uuid id PK
+        text name
+        text area_id FK
+        smallint tag_id FK
+        text description
+        bool is_active
+        uuid created_by FK
+    }
+    circle_members {
+        uuid circle_id PK, FK
+        uuid user_id PK, FK
+        timestamptz joined_at
+    }
+
+    blocks {
+        uuid blocker_id PK, FK
+        uuid blocked_id PK, FK
+    }
+    reports {
+        uuid id PK
+        uuid reporter_id FK "null for word filter"
+        report_target target_type
+        uuid target_id
+        uuid target_user_id FK
+        report_reason reason
+        varchar details
+        jsonb evidence
+        text evidence_media_key
+        report_status status
+        uuid handled_by FK
+        timestamptz handled_at
+        text internal_note
+    }
+    admin_actions {
+        uuid id PK
+        uuid admin_id FK
+        text action
+        text target_type
+        uuid target_id
+        text note
+    }
+    meetup_feedback {
+        uuid id PK
+        uuid user_id FK
+        uuid other_user_id FK
+        uuid activity_id FK "nullable"
+        bool did_meet
+        bool keep
+    }
+    data_requests {
+        uuid id PK
+        uuid user_id FK
+        data_request_kind kind
+        text status
+        timestamptz completed_at
+    }
+
+    areas ||--o{ profiles : "lives in"
+    areas ||--o{ activities : "located in"
+    areas ||--o{ circles : "based in"
+    tags ||--o{ profile_tags : ""
+    tags ||--o{ circles : "interest"
+    prompt_questions ||--o{ profile_prompts : ""
+    industries |o--o{ profiles : "networking"
+    consent_documents ||--o{ consents : ""
+
+    profiles ||--o{ profile_prompts : "answers"
+    profiles ||--o{ profile_tags : "has"
+    profiles ||--o{ photos : "uploads"
+    profiles ||--o{ consents : "accepts"
+    profiles ||--o| invite_redemptions : "redeemed"
+    invite_codes ||--o{ invite_redemptions : ""
+    profiles ||--o{ device_tokens : ""
+
+    profiles ||--o{ connections : "requests"
+    profiles ||--o{ connections : "receives"
+    connections ||--|{ connection_members : "two on accept"
+    connections ||--o{ connection_mode_changes : "mode history"
+    activities |o--o{ connections : "creates"
+    profiles ||--o{ connection_members : ""
+    connections ||--o{ messages : ""
+    profiles ||--o{ messages : "sends"
+    activities |o--o{ messages : "activity card"
+
+    profiles ||--o{ activities : "hosts"
+    circles |o--o{ activities : "posted to"
+    activities ||--o| activity_venues : ""
+    activities ||--o{ activity_requests : ""
+    profiles ||--o{ activity_requests : "requests to join"
+    circles ||--o{ circle_members : ""
+    profiles ||--o{ circle_members : "joins"
+
+    profiles ||--o{ blocks : "blocks"
+    profiles ||--o{ reports : "files"
+    profiles ||--o{ admin_actions : "admin"
+    profiles ||--o{ meetup_feedback : "gives"
+    activities |o--o{ meetup_feedback : "context"
+    profiles ||--o{ data_requests : ""

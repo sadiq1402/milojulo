@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+body{margin:0}
+.scr{--ground:#FFF7FB;--ink:#2B1233;--sub:#6D5876;--line:#F3DDEA;--pine:#CC2E86;--pine-soft:#FFE3F1;--sun:#FFE27A;--sun-soft:#FFF1B8;--brick:#C62828;--brick-soft:#FFE3DC;
+box-sizing:border-box;display:flex;flex-direction:column;background:var(--ground);padding-top:48px;overflow:hidden;position:relative;font-family:'Figtree',system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:24px}
+.scr *{box-sizing:border-box}
+.disp{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;letter-spacing:-0.015em}
+.top,.main,.prog{position:relative;z-index:1}
+.top{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;min-height:56px}
+.iconbtn{width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;color:var(--ink);border-radius:24px;text-decoration:none;padding:0}
+.ttl{font-weight:600;font-size:17px;line-height:24px}
+.main{flex:1;min-height:0;overflow:hidden;padding:0 20px;display:flex;flex-direction:column;gap:16px}
+.h1{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;font-weight:700;font-size:28px;line-height:32px;margin:0;letter-spacing:-0.02em}
+.h2{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;font-weight:700;font-size:20px;line-height:24px;margin:0;letter-spacing:-0.01em}
+.sub{color:var(--sub);font-size:14px;line-height:20px;margin:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:26px;font-weight:700;font-size:16px;line-height:20px;text-decoration:none;border:1px solid transparent;padding:0 20px;width:100%;font-family:inherit}
+.btn.pri{background:var(--pine);color:#fff;box-shadow:0 10px 22px rgba(204,46,134,.28)}
+.btn.sec{background:#fff;color:var(--ink);border-color:#E9CFE0}
+.btn.danger{background:var(--brick);color:#fff;box-shadow:0 10px 22px rgba(198,40,40,.25)}
+.btn.txt{background:none;color:var(--pine);min-height:48px}
+.btn.sm{min-height:44px;font-size:15px;width:auto;flex:1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.lbl{font-weight:600;font-size:14px}
+.inp{height:52px;border:1px solid #E9CFE0;border-radius:26px;background:#fff;padding:0 20px;font:inherit;font-size:16px;color:var(--ink);width:100%}
+.ta{min-height:96px;border:1px solid #E9CFE0;border-radius:20px;background:#fff;padding:12px 16px;font:inherit;font-size:16px;color:var(--ink);width:100%;resize:none}
+.card{background:#fff;border:0;border-radius:24px;box-shadow:0 8px 24px rgba(142,31,96,.08)}
+.chip{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:20px;border:1px solid #E9CFE0;background:#fff;font-size:14px;line-height:20px;font-weight:500;color:var(--ink);text-decoration:none;gap:6px;font-family:inherit}
+.chip.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:14px;background:#FBEAF3;font-size:12px;line-height:16px;font-weight:500;color:#4A2F55;white-space:nowrap}
+.tag.match{background:var(--pine-soft);color:#8E1F60}
+.tag.sun{background:var(--sun-soft);color:#2B1233}
+.tag.fr{background:#CFF1E5;color:#0B4A3E}
+.tag.ac{background:#FFF1B8;color:#2B1233}
+.tag.nw{background:#D6ECFF;color:#1F4E79}
+.tag.dt{background:#FFE3F1;color:#8E1F60}
+.tag.cs{background:#E3D4FF;color:#4B2BB8}
+.tag.warn{background:var(--brick-soft);color:#8B1D1D}
+.ph{display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;font-weight:700;color:rgba(43,18,51,.42);flex:none}
+.tabs{display:flex;background:#fff;border-radius:24px 24px 0 0;box-shadow:0 -8px 24px rgba(142,31,96,.10);padding:4px 8px 34px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:52px;font-size:12px;line-height:16px;font-weight:500;color:var(--sub);text-decoration:none}
+.tab.on{color:var(--pine);font-weight:700}
+.pillic{width:56px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.tab.on .pillic{background:var(--pine-soft)}
+.row{display:flex;align-items:center;gap:12px}
+.spread{justify-content:space-between}
+.col{display:flex;flex-direction:column}
+.sheet{background:#fff;border-radius:28px 28px 0 0;padding:12px 20px 34px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -8px 30px rgba(43,18,51,.14);position:absolute;left:0;right:0;bottom:0}
+.scrim{position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(43,18,51,.5)}
+.grab{width:40px;height:5px;border-radius:3px;background:#EBD3E2;align-self:center}
+.prog{display:flex;gap:6px;padding:0 20px 8px}
+.prog i{flex:1;height:4px;border-radius:2px;background:#F6DFEC;display:block}
+.prog i.on{background:var(--pine)}
+.opt{display:flex;align-items:center;gap:14px;padding:14px 16px;min-height:64px;border-radius:20px;border:1px solid #E9CFE0;background:#fff}
+.opt.on{border-color:var(--pine);background:#FFF1F8;box-shadow:inset 0 0 0 1px var(--pine)}
+.opt input{width:24px;height:24px;accent-color:#CC2E86;flex:none;margin:0}
+.opt .t{font-weight:600}
+.cb{display:flex;align-items:flex-start;gap:12px;min-height:48px;font-size:14px;line-height:20px}
+.cb input{width:24px;height:24px;accent-color:#CC2E86;flex:none;margin:1px 0 0}
+.sw{position:relative;display:inline-block;width:52px;height:32px;flex:none}
+.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0}
+.sw span{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:16px;background:#E9CFE0}
+.sw span::after{content:"";position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:12px;background:#fff}
+.sw input:checked + span{background:var(--pine)}
+.sw input:checked + span::after{left:24px}
+.list{display:flex;flex-direction:column;background:#fff;border:0;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px rgba(142,31,96,.08)}
+.li{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}
+.li:last-child{border-bottom:0}
+.li .grow{flex:1;min-width:0}
+.seg{display:flex;background:#FBEAF3;border-radius:26px;padding:4px;gap:4px}
+.seg a{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:22px;font-weight:600;font-size:15px;color:var(--sub);text-decoration:none}
+.seg a.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(43,18,51,.12)}
+.dot{width:10px;height:10px;border-radius:5px;background:var(--pine);flex:none}
+.bub{max-width:78%;padding:10px 14px;border-radius:22px;font-size:16px;line-height:22px}
+.bub.in{background:#fff;box-shadow:0 4px 12px rgba(142,31,96,.10);align-self:flex-start;border-bottom-left-radius:6px}
+.bub.out{background:var(--pine);color:#fff;align-self:flex-end;border-bottom-right-radius:6px}
+a{color:#CC2E86}
+</style>
+</helmet>
+<div class="scr" style="width:390px;height:844px"><div aria-hidden="true" style="position:absolute;right:-90px;top:-70px;width:260px;height:260px;border-radius:130px;background:#FFE3F1;z-index:0"></div><div aria-hidden="true" style="position:absolute;right:28px;top:118px;width:44px;height:44px;border-radius:22px;background:#FFE27A;opacity:.85;z-index:0"></div><header class="top"><a class="iconbtn" href="Chats.dc.html" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a><div class="row" style="gap:10px;flex:1;margin-left:2px"><div class="ph" style="width:36px;height:36px;background:#CFF1E5;font-size:15px;border-radius:18px" aria-hidden="true">I</div><div><div style="font-weight:600;line-height:1.2">Isha</div><div class="sub" style="font-size:12.5px">Baner</div></div></div><a class="iconbtn" href="Report.dc.html" aria-label="Report or block"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></a></header><main class="main" style="gap:10px;padding-top:6px"><div class="card row" style="padding:10px 12px;gap:10px;background:#FFF1F8;border-color:#FFC6E0;flex:none"><span style="color:#CC2E86"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7.5 2.8v5.7c0 4.6-3.2 7.8-7.5 9.5-4.3-1.7-7.5-4.9-7.5-9.5V5.8z"/><path d="M8.8 12l2.4 2.4 4-4.6"/></svg></span><span class="sub" style="font-size:13px;color:#8E1F60">Meet in public places and tell a friend. You can report or block from the menu.</span></div><div class="bub in">Hey! Saw you play badminton at Baner too?</div><div class="bub out">Yes, Tuesdays mostly. We are short of one for tonight if you are free.</div><div class="bub in" style="padding:6px"><div class="ph" style="width:200px;height:130px;background:#E3D4FF;font-size:20px;border-radius:14px" aria-hidden="true"></div></div><div class="bub out row" style="gap:10px;padding:10px 14px"><span aria-hidden="true" style="width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></span><span class="row" style="gap:3px"><span style="width:3px;height:8px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:16px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:11px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:22px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:14px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:9px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:19px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:12px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:7px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:15px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:10px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span><span style="width:3px;height:18px;border-radius:2px;background:rgba(255,255,255,.85);display:block"></span></span><span style="font-size:13px">0:14</span></div><div class="bub in">Count me in. 7:30?</div><a class="card row" href="ActivityDetail.dc.html" style="padding:12px 14px;gap:12px;text-decoration:none;color:inherit;align-self:center;flex:none"><span style="color:#CC2E86"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="col"><span style="font-weight:600;font-size:14.5px">Badminton doubles</span><span class="sub" style="font-size:13px">Tonight, 7:30 pm · Baner</span></span></a></main><div class="row" style="padding:10px 12px 28px;background:#fff;border-top:1px solid #F3DDEA;gap:6px"><a class="iconbtn" href="#" aria-label="Attach photo or video"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17l4.5-4.5L13 16l3-3 3 3.5"/></svg></a><input class="inp" type="text" placeholder="Message" aria-label="Message" style="height:48px;border-radius:24px;flex:1"><a class="iconbtn" href="#" aria-label="Record voice note"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3"/></svg></a></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
