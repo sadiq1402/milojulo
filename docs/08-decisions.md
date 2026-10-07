@@ -1,0 +1,26 @@
+# Decision log
+
+Format: decision, why, alternatives rejected. Update this file whenever a decision changes.
+
+1. **Auth: Supabase Auth with email OTP only (phone later).** Cognito does not come from Supabase and complicates RLS. SMS OTP in India needs DLT registration and costs per message, so it waits for beta funding. Phone attaches to an existing account later.
+2. **Backend: Supabase only, with Postgres functions plus a few TypeScript Edge Functions.** One platform, one bill, one deploy tool, free until the beta. Rejected: AWS Lambda with FastAPI (free but needs an AWS account with free-plan expiry rules and extra setup; Python was preferred for build speed); Google Cloud Run (free tier appears limited to US regions, which is far from a Mumbai database); Cloudflare Python Workers (new, 10 ms CPU on free, WebAssembly package limits); Firebase (Cloud Functions and Storage need the pay-as-you-go plan, Firestore is a poor fit for relational, geo and block-aware matching).
+3. **Business rules in SQL.** Keeps the language of the thin API layer almost irrelevant, scales with Postgres, and is portable to any Postgres host.
+4. **Chat transport: Realtime Broadcast from database triggers** on private channels with RLS on realtime.messages. Postgres Changes was the first sketch but does not scale (single-threaded per-subscriber authorisation).
+5. **Media on Cloudflare R2** (founder decision) instead of Supabase Storage: 10 GB free, free egress (video in chat), cheap beyond. Costs: second vendor, payment method may be required, access control must be rebuilt as signed URLs from an Edge Function, delete R2 objects on account deletion. Store object key plus provider so it can move.
+6. **Matching: rule-based SQL, no LLM in V1.** Cuts cost and complexity; AI becomes one more signal later.
+7. **Moderation: invite-only plus manual approval of profiles and photos** for the first few hundred users. *Superseded by 15.*
+8. **Android first** (Google Play closed test doubles as the beta); iOS after the Apple fee is paid.
+9. **Scope expansion (founder decision):** Dating, Serious, Casual, Networking, Circles and media in chat were added to V1. Risk flagged: timeline is now a floor; Casual and media raise moderation and store-review exposure; build each mode behind a switch and open in stages if time is short.
+10. **Colour: Orchid pop** (founder decision after research on women's colour preferences and competitor palettes). First scheme (rosewood and ochre on beige) was dropped for looking institutional.
+11. **Logo: not final.** Overlapping-circles mark rejected (Mastercard resemblance). Leading candidate Mingle plus Tail wordmark; trademark search pending.
+12. **UI standards:** 48 hit targets, 4-pt grid, pill controls, soft-shadow cards (see docs/05-ui-standards.md).
+13. **Business idea:** the founder chose to focus on MiloJulo only. Revenue is postponed until retention is proven; likelier paths are ticketed events and venue partnerships before premium subscriptions.
+14. **Mobile: React Native CLI (bare workflow), no Expo** (founder decision; the assistant had recommended Expo with development builds).
+    - Why: full control of the native projects (Gradle/Xcode), no dependence on Expo's tooling or build service, free local Android builds.
+    - Accepted costs: hand-maintained native config and React Native upgrades (use the Upgrade Helper), manual autolinking and native-module setup, FCM set up directly (no Expo push API), iOS builds require macOS (a Mac or macOS CI) because local iOS builds are impossible on Linux, no built-in over-the-air updates.
+    - Bootstrap: `npx @react-native-community/cli@latest init` (the old `npx react-native init` is deprecated; projects must declare `@react-native-community/cli` as an explicit devDependency).
+    - Escape hatch if it becomes painful: `npx install-expo-modules@latest` adds Expo modules to a bare app without a rewrite.
+    - Consequences for other decisions: push is FCM only; Android-first beta (decision 8) fits because iOS needs a Mac or CI.
+15. **No pre-approval of profiles or photos (founder decision, 2026-10-07; supersedes 7).** Members go live on profile submission; moderation is after the fact via reports (24-hour target), bans, word filter and invite codes. Accepted risk: nothing screens photos before others see them, which weakens the store-review answer for UGC with Casual mode; automated photo screening is the fallback. See docs/adr/0002-no-pre-approval-of-profiles-or-photos.md.
+16. **Connections carry a Mode and are per-pair history rows** (one active per pair, consent-based Mode Change, accepted Join Requests create an Activity Connection). See docs/adr/0001-connections-are-per-pair-history-with-a-mode.md.
+17. **Chat media limits and retention (2026-10-07).** Report-only moderation; video up to 30 s and 20 MB, voice notes up to 2 min; chat media deleted from R2 90 days after sending (message stays, shows "media expired"); media in reported messages copied to evidence and kept for the safety-retention period set by the lawyer. Casual Connections require Media Consent from both sides before images or video.
