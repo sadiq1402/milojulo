@@ -1,0 +1,24 @@
+-- Shared test helpers; include with \ir from a test file inside its transaction.
+create extension if not exists pgtap with schema extensions;
+
+create function pg_temp.act_as_member(member_id uuid, user_metadata jsonb default '{}') returns void
+language sql as $$
+  select set_config('request.jwt.claims', jsonb_build_object(
+    'sub', member_id, 'role', 'authenticated',
+    'app_metadata', '{}'::jsonb, 'user_metadata', user_metadata)::text, true);
+  set local role authenticated;
+$$;
+
+create function pg_temp.act_as_admin(admin_id uuid) returns void
+language sql as $$
+  select set_config('request.jwt.claims', jsonb_build_object(
+    'sub', admin_id, 'role', 'authenticated',
+    'app_metadata', '{"role":"admin"}'::jsonb)::text, true);
+  set local role authenticated;
+$$;
+
+create function pg_temp.act_as_anon() returns void
+language sql as $$
+  select set_config('request.jwt.claims', '{"role":"anon"}', true);
+  set local role anon;
+$$;
