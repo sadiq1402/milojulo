@@ -31,7 +31,7 @@ Removed by an admin; all the Member's Connections close, they leave every Activi
 A Member's own choice to stop meeting new people: hidden from Discover, cannot post Activities or send requests, while existing Connections and chats carry on. Independent of Account Status.
 
 **Submitted Profile**:
-A profile that has met the minimum (2 photos, 2 prompts, a Mode, an Area, and gender and Dating Preferences if a Dating Mode is held) and been submitted once; it can never fall back below the minimum.
+A profile that has met the minimum (a first name, 2 photos, 2 prompts, a Mode, an Area, and gender and Dating Preferences if a Dating Mode is held) and been submitted once; it can never fall back below the minimum.
 
 **Visible Member**:
 A Member who is Active, has a Submitted Profile, is not Paused, not Auto-hidden and not deleted; the only kind others can discover.

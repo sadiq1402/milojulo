@@ -73,7 +73,7 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 
 Owner can select own row and update: display_name, area_id, modes, availability, gender, profession, industry_id, career_stage, pref_*, notify_*, paused_at (via `set_paused()`). Everyone else: only through `discover_feed()` / `get_profile()`.
 
-**Profile minimum** (trigger `enforce_profile_minimum`, active once `submitted_at` is set): at least 2 live photos, 2 prompts, 1 Mode, an Area, and gender plus Dating Preferences while a Dating Mode is held. Deletes or updates that would break it are rejected; replacing is fine. An admin Takedown of a photo may break the photo minimum: the Member is then not visible until they add one.
+**Profile minimum** (trigger `enforce_profile_minimum`, active once `submitted_at` is set): a first name, at least 2 live photos, 2 prompts, 1 Mode, an Area, and gender plus Dating Preferences while a Dating Mode is held. Deletes or updates that would break it are rejected; replacing is fine. An admin Takedown of a photo may break the photo minimum: the Member is then not visible until they add one.
 
 | Table | Columns | Access |
 |---|---|---|
@@ -147,8 +147,8 @@ Business functions:
 | `check_invite(code)` | callable by anon (InviteCode comes before sign-in); returns valid or not, nothing else |
 | `redeem_invite(code)` | decrements uses_left, writes the redemption, creates the profile row |
 | `accept_consents(dob, document_ids[])` | rejects under 18, stores DOB and consents |
-| `submit_profile()` | checks the profile minimum; sets submitted_at; the Member is visible at once |
-| `confirm_photo_upload(photo_id)` | sets uploaded_at after the object exists |
+| `submit_profile()` | requires the age gate and consents to be passed; checks the profile minimum; sets submitted_at; the Member is visible at once |
+| `confirm_photo_upload(photo_id)` | service role only: the upload Edge Function calls it after checking the object exists in R2 |
 | `set_paused(paused)` | |
 | `discover_feed(mode, limit, cursor)` | visible candidates with an Eligible Mode (all Eligible Modes when mode is null), score, safe columns only, age not DOB, why-you-match text from Eligible Modes, shared tags. Networking ranks by industry and career stage |
 | `get_profile(user_id)` | full profile view under the same visibility rules |
