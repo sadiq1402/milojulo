@@ -48,4 +48,27 @@ Follow docs/05-ui-standards.md for every dimension (touch targets 48, pill butto
 - When a decision changes, update the relevant doc and add an entry to docs/08-decisions.md.
 
 ## Current phase
-Foundations (week 1). First tasks are in docs/10-build-plan.md.
+V1 database: spec in GitHub issue #1, tickets #2 to #20 (each lists what blocks it). Plan and lessons in tasks/todo.md.
+
+## Database tickets
+Work one ticket per branch and PR, test-first with the mattpocock-skills `tdd` skill.
+- Start: `gh issue view <n>`; check its blockers are merged; branch `feat/<n>-<slug>` from an up-to-date `main`. Read the Review section of tasks/todo.md for gotchas.
+- Local database: `npx supabase db start` (Docker), `npx supabase db reset` to re-apply migrations, `npx supabase test db` to run tests. Pass `</dev/null` to Supabase CLI commands when not in a terminal.
+- One migration per ticket in `supabase/migrations/`. Tests in `supabase/tests/` only; the test runner cannot see other folders.
+- Test seam: act as a Member, admin or signed-out visitor with `supabase/tests/helpers/act_as.psql`, then use only public functions and tables under RLS. Assert behaviour (rows visible, calls refused, results returned), never internals. Every rule gets an allow and a deny test.
+- One red → green cycle at a time. A test that passes before its code exists gets mutation-checked: break the rule in the local database, confirm a test fails, then `db reset`.
+- Finish: add a line to the Review section of tasks/todo.md, commit, push, open a PR that closes the issue, and wait for the `db-tests` check. `main` is protected: merges need a PR with `db-tests` passing and an up-to-date branch.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on sadiq1402/milojulo, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
