@@ -23,9 +23,47 @@ language sql as $$
   set local role anon;
 $$;
 
+-- What Edge Functions run as.
+create function pg_temp.act_as_service() returns void
+language sql as $$
+  select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  set local role service_role;
+$$;
+
 -- An auth account with no profile yet (what sign-in produces). Run as postgres.
 create function pg_temp.create_account(account_id uuid) returns void
 language sql as $$
   insert into auth.users (id, email, aud, role)
   values (account_id, account_id || '@test.milojulo', 'authenticated', 'authenticated');
+$$;
+
+-- A Member who has redeemed an invite and accepted every current document. Run as postgres.
+create function pg_temp.create_member(member_id uuid) returns void
+language plpgsql as $$
+begin
+  insert into public.invite_codes (code, uses_left) values ('TEST-MEMBERS', 1000)
+  on conflict (code) do nothing;
+  perform pg_temp.create_account(member_id);
+  perform pg_temp.act_as_member(member_id);
+  perform public.redeem_invite('TEST-MEMBERS');
+  perform public.accept_consents('1995-06-15',
+    (select array_agg(id) from public.consent_documents where version = 'v1'));
+  reset role;
+end;
+$$;
+
+-- A Member whose profile meets the minimum but is not yet submitted. Run as postgres.
+create function pg_temp.create_complete_member(member_id uuid) returns void
+language plpgsql as $$
+begin
+  perform pg_temp.create_member(member_id);
+  update public.profiles set display_name = 'Test', area_id = 'baner', modes = '{friends}'
+  where id = member_id;
+  insert into public.profile_prompts (user_id, position, question_id, answer)
+  select member_id, p, (select min(id) from public.prompt_questions), 'An answer'
+  from generate_series(1, 2) p;
+  insert into public.photos (user_id, object_key, position, uploaded_at)
+  select member_id, member_id || '/' || p || '.jpg', p, now()
+  from generate_series(1, 2) p;
+end;
 $$;
