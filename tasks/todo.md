@@ -28,3 +28,4 @@ Ordering note: 0004's message word filter files a report, so `reports` must exis
 
 ## Review
 - #2 (harness + CI): foundations migration (postgis, pg_cron, pg_net, `is_admin()`), act-as helpers, 4 admin tests passing locally; a deliberately broken `is_admin()` made the suite fail. Gotcha: `supabase migration new` waits on stdin when not run from a terminal, so pass `</dev/null`. Branch protection pending the first workflow run on GitHub.
+- #3 (invites, age gate, consents): `check_invite`, `redeem_invite`, `accept_consents` (18+ by India calendar date, every current document required), `seed_reviewer` (service role only) plus `supabase/seed/reviewer.sql`; reserved `REVIEWER` code with no uses. 24 new tests; every rule mutation-checked. Gotcha: `supabase test db` mounts only `supabase/tests`, so seed logic lives in a function the test can call. Consent document URLs are null until the domain and lawyer-reviewed texts exist.
