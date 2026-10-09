@@ -16,4 +16,13 @@ jobs:
           version: 2.120.0
       # Applies every migration from scratch on a fresh database.
       - run: supabase db start
-      - run: supabase test db
+      - name: Run database tests
+        shell: bash
+        run: supabase test db 2>&1 | tee "$RUNNER_TEMP/db-tests.log"
+      # Shows each test file and any failed tests on the run's summary page.
+      - name: Write test summary
+        if: always()
+        shell: bash
+        run: |
+          [ -f "$RUNNER_TEMP/db-tests.log" ] || exit 0
+          .github/scripts/db-test-summary.sh "$RUNNER_TEMP/db-tests.log" >> "$GITHUB_STEP_SUMMARY"
