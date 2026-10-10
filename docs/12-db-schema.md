@@ -150,7 +150,7 @@ Business functions:
 | `submit_profile()` | requires the age gate and consents to be passed; checks the profile minimum; sets submitted_at; the Member is visible at once |
 | `confirm_photo_upload(photo_id)` | service role only: the upload Edge Function calls it after checking the object exists in R2 |
 | `set_paused(paused)` | |
-| `discover_feed(mode, limit, cursor)` | visible candidates with an Eligible Mode (all Eligible Modes when mode is null), score, safe columns only, age not DOB, why-you-match text from Eligible Modes, shared tags. the Networking feed ranks shared Industry first, then shared Career Stage, then the usual score |
+| `discover_feed(mode, limit, cursor)` | visible candidates with an Eligible Mode (all Eligible Modes when mode is null), score, safe columns only, age not DOB, why-you-match text from Eligible Modes, shared tags. the Networking feed ranks by how many of Industry and Career Stage are shared (equal weight), then the usual score |
 | `get_profile(user_id)` | full profile view under the same visibility rules |
 | `match_reason(a, b)` | templated text |
 | `send_request(to, mode, note)`, `respond_request(id, accept)`, `close_connection(id)` | rules above |
