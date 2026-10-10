@@ -67,3 +67,16 @@ begin
   from generate_series(1, 2) p;
 end;
 $$;
+
+-- A Member with a Submitted Profile, visible to others. Run as postgres.
+create function pg_temp.create_visible_member(member_id uuid, member_modes public.mode[] default '{friends}')
+returns void
+language plpgsql as $$
+begin
+  perform pg_temp.create_complete_member(member_id);
+  update public.profiles set modes = member_modes where id = member_id;
+  perform pg_temp.act_as_member(member_id);
+  perform public.submit_profile();
+  reset role;
+end;
+$$;
