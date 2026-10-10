@@ -28,7 +28,7 @@ $$;
 
 revoke execute on function public.fits_dating_preferences(uuid, uuid) from public, anon, authenticated;
 
--- Cursor is rank:score:id. In the Networking feed, shared Industry outranks shared Career Stage, and both outrank the usual score.
+-- Cursor is rank:score:id. In the Networking feed, sharing Industry and Career Stage outranks sharing one, which outranks the usual score.
 create or replace function public.discover_feed(
   mode_filter public.mode default null,
   page_size integer default 20,
@@ -50,7 +50,7 @@ as $$
   with candidates as (
     select p.*, me.id as viewer_id, public.eligible_modes(me.id, p.id) as shared_modes,
       case when mode_filter = 'networking'
-        then 2 * coalesce(p.industry_id = me.industry_id, false)::integer
+        then coalesce(p.industry_id = me.industry_id, false)::integer
              + coalesce(p.career_stage = me.career_stage, false)::integer
         else 0
       end as rank,
