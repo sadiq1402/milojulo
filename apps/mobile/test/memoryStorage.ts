@@ -1,3 +1,4 @@
+// Stands in for AsyncStorage in tests: plain functions, so resetMocks leaves it working.
 const items = new Map<string, string>();
 
 export default {
@@ -8,4 +9,5 @@ export default {
   removeItem: async (key: string) => {
     items.delete(key);
   },
+  clear: async () => items.clear(),
 };

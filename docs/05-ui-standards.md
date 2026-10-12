@@ -24,6 +24,7 @@ Visual size at least 40; hit area at least 48 x 48 (iOS minimum is 44, Android 4
 | Body small | 14 / 20 | Figtree 400 |
 | Label (buttons) | 16 / 20 | Figtree 700 |
 | Caption, tags, tab labels | 12 / 16 | Figtree 500 to 700 (never below 12) |
+| Code digit | 24 / 32 | Figtree 600 |
 
 ## Components
 | Element | Standard |
@@ -45,7 +46,7 @@ Visual size at least 40; hit area at least 48 x 48 (iOS minimum is 44, Android 4
 | Avatars | 28 inline, 36 chat header, 44 sheets, 48 rows, 72 profile; thumbnail 64 radius 16 |
 | Photos | Stored 4:5 (min 1080 x 1350); profile hero 350 x 437 radius 32; upload slots 169 x 211 radius 20 |
 | Bottom sheet | Radius 28 top; handle 40 x 5, 12 from top; padding 12 20 + 34 inset; max height 90% |
-| Switch / checkbox / radio | Switch 52 x 32; checkbox and radio 24 visual, row at least 48; option card 64 min, radius 20 |
+| Switch / checkbox / radio | Switch 52 x 32; checkbox and radio 24 visual (checkbox radius 6), row at least 48; option card 64 min, radius 20 |
 | Progress (onboarding) | 4 high segments, 6 gaps, 20 side margins |
 | Chat bubble | Radius 22 (6 on tail corner), padding 10 14, 16/22, max width 78%; incoming bubbles on a soft shadow |
 | Chat media | Max 240 wide, 4:3 |

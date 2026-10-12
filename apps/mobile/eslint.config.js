@@ -5,7 +5,7 @@ module.exports = [
   { ignores: ['android/', 'ios/', 'src/lib/database.types.ts'] },
   ...reactNativeConfig,
   {
-    files: ['jest.setup.js'],
-    languageOptions: { globals: { jest: 'readonly' } },
+    files: ['jest.setup.js', 'jest.afterEnv.js'],
+    languageOptions: { globals: { jest: 'readonly', afterEach: 'readonly' } },
   },
 ];

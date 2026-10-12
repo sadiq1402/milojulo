@@ -8,6 +8,13 @@ const glyphs = {
   chevronRight: <Path d="M9 6l6 6-6 6" />,
   close: <Path d="M6 6l12 12M18 6L6 18" />,
   plus: <Path d="M12 5v14M5 12h14" />,
+  check: <Path d="M5 12.5l4.5 4.5L19 7.5" />,
+  shieldCheck: (
+    <>
+      <Path d="M12 3l7.5 2.8v5.7c0 4.6-3.2 7.8-7.5 9.5-4.3-1.7-7.5-4.9-7.5-9.5V5.8z" />
+      <Path d="M8.8 12l2.4 2.4 4-4.6" />
+    </>
+  ),
   more: (
     <>
       <Circle cx="5" cy="12" r="1.4" />

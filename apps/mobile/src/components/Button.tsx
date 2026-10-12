@@ -9,7 +9,14 @@ import {
 import { colors, radius, shadow, sizes } from '../theme';
 import { Text } from './Text';
 
-type Variant = 'primary' | 'secondary' | 'text' | 'danger';
+// inverse and inverseText sit on an orchid screen (Welcome).
+type Variant =
+  | 'primary'
+  | 'secondary'
+  | 'text'
+  | 'danger'
+  | 'inverse'
+  | 'inverseText';
 
 type Props = {
   label: string;
@@ -27,6 +34,8 @@ const labelColor: Record<Variant, string> = {
   secondary: colors.ink,
   text: colors.orchid,
   danger: colors.white,
+  inverse: colors.orchid,
+  inverseText: colors.white,
 };
 
 export function Button({
@@ -82,6 +91,8 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: colors.orchid, ...shadow('primaryButton') },
   secondary: { backgroundColor: colors.card, borderColor: colors.field },
   danger: { backgroundColor: colors.danger },
+  inverse: { backgroundColor: colors.white, ...shadow('primaryButton') },
+  inverseText: { minHeight: sizes.button.text, backgroundColor: 'transparent' },
   text: { minHeight: sizes.button.text, backgroundColor: 'transparent' },
   compact: {
     minHeight: sizes.button.compact,

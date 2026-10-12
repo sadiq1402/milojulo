@@ -1,24 +1,23 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
-import * as hello from '../src/features/hello/api';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/account/api');
-jest.mock('../src/features/hello/api');
 
-test('a signed-out visitor is asked for their email', async () => {
+test('a signed-out visitor starts at welcome', async () => {
   await renderApp(null);
-  expect(await screen.findByLabelText('Email')).toBeOnTheScreen();
-  expect(screen.getByRole('button', { name: 'Send code' })).toBeOnTheScreen();
+  expect(
+    await screen.findByRole('button', { name: 'I have an invite code' }),
+  ).toBeOnTheScreen();
 });
 
-test('a signed-in account still onboarding sees the hello screen with its account checked', async () => {
-  jest.mocked(account.fetchAccountStage).mockResolvedValue('onboarding');
-  jest.mocked(hello.fetchIsAdmin).mockResolvedValue(false);
+test('a Member who has given consent but not built a profile resumes at profile setup', async () => {
+  jest.mocked(account.fetchAccountStage).mockResolvedValue('profile');
   await renderApp(sessionFor('asha@example.com'));
-  expect(await screen.findByText('Member account')).toBeOnTheScreen();
-  expect(screen.getByText('Signed in as asha@example.com')).toBeOnTheScreen();
+  expect(
+    await screen.findByRole('header', { name: 'Set up your profile' }),
+  ).toBeOnTheScreen();
 });
 
 test('a Member with a Submitted Profile lands on Discover and can switch tabs', async () => {
