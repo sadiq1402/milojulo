@@ -1,8 +1,8 @@
 begin;
 \ir helpers/act_as.psql
-select plan(19);
+select plan(21);
 
--- k1 Asha and k2 Ravi are connected under Friends.
+-- c1 Asha and c2 Ravi are connected under Friends; c3 is unrelated.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c1');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c2');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c3');
@@ -12,9 +12,9 @@ select id as ravi_cover from public.photos
 where user_id = '00000000-0000-0000-0000-0000000000c2' and position = 1 \gset
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
-select public.send_request('00000000-0000-0000-0000-0000000000c2', 'friends', 'Coffee?') as k_conn \gset
+select public.send_request('00000000-0000-0000-0000-0000000000c2', 'friends', 'Coffee?') as asha_ravi \gset
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c2');
-select public.respond_request(:'k_conn', true);
+select public.respond_request(:'asha_ravi', true);
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select results_eq(
@@ -46,7 +46,7 @@ select public.respond_request(:'declined_conn', false);
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select results_eq(
-  $$ select other_id, direction, note::text from public.my_connections()
+  $$ select other_id, direction::text, note::text from public.my_connections()
      where status = 'requested' order by other_id $$,
   $$ values ('00000000-0000-0000-0000-0000000000c4'::uuid, 'outgoing', 'Trek on Sunday?'),
             ('00000000-0000-0000-0000-0000000000c5'::uuid, 'incoming', 'Badminton?') $$,
@@ -99,28 +99,47 @@ select results_eq(
   format('select %L::uuid', :'ravi_second'),
   'a hidden cover photo is skipped for the next live one');
 
+-- Ravi is Auto-hidden and c7 is banned: both stay in Asha's history by name, without a photo.
+reset role;
+update public.profiles set hidden_at = now() where id = '00000000-0000-0000-0000-0000000000c2';
+update public.profiles set status = 'banned', banned_at = now() where id = '00000000-0000-0000-0000-0000000000c7';
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
+select results_eq(
+  $$ select other_name, other_photo_id from public.my_connections()
+     where other_id in ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000c7')
+     order by other_id $$,
+  $$ values ('Ravi'::varchar, null::uuid), ('Test'::varchar, null::uuid) $$,
+  'an Auto-hidden or banned Member stays listed by name but without a cover photo');
+reset role;
+update public.profiles set hidden_at = null where id = '00000000-0000-0000-0000-0000000000c2';
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
+select results_eq(
+  $$ select other_photo_id from public.my_connections() where other_id = '00000000-0000-0000-0000-0000000000c2' $$,
+  format('select %L::uuid', :'ravi_second'),
+  'the cover photo returns once the Member is restored');
+
 -- Asha and Ravi chat; times are set directly because now() is fixed inside the test transaction.
 reset role;
 insert into public.messages (id, connection_id, sender_id, type, body, created_at) values
-  (gen_random_uuid(), :'k_conn', '00000000-0000-0000-0000-0000000000c2', 'text', 'Hi', now() - interval '3 minutes'),
-  (gen_random_uuid(), :'k_conn', '00000000-0000-0000-0000-0000000000c1', 'text', 'Hello!', now() - interval '2 minutes'),
-  (gen_random_uuid(), :'k_conn', '00000000-0000-0000-0000-0000000000c2', 'text', 'Saturday works?', now() - interval '1 minute');
+  (gen_random_uuid(), :'asha_ravi', '00000000-0000-0000-0000-0000000000c2', 'text', 'Hi', now() - interval '3 minutes'),
+  (gen_random_uuid(), :'asha_ravi', '00000000-0000-0000-0000-0000000000c1', 'text', 'Hello!', now() - interval '2 minutes'),
+  (gen_random_uuid(), :'asha_ravi', '00000000-0000-0000-0000-0000000000c2', 'text', 'Saturday works?', now() - interval '1 minute');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select results_eq(
-  $$ select last_message_body, last_message_at = now() - interval '1 minute', unread_count
-     from public.my_connections() where connection_id = '$$ || :'k_conn' || $$' $$,
+  format($$ select last_message_body, last_message_at = now() - interval '1 minute', unread_count
+            from public.my_connections() where connection_id = %L $$, :'asha_ravi'),
   $$ values ('Saturday works?'::text, true, 2) $$,
   'the newest message is previewed, and the other side''s messages are unread');
 update public.connection_members set last_read_at = now() - interval '150 seconds'
-where connection_id = :'k_conn' and user_id = '00000000-0000-0000-0000-0000000000c1';
+where connection_id = :'asha_ravi' and user_id = '00000000-0000-0000-0000-0000000000c1';
 select results_eq(
-  $$ select unread_count from public.my_connections() where connection_id = '$$ || :'k_conn' || $$' $$,
+  format('select unread_count from public.my_connections() where connection_id = %L', :'asha_ravi'),
   array[1], 'only messages newer than the read position count as unread');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c2');
 select results_eq(
-  $$ select unread_count from public.my_connections() where connection_id = '$$ || :'k_conn' || $$' $$,
+  format('select unread_count from public.my_connections() where connection_id = %L', :'asha_ravi'),
   array[1], 'a Member''s own messages never count as unread');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
@@ -133,13 +152,15 @@ reset role;
 update public.messages set removed_at = now() where body = 'Saturday works?';
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select results_eq(
-  $$ select last_message_body, unread_count from public.my_connections()
-     where connection_id = '$$ || :'k_conn' || $$' $$,
+  format('select last_message_body, unread_count from public.my_connections() where connection_id = %L',
+         :'asha_ravi'),
   $$ values ('Hello!'::text, 0) $$,
   'a message removed by moderation is neither previewed nor counted');
 
 select is(
-  (select connection_id from public.my_connections() offset 3 limit 1), :'k_conn'::uuid,
+  (select connection_id from public.my_connections() with ordinality as r
+   order by r.ordinality desc limit 1),
+  :'asha_ravi'::uuid,
   'the Connection with the oldest activity comes last');
 
 -- Blocks: Asha blocks c6 Neha; c5 blocks Asha.

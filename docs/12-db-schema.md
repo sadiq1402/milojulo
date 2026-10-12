@@ -79,7 +79,7 @@ Owner can select own row and update: display_name, area_id, modes, availability,
 |---|---|---|
 | `profile_prompts` | pk (user_id, position 1..2), `question_id`, `answer varchar(140)` | owner CRUD (within the minimum); others via `get_profile()` |
 | `profile_tags` | pk (user_id, tag_id) | owner CRUD; others via functions |
-| `photos` | `id`, `user_id`, `provider text default 'r2'`, `object_key`, `position 1..4` (1 = cover), `width`, `height`, `uploaded_at`, `hidden_at`, `removed_at`, `removed_by`; unique (user_id, position) | Row inserted by the upload Edge Function with `uploaded_at` null; `confirm_photo_upload()` sets it after checking the object exists. Live = uploaded, not hidden, not removed. Owner selects, reorders, deletes. Others never read the table; they get signed URLs from functions |
+| `photos` | `id`, `user_id`, `provider text default 'r2'`, `object_key`, `position 1..4` (1 = cover; lists use the first live photo, so a hidden or removed cover gives way to the next), `width`, `height`, `uploaded_at`, `hidden_at`, `removed_at`, `removed_by`; unique (user_id, position) | Row inserted by the upload Edge Function with `uploaded_at` null; `confirm_photo_upload()` sets it after checking the object exists. Live = uploaded, not hidden, not removed. Owner selects, reorders, deletes. Others never read the table; they get signed URLs from functions |
 | `consents` | pk (user_id, document_id), `accepted_at`, `withdrawn_at` | owner reads; written by `accept_consents()`, withdrawn by `withdraw_consent()` |
 | `invite_codes` | `code text pk`, `issued_by` (nullable), `event_tag`, `uses_left`, `expires_at` | admin only; `check_invite()` / `redeem_invite()` |
 | `invite_redemptions` | `user_id pk`, `code`, `redeemed_at` | admin only |
@@ -155,6 +155,8 @@ Business functions:
 | `match_reason(a, b)` | templated text |
 | `send_request(to, mode, note)`, `respond_request(id, accept)`, `close_connection(id)` | rules above |
 | `propose_mode_change(connection, mode)`, `respond_mode_change(id, accept)` | rules above |
+| `my_connections()` | the caller's Connections for the Inbox and chat list: requests both ways (with direction and note), accepted, and closed as history; declined left out. Other side: first name, cover photo id and Area only, also while Paused; banned or Auto-hidden Members keep their name but no photo. Plus Mode, status, the newest message not removed by moderation, and unread = the other side's messages newer than my `last_read_at`. Newest activity first. A Block's closed Connection looks like any other close (decision 19) |
+| `my_blocks()` | Members the caller has blocked, first name only; never who has blocked the caller |
 | `join_activity_request(activity)`, `respond_activity_request(id, accept)`, `withdraw_activity_request(id)` | |
 | `join_circle(circle)`, `circle_members_of(circle)` | |
 | `block_user(id)`, `report(target_type, target_id, reason, details)` | `report()` applies Auto-hide |
