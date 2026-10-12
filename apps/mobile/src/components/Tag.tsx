@@ -4,13 +4,20 @@ import { colors, fontFamily, fonts, modeTints, radius, sizes } from '../theme';
 import { Text } from './Text';
 
 type Mode = keyof typeof modeTints;
-export type TagTone = 'neutral' | 'match' | 'butter' | 'warn' | Mode;
+export type TagTone =
+  | 'neutral'
+  | 'match'
+  | 'butter'
+  | 'warn'
+  | 'onPhoto'
+  | Mode;
 
 const tones: Record<TagTone, { bg: string; fg: string }> = {
   neutral: { bg: colors.tagNeutral, fg: colors.tagNeutralInk },
   match: { bg: colors.tint, fg: colors.orchidDark },
   butter: { bg: colors.butterSoft, fg: colors.ink },
   warn: { bg: colors.warnTint, fg: colors.warnInk },
+  onPhoto: { bg: colors.card, fg: colors.ink },
   ...modeTints,
 };
 

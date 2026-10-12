@@ -7,8 +7,10 @@ import React from 'react';
 import { TabBar, type TabItem } from '../components';
 import { useRequests } from '../features/requests/queries';
 import { ChatScreen } from '../screens/chat/ChatScreen';
+import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
 import { PlaceholderScreen } from '../screens/PlaceholderScreen';
+import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import type { MemberParams } from './types';
 
 const Stack = createNativeStackNavigator<MemberParams>();
@@ -38,7 +40,6 @@ function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
   );
 }
 
-const DiscoverScreen = () => <PlaceholderScreen title="Discover" />;
 const ActivitiesScreen = () => <PlaceholderScreen title="Activities" />;
 const CirclesScreen = () => <PlaceholderScreen title="Circles" />;
 const MeScreen = () => <PlaceholderScreen title="Me" canSignOut />;
@@ -63,12 +64,13 @@ function MainTabs() {
   );
 }
 
-// A Member's app: the five tabs, with chats and other full screens pushed over them.
+// A Member's app: the five tabs, with chats, profiles and other full screens pushed over them.
 export function MemberNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Tabs" component={MainTabs} />
       <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="SafetyCentre" component={SafetyCentreScreen} />
     </Stack.Navigator>
   );

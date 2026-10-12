@@ -134,8 +134,9 @@ test('tag and prompt names come from the catalog', async () => {
   expect(tagNames[tags.badminton]).toBe('Badminton');
   const questions = await fetchPromptQuestions();
   const profile = await fetchProfile(ravi.id);
+  // createMember answers the first two questions in whatever order the catalog returns.
   expect(
-    profile!.prompts.map(prompt => questions[prompt.questionId]),
+    profile!.prompts.map(prompt => questions[prompt.questionId]).sort(),
   ).toEqual(['A perfect Sunday in Pune is…', "I'm looking for people to…"]);
 });
 

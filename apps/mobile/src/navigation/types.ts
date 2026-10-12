@@ -8,5 +8,6 @@ export type SignedOutParams = {
 export type MemberParams = {
   Tabs: undefined;
   Chat: { connectionId: string };
+  Profile: { memberId: string };
   SafetyCentre: undefined;
 };
