@@ -46,5 +46,5 @@ Static Bricolage Grotesque (Bold) and Figtree (Regular, Medium, SemiBold, Bold) 
 ## Conventions
 
 - Ask before adding any dependency; a native module must autolink with the CLI.
-- Function errors arrive as plain messages (for example `you have sent 10 requests in the last 24 hours`); map them to friendly copy in the screen.
+- Function errors arrive as plain messages (for example `you have sent 10 requests in the last 24 hours`). The feature's data module maps each to friendly copy (exported when a screen needs to recognise it, like `invalidInviteMessage`), so screens just show `error.message`.
 - Media is never shown by public URL; photos come from signed URLs issued by the media Edge Function.

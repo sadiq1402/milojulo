@@ -1,6 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -12,9 +11,9 @@ import {
   SegmentedControl,
   Text,
 } from '../../components';
-import { fetchConversations, type Conversation } from '../../features/chat/api';
+import type { Conversation } from '../../features/chat/api';
 import { formatChatTime, previewText } from '../../features/chat/messages';
-import { conversationsKey } from '../../features/chat/useChat';
+import { useConversations } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
 
@@ -49,10 +48,7 @@ export function InboxScreen() {
 
 function ChatList() {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
-  const conversations = useQuery({
-    queryKey: conversationsKey,
-    queryFn: fetchConversations,
-  });
+  const conversations = useConversations();
   const chats = (conversations.data ?? []).filter(
     c => c.status === 'accepted' || c.status === 'closed',
   );

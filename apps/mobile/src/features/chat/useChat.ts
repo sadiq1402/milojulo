@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import {
+  cannotSendMessage,
   fetchChatState,
   fetchMessages,
   markRead,
@@ -11,45 +12,49 @@ import {
   type Message,
 } from './api';
 import { catchUpFrom, mergeMessages } from './messages';
+import { chatKeys } from './queries';
 
-export type ChatItem = Message & { delivery: 'sent' | 'sending' | 'failed' };
+// 'refused': the Connection closed or a Block landed, so retrying can't help.
+type Delivery = 'sent' | 'sending' | 'failed' | 'refused';
+export type ChatItem = Message & { delivery: Delivery };
 type Pending = {
   id: string;
   body: string;
   createdAt: string;
-  delivery: 'sending' | 'failed';
+  delivery: Delivery;
 };
 
-export const conversationsKey = ['conversations'];
-
-// One chat: messages from the first load, the live channel and catch-ups, plus sends that
-// are still on their way.
-export function useChat(connectionId: string, myId: string) {
+// One chat: messages from the first load, the live channel and catch-ups, plus sends still on
+// their way. `reading` is whether the Member can see the chat right now.
+export function useChat(connectionId: string, myId: string, reading: boolean) {
   const client = useQueryClient();
-  const key = useMemo(() => ['messages', connectionId], [connectionId]);
+  const key = chatKeys.messages(connectionId);
   const messages = useQuery({
     queryKey: key,
     queryFn: () => fetchMessages(connectionId),
   });
   const state = useQuery({
-    queryKey: ['chat-state', connectionId],
+    queryKey: chatKeys.state(connectionId),
     queryFn: () => fetchChatState(connectionId),
     // The other side's read position isn't broadcast, so check it now and then.
     refetchInterval: 15_000,
   });
   const [pending, setPending] = useState<Pending[]>([]);
+  const setDelivery = (id: string, delivery: Delivery) =>
+    setPending(list => list.map(p => (p.id === id ? { ...p, delivery } : p)));
 
   const merge = useCallback(
     (incoming: Message[]) =>
-      client.setQueryData<Message[]>(key, current =>
+      client.setQueryData<Message[]>(chatKeys.messages(connectionId), current =>
         mergeMessages(current ?? [], incoming),
       ),
-    [client, key],
+    [client, connectionId],
   );
   const catchUp = useCallback(async () => {
-    const seen = client.getQueryData<Message[]>(key) ?? [];
+    const seen =
+      client.getQueryData<Message[]>(chatKeys.messages(connectionId)) ?? [];
     merge(await fetchMessages(connectionId, catchUpFrom(seen)));
-  }, [client, key, merge, connectionId]);
+  }, [client, merge, connectionId]);
 
   useEffect(
     () =>
@@ -64,8 +69,12 @@ export function useChat(connectionId: string, myId: string) {
     [connectionId, merge, catchUp],
   );
 
+  const [appActive, setAppActive] = useState(
+    AppState.currentState !== 'background',
+  );
   useEffect(() => {
     const sub = AppState.addEventListener('change', appState => {
+      setAppActive(appState === 'active');
       if (appState === 'active') {
         catchUp().catch(() => {});
       }
@@ -73,34 +82,34 @@ export function useChat(connectionId: string, myId: string) {
     return () => sub.remove();
   }, [catchUp]);
 
-  // Everything up to the newest message on screen counts as read.
+  // Everything up to the newest message on screen counts as read, but only while it's seen.
   const newestAt = messages.data?.at(-1)?.createdAt;
   const markedAt = useRef<string>(undefined);
   useEffect(() => {
-    if (newestAt && newestAt !== markedAt.current) {
+    if (reading && appActive && newestAt && newestAt !== markedAt.current) {
       markedAt.current = newestAt;
       markRead(connectionId, newestAt)
-        .then(() => client.invalidateQueries({ queryKey: conversationsKey }))
+        .then(() =>
+          client.invalidateQueries({ queryKey: chatKeys.conversations }),
+        )
         .catch(() => {});
     }
-  }, [newestAt, connectionId, client]);
+  }, [reading, appActive, newestAt, connectionId, client]);
 
-  const attempt = useCallback(
-    async (id: string, body: string) => {
-      setPending(list =>
-        list.map(p => (p.id === id ? { ...p, delivery: 'sending' } : p)),
+  const attempt = async (id: string, body: string) => {
+    setDelivery(id, 'sending');
+    try {
+      await sendMessage({ id, connectionId, body });
+    } catch (e) {
+      setDelivery(
+        id,
+        (e as Error).message === cannotSendMessage ? 'refused' : 'failed',
       );
-      try {
-        await sendMessage({ id, connectionId, body });
-        await catchUp().catch(() => {});
-      } catch {
-        setPending(list =>
-          list.map(p => (p.id === id ? { ...p, delivery: 'failed' } : p)),
-        );
-      }
-    },
-    [connectionId, catchUp],
-  );
+      return;
+    }
+    setDelivery(id, 'sent');
+    catchUp().catch(() => {});
+  };
 
   const send = (body: string) => {
     const id = newMessageId();
@@ -135,10 +144,18 @@ export function useChat(connectionId: string, myId: string) {
       })),
   ];
 
+  // "Seen" goes under my newest delivered message once the other side has read up to it.
+  const otherLastReadAt = state.data?.otherLastReadAt;
+  const myNewest = [...confirmed].reverse().find(m => m.senderId === myId);
+  const seenId =
+    myNewest && otherLastReadAt && otherLastReadAt >= myNewest.createdAt
+      ? myNewest.id
+      : undefined;
+
   return {
     items,
     loading: messages.isPending,
-    otherLastReadAt: state.data?.otherLastReadAt ?? null,
+    seenId,
     muted: state.data?.muted ?? false,
     send,
     retry,

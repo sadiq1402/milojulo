@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Card, Icon, Text } from '../../components';
+import { cannotSendMessage } from '../../features/chat/api';
 import type { ChatItem } from '../../features/chat/useChat';
 import {
   colors,
@@ -63,6 +64,11 @@ export function MessageBubble({ item, mine, seen, onRetry }: Props) {
             Not sent. Tap to retry.
           </Text>
         </Pressable>
+      ) : null}
+      {item.delivery === 'refused' ? (
+        <Text variant="caption" color={colors.danger}>
+          {cannotSendMessage}
+        </Text>
       ) : null}
       {seen ? (
         <Text variant="caption" color={colors.secondary}>

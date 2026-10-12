@@ -7,7 +7,8 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   name: string;
-  open: boolean;
+  // The Connection is accepted, so it can still be closed.
+  accepted: boolean;
   muted: boolean;
   onMute: (muted: boolean) => void;
   onBlock: () => void;
@@ -20,7 +21,7 @@ export function ChatMenu({
   visible,
   onClose,
   name,
-  open,
+  accepted,
   muted,
   onMute,
   onBlock,
@@ -82,7 +83,7 @@ export function ChatMenu({
             variant="secondary"
             onPress={confirmAnd(() => onMute(!muted))}
           />
-          {open ? (
+          {accepted ? (
             <Button
               label="Close chat"
               variant="secondary"

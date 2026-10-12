@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsFocused } from '@react-navigation/native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
   FlatList,
@@ -16,14 +17,10 @@ import { fetchAreaNames } from '../../features/catalog/api';
 import {
   blockMember,
   closeConnection,
-  fetchConversations,
   setMuted,
 } from '../../features/chat/api';
-import {
-  conversationsKey,
-  useChat,
-  type ChatItem,
-} from '../../features/chat/useChat';
+import { chatKeys, useConversations } from '../../features/chat/queries';
+import { useChat, type ChatItem } from '../../features/chat/useChat';
 import type { MemberParams } from '../../navigation/types';
 import {
   colors,
@@ -43,16 +40,13 @@ export function ChatScreen({
   const { connectionId } = route.params;
   const myId = useSession().session!.user.id;
   const client = useQueryClient();
-  const conversations = useQuery({
-    queryKey: conversationsKey,
-    queryFn: fetchConversations,
-  });
+  const conversations = useConversations();
   const areas = useQuery({
     queryKey: ['areas'],
     queryFn: fetchAreaNames,
     staleTime: Infinity,
   });
-  const chat = useChat(connectionId, myId);
+  const chat = useChat(connectionId, myId, useIsFocused());
   const [draft, setDraft] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -60,20 +54,14 @@ export function ChatScreen({
     c => c.connectionId === connectionId,
   );
   const name = conversation?.otherName ?? '';
-  const open = conversation?.status === 'accepted';
-  const refresh = () =>
-    client.invalidateQueries({ queryKey: conversationsKey });
-
-  // "Seen" goes under my newest message once the other side's read position reaches it.
-  const myNewest = [...chat.items]
-    .reverse()
-    .find(m => m.senderId === myId && m.delivery === 'sent');
-  const seenId =
-    myNewest &&
-    chat.otherLastReadAt &&
-    chat.otherLastReadAt >= myNewest.createdAt
-      ? myNewest.id
-      : undefined;
+  const accepted = conversation?.status === 'accepted';
+  const menuAction = useMutation({
+    mutationFn: (action: () => Promise<void>) => action(),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: chatKeys.conversations });
+      client.invalidateQueries({ queryKey: chatKeys.state(connectionId) });
+    },
+  });
 
   const send = () => {
     const body = draft.trim();
@@ -123,12 +111,22 @@ export function ChatScreen({
             <MessageBubble
               item={item}
               mine={item.senderId === myId}
-              seen={item.id === seenId}
+              seen={item.id === chat.seenId}
               onRetry={() => chat.retry(item.id)}
             />
           )}
         />
-        {open ? (
+        {menuAction.isError ? (
+          <Text
+            variant="bodySmall"
+            color={colors.danger}
+            style={styles.actionError}
+            accessibilityLiveRegion="polite"
+          >
+            That didn't work. Check your connection and try again.
+          </Text>
+        ) : null}
+        {accepted ? (
           <View style={styles.composer}>
             <TextInput
               value={draft}
@@ -158,19 +156,16 @@ export function ChatScreen({
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         name={name}
-        open={open}
+        accepted={accepted}
         muted={chat.muted}
-        onMute={muted =>
-          setMuted(connectionId, muted).then(() =>
-            client.invalidateQueries({
-              queryKey: ['chat-state', connectionId],
-            }),
-          )
-        }
+        onMute={muted => menuAction.mutate(() => setMuted(connectionId, muted))}
         onBlock={() =>
-          conversation && blockMember(conversation.otherId).then(refresh)
+          conversation &&
+          menuAction.mutate(() => blockMember(conversation.otherId))
         }
-        onCloseChat={() => closeConnection(connectionId).then(refresh)}
+        onCloseChat={() =>
+          menuAction.mutate(() => closeConnection(connectionId))
+        }
         onSafety={() => navigation.navigate('SafetyCentre')}
       />
     </SafeAreaView>
@@ -200,6 +195,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   who: { flex: 1 },
+  actionError: {
+    paddingHorizontal: layout.pageMargin,
+    paddingBottom: spacing.xs,
+  },
   messages: {
     paddingHorizontal: layout.pageMargin,
     // Inverted: this is the gap above the composer.

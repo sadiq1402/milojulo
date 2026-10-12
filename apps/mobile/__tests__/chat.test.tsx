@@ -1,4 +1,10 @@
-import { act, fireEvent, screen, within } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
@@ -180,6 +186,34 @@ describe('a chat', () => {
     });
   });
 
+  test('a send refused because the chat just closed says why instead of offering a retry', async () => {
+    jest
+      .mocked(chat.sendMessage)
+      .mockRejectedValue(new Error(chat.cannotSendMessage));
+    await openChatWith('Isha');
+    await fireEvent.changeText(
+      screen.getByLabelText('Message'),
+      'Still there?',
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    expect(await screen.findByText(chat.cannotSendMessage)).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /Tap to retry/ }),
+    ).not.toBeOnTheScreen();
+  });
+
+  test('a send that went through stops showing "Sending…" even if confirming it fails', async () => {
+    jest.mocked(chat.sendMessage).mockResolvedValue();
+    await openChatWith('Isha');
+    jest.mocked(chat.fetchMessages).mockRejectedValue(new Error('offline'));
+    await fireEvent.changeText(screen.getByLabelText('Message'), 'On my way');
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    expect(screen.getByText('On my way')).toBeOnTheScreen();
+    await waitFor(() =>
+      expect(screen.queryByText('Sending…')).not.toBeOnTheScreen(),
+    );
+  });
+
   test('a message from the other side appears live and is marked read', async () => {
     await openChatWith('Isha');
     await act(async () =>
@@ -290,6 +324,20 @@ describe('chat menu', () => {
     expect(chat.blockMember).toHaveBeenCalledWith('isha');
     expect(
       await screen.findByText('This chat is closed. You can still read it.'),
+    ).toBeOnTheScreen();
+  });
+
+  test('a menu action that fails says so', async () => {
+    jest.mocked(chat.blockMember).mockRejectedValue(new Error('offline'));
+    await openMenu();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Block Isha' }),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Block' }));
+    expect(
+      await screen.findByText(
+        "That didn't work. Check your connection and try again.",
+      ),
     ).toBeOnTheScreen();
   });
 
