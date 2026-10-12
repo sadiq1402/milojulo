@@ -86,23 +86,29 @@ beforeEach(() => {
     live = handlers;
     return () => {};
   });
+  jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
+  jest
+    .mocked(chat.fetchEligibleModes)
+    .mockResolvedValue(['friends', 'activities', 'networking']);
   let n = 0;
   jest.mocked(chat.newMessageId).mockImplementation(() => `new-${++n}`);
 });
 
 async function openInbox() {
-  await renderApp(me);
+  const app = await renderApp(me);
   await fireEvent.press(await screen.findByRole('tab', { name: 'Inbox' }));
+  return app;
 }
 
 async function openChatWith(name: string) {
-  await openInbox();
+  const app = await openInbox();
   await fireEvent.press(
     await screen.findByRole('button', { name: new RegExp(`^${name}`) }),
   );
   await screen.findByLabelText('Chat menu');
   // Let the screen's loads (area names, messages, read state) land before the test goes on.
   await screen.findByText(name === 'Isha' ? 'Baner' : name);
+  return app;
 }
 
 describe('chat list', () => {
@@ -358,5 +364,151 @@ describe('chat menu', () => {
     expect(
       await screen.findByText('This chat is closed. You can still read it.'),
     ).toBeOnTheScreen();
+  });
+});
+
+describe('Mode Change', () => {
+  test("the chat header shows the Connection's Mode", async () => {
+    await openChatWith('Isha');
+    expect(screen.getByText('Friends')).toBeOnTheScreen();
+  });
+
+  test('Change Mode offers only the other Eligible Modes, and a proposal then waits for an answer', async () => {
+    jest.mocked(chat.proposeModeChange).mockImplementation(async () => {
+      jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
+        id: 'mc1',
+        proposedBy: myId,
+        fromMode: 'friends',
+        toMode: 'activities',
+        proposedAt: '2026-10-12T10:00:00.000Z',
+      });
+    });
+    await openChatWith('Isha');
+    await fireEvent.press(screen.getByLabelText('Chat menu'));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Change Mode' }),
+    );
+    expect(
+      await screen.findByRole('button', { name: 'Activities' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Networking' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Friends' }),
+    ).not.toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Activities' }));
+    expect(chat.proposeModeChange).toHaveBeenCalledWith(
+      'conn-isha',
+      'activities',
+    );
+    expect(
+      await screen.findByText(
+        'You suggested moving to Activities. Waiting for Isha.',
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test('a refused proposal says why', async () => {
+    jest
+      .mocked(chat.proposeModeChange)
+      .mockRejectedValue(
+        new Error("There's already a Mode Change waiting for an answer."),
+      );
+    await openChatWith('Isha');
+    await fireEvent.press(screen.getByLabelText('Chat menu'));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Change Mode' }),
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Activities' }),
+    );
+    expect(
+      await screen.findByText(
+        "There's already a Mode Change waiting for an answer.",
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test('the other side can accept, and the header moves to the new Mode', async () => {
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
+      id: 'mc2',
+      proposedBy: 'isha',
+      fromMode: 'friends',
+      toMode: 'activities',
+      proposedAt: '2026-10-12T10:00:00.000Z',
+    });
+    jest.mocked(chat.respondModeChange).mockImplementation(async () => {
+      jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
+      jest
+        .mocked(chat.fetchConversations)
+        .mockResolvedValue([{ ...isha, mode: 'activities' }]);
+    });
+    await openChatWith('Isha');
+    expect(
+      await screen.findByText(
+        'Isha would like to move this chat to Activities.',
+      ),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Accept' }));
+    expect(chat.respondModeChange).toHaveBeenCalledWith('mc2', true);
+    expect(await screen.findByText('Activities')).toBeOnTheScreen();
+    expect(
+      screen.queryByText(/would like to move this chat/),
+    ).not.toBeOnTheScreen();
+  });
+
+  test('when the other side accepts my proposal, my header moves to the new Mode', async () => {
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
+      id: 'mc4',
+      proposedBy: myId,
+      fromMode: 'friends',
+      toMode: 'activities',
+      proposedAt: '2026-10-12T10:00:00.000Z',
+    });
+    const { client } = await openChatWith('Isha');
+    expect(
+      await screen.findByText(
+        'You suggested moving to Activities. Waiting for Isha.',
+      ),
+    ).toBeOnTheScreen();
+
+    // Isha accepts on her phone; this phone's next check finds no open proposal.
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
+    jest
+      .mocked(chat.fetchConversations)
+      .mockResolvedValue([{ ...isha, mode: 'activities' }]);
+    await act(async () => {
+      await client.invalidateQueries({
+        queryKey: ['mode-change', 'conn-isha'],
+      });
+    });
+    expect(await screen.findByText('Activities')).toBeOnTheScreen();
+  });
+
+  test('the other side can decline', async () => {
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
+      id: 'mc3',
+      proposedBy: 'isha',
+      fromMode: 'friends',
+      toMode: 'activities',
+      proposedAt: '2026-10-12T10:00:00.000Z',
+    });
+    jest.mocked(chat.respondModeChange).mockResolvedValue();
+    await openChatWith('Isha');
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Decline' }),
+    );
+    expect(chat.respondModeChange).toHaveBeenCalledWith('mc3', false);
+  });
+
+  test('a closed chat offers no Mode Change', async () => {
+    await openChatWith('Kabir');
+    await fireEvent.press(screen.getByLabelText('Chat menu'));
+    await screen.findByRole('button', { name: 'Safety Centre' });
+    expect(
+      screen.queryByRole('button', { name: 'Change Mode' }),
+    ).not.toBeOnTheScreen();
   });
 });
