@@ -10,3 +10,8 @@ jest.mock('react-native-safe-area-context', () => {
 
 // Unit tests never reach Supabase; they mock the feature data modules instead.
 jest.mock('./src/lib/supabase', () => ({ supabase: {} }));
+
+// React Native's mock is a jest.fn that resetMocks would empty between tests.
+require('react-native').AppState.addEventListener = () => ({
+  remove: () => {},
+});

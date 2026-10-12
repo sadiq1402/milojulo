@@ -4,3 +4,9 @@ export type SignedOutParams = {
   Email: undefined;
   Otp: { email: string };
 };
+
+export type MemberParams = {
+  Tabs: undefined;
+  Chat: { connectionId: string };
+  SafetyCentre: undefined;
+};

@@ -19,9 +19,17 @@ type Props = {
   left?: ReactNode;
   right?: ReactNode;
   onPress?: () => void;
+  accessibilityLabel?: string;
 };
 
-export function ListRow({ title, subtitle, left, right, onPress }: Props) {
+export function ListRow({
+  title,
+  subtitle,
+  left,
+  right,
+  onPress,
+  accessibilityLabel,
+}: Props) {
   const content = (
     <>
       {left}
@@ -52,7 +60,9 @@ export function ListRow({ title, subtitle, left, right, onPress }: Props) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={subtitle ? `${title}, ${subtitle}` : title}
+      accessibilityLabel={
+        accessibilityLabel ?? (subtitle ? `${title}, ${subtitle}` : title)
+      }
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       {content}

@@ -1,3 +1,15 @@
+# Chat (#42)
+
+Inbox tab = "Inbox" heading + Requests | Chats switch (mockups Inbox, Chats); Requests stays a placeholder until #41, so the tab opens on Chats. Chat screen per mockup Chat: header (back, avatar, name, Area, menu), first-meet safety banner, bubbles, Activity cards, composer (text + send; attach and voice come with #45).
+
+- [ ] Data module `features/chat`: conversations from `my_connections()`, messages (load, catch-up since slightly before the last seen, de-duplicate by id), send with a client UUID (a repeat of the same id counts as sent), mark read, members (other side's `last_read_at`, own `muted`), Mute, close, Block, Realtime subscription on private `connection:<id>`
+- [ ] Chats list: avatar, name, preview, time, unread dot; closed Connections as read-only history
+- [ ] Chat screen: optimistic bubble, retry with the same id on failure, read receipt ("Seen"), mark read on open and on new messages, catch-up on reconnect and app foreground
+- [ ] Menu sheet: Mute/Unmute, Block, Close Connection, Safety Centre (placeholder until #43); confirm before Block and Close
+- [ ] Composer off with a reason when the Connection is closed or blocked
+- [ ] Component tests over the mocked data module; integration tests against local Supabase including Realtime (also started in CI)
+- [ ] Local-only script to create a connected test partner, for checking on the phone
+
 # Getting in (#37)
 
 Flow: Welcome → Invite code (checked with `check_invite`, kept on the phone) → Email → 6-digit code → signed in → `redeem_invite` with the kept code → Date of birth and consents (`accept_consents`) → profile setup (placeholder until #38). The account's stage decides where a returning Member lands: no profile row → invite, no date of birth → consent, not submitted → profile setup, submitted → tabs.

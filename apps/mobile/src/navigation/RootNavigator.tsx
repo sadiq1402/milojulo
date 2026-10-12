@@ -1,10 +1,5 @@
-import {
-  createBottomTabNavigator,
-  type BottomTabBarProps,
-} from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { TabBar, type TabItem } from '../components';
 import { useAccountStage } from '../features/account/useAccountStage';
 import { useSession } from '../features/auth/SessionProvider';
 import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
@@ -16,51 +11,12 @@ import {
 import { OtpScreen } from '../screens/gettingIn/OtpScreen';
 import { ProfileSetupScreen } from '../screens/gettingIn/ProfileSetupScreen';
 import { WelcomeScreen } from '../screens/gettingIn/WelcomeScreen';
-import { PlaceholderScreen } from '../screens/PlaceholderScreen';
 import { LoadErrorScreen, LoadingScreen } from '../screens/StatusScreen';
+import { MemberNavigator } from './MemberNavigator';
 import type { SignedOutParams } from './types';
 
 const SignedOut = createNativeStackNavigator<SignedOutParams>();
 const Onboarding = createNativeStackNavigator();
-const Tabs = createBottomTabNavigator();
-
-const tabs: TabItem[] = [
-  { key: 'Discover', label: 'Discover', icon: 'discover' },
-  { key: 'Activities', label: 'Activities', icon: 'activities' },
-  { key: 'Circles', label: 'Circles', icon: 'circles' },
-  { key: 'Inbox', label: 'Inbox', icon: 'inbox' },
-  { key: 'Me', label: 'Me', icon: 'me' },
-];
-
-function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
-  return (
-    <TabBar
-      items={tabs}
-      activeKey={state.routes[state.index].name}
-      onSelect={name => navigation.navigate(name)}
-      bottomInset={insets.bottom}
-    />
-  );
-}
-
-const DiscoverScreen = () => <PlaceholderScreen title="Discover" />;
-const ActivitiesScreen = () => <PlaceholderScreen title="Activities" />;
-const CirclesScreen = () => <PlaceholderScreen title="Circles" />;
-const InboxScreen = () => <PlaceholderScreen title="Inbox" />;
-const MeScreen = () => <PlaceholderScreen title="Me" canSignOut />;
-
-function MainTabs() {
-  return (
-    <Tabs.Navigator screenOptions={{ headerShown: false }} tabBar={NavTabBar}>
-      <Tabs.Screen name="Discover" component={DiscoverScreen} />
-      <Tabs.Screen name="Activities" component={ActivitiesScreen} />
-      <Tabs.Screen name="Circles" component={CirclesScreen} />
-      <Tabs.Screen name="Inbox" component={InboxScreen} />
-      <Tabs.Screen name="Me" component={MeScreen} />
-    </Tabs.Navigator>
-  );
-}
-
 // Signed out, then one onboarding step per account stage, then a Member's tabs.
 // A completed step refreshes the stage, which swaps in the next screen.
 export function RootNavigator() {
@@ -84,7 +40,7 @@ export function RootNavigator() {
     return <LoadErrorScreen onRetry={() => stage.refetch()} />;
   }
   if (stage.data === 'member') {
-    return <MainTabs />;
+    return <MemberNavigator />;
   }
   return (
     <Onboarding.Navigator screenOptions={{ headerShown: false }}>

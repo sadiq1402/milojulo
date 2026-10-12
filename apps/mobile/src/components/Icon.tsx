@@ -9,6 +9,7 @@ const glyphs = {
   close: <Path d="M6 6l12 12M18 6L6 18" />,
   plus: <Path d="M12 5v14M5 12h14" />,
   check: <Path d="M5 12.5l4.5 4.5L19 7.5" />,
+  send: <Path d="M21 3L10 14M21 3l-6.5 18-3.5-7-7-3.5z" />,
   shieldCheck: (
     <>
       <Path d="M12 3l7.5 2.8v5.7c0 4.6-3.2 7.8-7.5 9.5-4.3-1.7-7.5-4.9-7.5-9.5V5.8z" />

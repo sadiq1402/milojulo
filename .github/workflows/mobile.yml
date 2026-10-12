@@ -43,9 +43,9 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.120.0
-      - name: Start Supabase (database, Auth, REST, mail)
+      - name: Start Supabase (database, Auth, REST, Realtime, mail)
         working-directory: .
-        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,storage-api,realtime,postgres-meta
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,storage-api,postgres-meta
       - name: Export local Supabase settings
         working-directory: .
         run: |
