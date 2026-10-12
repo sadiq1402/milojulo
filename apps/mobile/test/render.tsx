@@ -20,7 +20,12 @@ export async function renderApp(session: Session | null) {
     return () => {};
   });
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    // No garbage-collection timers: TanStack's 5-minute default keeps a single-process Jest
+    // (CI's 2-CPU runners) alive after the last test.
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity },
+      mutations: { gcTime: Infinity },
+    },
   });
   const result = await render(<App client={client} />);
   const setSession = (next: Session | null) => emit(next);

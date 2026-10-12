@@ -8,7 +8,7 @@ module.exports = {
     '^react-native-url-polyfill/auto$':
       '<rootDir>/__integration__/support/empty.ts',
     '^@react-native-async-storage/async-storage$':
-      '<rootDir>/__integration__/support/memoryStorage.ts',
+      '<rootDir>/test/memoryStorage.ts',
     '/config/env$': '<rootDir>/__integration__/support/env.ts',
   },
 };

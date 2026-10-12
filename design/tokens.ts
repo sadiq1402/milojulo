@@ -57,6 +57,7 @@ export const type = {
   bodySmall: { size: 14, line: 20, family: fonts.text, weight: '400' },
   label: { size: 16, line: 20, family: fonts.text, weight: '700' },
   caption: { size: 12, line: 16, family: fonts.text, weight: '600' }, // never below 12
+  code: { size: 24, line: 32, family: fonts.text, weight: '600' }, // one digit in a code box
 } as const;
 
 export const sizes = {
@@ -80,6 +81,7 @@ export const sizes = {
   sheet: { handle: { w: 40, h: 5 }, paddingTop: 12, paddingX: 20, maxHeightPct: 90 },
   switch: { w: 52, h: 32 },
   checkbox: 24,
+  checkboxRadius: 6,
   optionCardMin: 64,
   progress: { height: 4, gap: 6 },
   chat: { bubbleMaxWidthPct: 78, bubbleTailRadius: 6, bubblePaddingY: 10, bubblePaddingX: 14, mediaMaxW: 240, composerInput: 48 },

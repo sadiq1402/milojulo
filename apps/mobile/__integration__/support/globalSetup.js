@@ -6,6 +6,7 @@ module.exports = async () => {
   if (
     process.env.SUPABASE_URL &&
     process.env.SUPABASE_ANON_KEY &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY &&
     process.env.MAILPIT_URL
   ) {
     return;
@@ -23,5 +24,6 @@ module.exports = async () => {
   );
   process.env.SUPABASE_URL ??= vars.API_URL;
   process.env.SUPABASE_ANON_KEY ??= vars.ANON_KEY;
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??= vars.SERVICE_ROLE_KEY;
   process.env.MAILPIT_URL ??= vars.MAILPIT_URL ?? vars.INBUCKET_URL;
 };

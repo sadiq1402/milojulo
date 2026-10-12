@@ -15,6 +15,7 @@ jobs:
   app-checks:
     name: app-checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,6 +32,7 @@ jobs:
   app-integration:
     name: app-integration
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +50,7 @@ jobs:
         working-directory: .
         run: |
           supabase status -o env \
-            | sed -nE 's/^(API_URL|ANON_KEY|MAILPIT_URL)="?([^"]*)"?$/\1=\2/p' \
-            | sed -E 's/^API_URL=/SUPABASE_URL=/; s/^ANON_KEY=/SUPABASE_ANON_KEY=/' >> "$GITHUB_ENV"
+            | sed -nE 's/^(API_URL|ANON_KEY|SERVICE_ROLE_KEY|MAILPIT_URL)="?([^"]*)"?$/\1=\2/p' \
+            | sed -E 's/^API_URL=/SUPABASE_URL=/; s/^ANON_KEY=/SUPABASE_ANON_KEY=/; s/^SERVICE_ROLE_KEY=/SUPABASE_SERVICE_ROLE_KEY=/' >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run test:integration

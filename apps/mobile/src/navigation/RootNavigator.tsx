@@ -3,17 +3,24 @@ import {
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import { TabBar, type TabItem } from '../components';
-import { fetchAccountStage } from '../features/account/api';
+import { useAccountStage } from '../features/account/useAccountStage';
 import { useSession } from '../features/auth/SessionProvider';
-import { HelloScreen } from '../screens/HelloScreen';
+import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
+import { EmailScreen } from '../screens/gettingIn/EmailScreen';
+import {
+  CheckInviteScreen,
+  RedeemInviteScreen,
+} from '../screens/gettingIn/InviteCodeScreen';
+import { OtpScreen } from '../screens/gettingIn/OtpScreen';
+import { ProfileSetupScreen } from '../screens/gettingIn/ProfileSetupScreen';
+import { WelcomeScreen } from '../screens/gettingIn/WelcomeScreen';
 import { PlaceholderScreen } from '../screens/PlaceholderScreen';
-import { SignInScreen } from '../screens/SignInScreen';
 import { LoadErrorScreen, LoadingScreen } from '../screens/StatusScreen';
+import type { SignedOutParams } from './types';
 
-const SignedOut = createNativeStackNavigator();
+const SignedOut = createNativeStackNavigator<SignedOutParams>();
 const Onboarding = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
@@ -54,23 +61,22 @@ function MainTabs() {
   );
 }
 
-// Signed out, onboarding, or a Member's tabs; switching stacks resets navigation history.
+// Signed out, then one onboarding step per account stage, then a Member's tabs.
+// A completed step refreshes the stage, which swaps in the next screen.
 export function RootNavigator() {
   const { session, loading } = useSession();
-  const userId = session?.user.id;
-  const stage = useQuery({
-    queryKey: ['account-stage', userId],
-    queryFn: () => fetchAccountStage(userId!),
-    enabled: !!userId,
-  });
+  const stage = useAccountStage();
 
-  if (loading || (userId && stage.isPending)) {
+  if (loading || (session && stage.isPending)) {
     return <LoadingScreen />;
   }
   if (!session) {
     return (
       <SignedOut.Navigator screenOptions={{ headerShown: false }}>
-        <SignedOut.Screen name="SignIn" component={SignInScreen} />
+        <SignedOut.Screen name="Welcome" component={WelcomeScreen} />
+        <SignedOut.Screen name="InviteCode" component={CheckInviteScreen} />
+        <SignedOut.Screen name="Email" component={EmailScreen} />
+        <SignedOut.Screen name="Otp" component={OtpScreen} />
       </SignedOut.Navigator>
     );
   }
@@ -82,7 +88,13 @@ export function RootNavigator() {
   }
   return (
     <Onboarding.Navigator screenOptions={{ headerShown: false }}>
-      <Onboarding.Screen name="Hello" component={HelloScreen} />
+      {stage.data === 'invite' ? (
+        <Onboarding.Screen name="RedeemInvite" component={RedeemInviteScreen} />
+      ) : stage.data === 'consent' ? (
+        <Onboarding.Screen name="AgeConsent" component={AgeConsentScreen} />
+      ) : (
+        <Onboarding.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+      )}
     </Onboarding.Navigator>
   );
 }

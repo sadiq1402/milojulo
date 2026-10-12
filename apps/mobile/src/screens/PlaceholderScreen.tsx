@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Screen, Text, TopBar } from '../components';
-import { signOut } from '../features/auth/api';
+import { signOutCompletely } from '../features/account/api';
 import { colors } from '../theme';
 
 export function PlaceholderScreen({
@@ -17,7 +17,7 @@ export function PlaceholderScreen({
         <Button
           label="Sign out"
           variant="secondary"
-          onPress={() => signOut()}
+          onPress={() => signOutCompletely()}
         />
       ) : null}
     </Screen>
