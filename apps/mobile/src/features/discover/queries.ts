@@ -1,9 +1,4 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import {
-  fetchAreaNames,
-  fetchPromptQuestions,
-  fetchTagNames,
-} from '../catalog/api';
 import type { Mode } from '../modes';
 import { fetchFeedPage, fetchMyDiscoverState, fetchProfile } from './api';
 
@@ -34,30 +29,5 @@ export function useProfile(memberId: string) {
   return useQuery({
     queryKey: discoverKeys.profile(memberId),
     queryFn: () => fetchProfile(memberId),
-  });
-}
-
-// Catalogs change only with a release, so they load once.
-export function useAreaNames() {
-  return useQuery({
-    queryKey: ['areas'],
-    queryFn: fetchAreaNames,
-    staleTime: Infinity,
-  });
-}
-
-export function useTagNames() {
-  return useQuery({
-    queryKey: ['tags'],
-    queryFn: fetchTagNames,
-    staleTime: Infinity,
-  });
-}
-
-export function usePromptQuestions() {
-  return useQuery({
-    queryKey: ['prompt-questions'],
-    queryFn: fetchPromptQuestions,
-    staleTime: Infinity,
   });
 }

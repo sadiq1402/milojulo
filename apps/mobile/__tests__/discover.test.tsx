@@ -187,6 +187,18 @@ describe('the Discover feed', () => {
     expect(discover.fetchFeedPage).toHaveBeenCalledTimes(2);
   });
 
+  test('someone who comes up again on the next page shows only once', async () => {
+    jest
+      .mocked(discover.fetchFeedPage)
+      .mockResolvedValueOnce({ cards: [isha], nextCursor: 'cursor-1' })
+      .mockResolvedValueOnce({ cards: [isha, rohan], nextCursor: null });
+    await renderApp(me);
+    await cardFor('Isha');
+    await fireEvent(screen.getByTestId('discover-feed'), 'endReached');
+    expect(await cardFor('Rohan')).toBeOnTheScreen();
+    expect(screen.getAllByText('Isha, 27')).toHaveLength(1);
+  });
+
   test('pulling down refreshes the feed', async () => {
     await renderApp(me);
     await cardFor('Isha');

@@ -23,9 +23,9 @@ export function ProfileMenu({ visible, onClose, name, onBlock }: Props) {
   const block = () => {
     setBlocking(true);
     setError(undefined);
-    onBlock().catch(() => {
+    onBlock().catch((e: Error) => {
       setBlocking(false);
-      setError(`We couldn't block ${name}. Try again.`);
+      setError(e.message);
     });
   };
 

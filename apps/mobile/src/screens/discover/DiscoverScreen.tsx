@@ -17,12 +17,11 @@ import {
   unpause,
   type FeedCard as FeedCardData,
 } from '../../features/discover/api';
+import { useAreaNames, useTagNames } from '../../features/catalog/queries';
 import {
   discoverKeys,
-  useAreaNames,
   useFeed,
   useMyDiscoverState,
-  useTagNames,
 } from '../../features/discover/queries';
 import { modeLabels, type Mode } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
@@ -104,7 +103,15 @@ function Feed({ mode }: { mode: Mode | null }) {
   const feed = useFeed(mode);
   const areas = useAreaNames();
   const tags = useTagNames();
-  const cards = feed.data?.pages.flatMap(page => page.cards) ?? [];
+  // The score behind the cursor is live, so a profile edited between pages can come up twice.
+  const cards = [
+    ...new Map(
+      (feed.data?.pages.flatMap(page => page.cards) ?? []).map(card => [
+        card.id,
+        card,
+      ]),
+    ).values(),
+  ];
 
   if (feed.isError && cards.length === 0) {
     return (

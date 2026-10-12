@@ -1,13 +1,33 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAreaNames } from './api';
+import { fetchAreaNames, fetchPromptQuestions, fetchTagNames } from './api';
 
 // Catalogs change only with a migration, so they're loaded once per session.
-export const catalogKeys = { areas: ['areas'] };
+export const catalogKeys = {
+  areas: ['areas'],
+  tags: ['tags'],
+  promptQuestions: ['prompt-questions'],
+};
 
 export function useAreaNames() {
   return useQuery({
     queryKey: catalogKeys.areas,
     queryFn: fetchAreaNames,
+    staleTime: Infinity,
+  });
+}
+
+export function useTagNames() {
+  return useQuery({
+    queryKey: catalogKeys.tags,
+    queryFn: fetchTagNames,
+    staleTime: Infinity,
+  });
+}
+
+export function usePromptQuestions() {
+  return useQuery({
+    queryKey: catalogKeys.promptQuestions,
+    queryFn: fetchPromptQuestions,
     staleTime: Infinity,
   });
 }

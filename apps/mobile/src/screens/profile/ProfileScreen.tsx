@@ -19,12 +19,11 @@ import { blockMember } from '../../features/chat/api';
 import { chatKeys, useConversations } from '../../features/chat/queries';
 import type { Profile } from '../../features/discover/api';
 import {
-  discoverKeys,
   useAreaNames,
-  useProfile,
   usePromptQuestions,
   useTagNames,
-} from '../../features/discover/queries';
+} from '../../features/catalog/queries';
+import { discoverKeys, useProfile } from '../../features/discover/queries';
 import { modeLabels } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, sizes, spacing } from '../../theme';
