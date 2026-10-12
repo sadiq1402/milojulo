@@ -98,19 +98,35 @@ test('a message from the other side arrives live on the private channel', async 
   });
   await subscribed;
 
-  const id = newMessageId();
-  await ravi.client.from('messages').insert({
-    id,
-    connection_id: connectionId,
-    type: 'text',
-    body: 'See you there',
-  });
+  const sendAsRavi = async (body: string) => {
+    const id = newMessageId();
+    await ravi.client
+      .from('messages')
+      .insert({ id, connection_id: connectionId, type: 'text', body });
+    return id;
+  };
+  // A freshly started Realtime only begins streaming database broadcasts after the first
+  // join, and anything sent before then is never broadcast (CI starts it fresh). Wait until
+  // broadcasts flow; the app itself covers that gap by catching up when it goes live.
+  for (let tries = 0; ; tries++) {
+    const probe = await sendAsRavi('Are you there?');
+    try {
+      await waitFor(() => received.some(m => m.id === probe), 1000);
+      break;
+    } catch (e) {
+      if (tries === 15) {
+        throw e;
+      }
+    }
+  }
+
+  const id = await sendAsRavi('See you there');
   await waitFor(() => received.some(m => m.id === id));
   expect(received.find(m => m.id === id)).toMatchObject({
     senderId: ravi.id,
     body: 'See you there',
   });
-}, 20_000);
+}, 30_000);
 
 test('catching up fetches only messages from the given time on', async () => {
   const all = await fetchMessages(connectionId);
