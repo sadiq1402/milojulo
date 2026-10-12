@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
   FlatList,
@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Icon, IconButton, Tag, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
-import { fetchAreaNames } from '../../features/catalog/api';
+import { useAreaNames } from '../../features/catalog/queries';
 import {
   blockMember,
   closeConnection,
@@ -44,11 +44,7 @@ export function ChatScreen({
   const myId = useSession().session!.user.id;
   const client = useQueryClient();
   const conversations = useConversations();
-  const areas = useQuery({
-    queryKey: ['areas'],
-    queryFn: fetchAreaNames,
-    staleTime: Infinity,
-  });
+  const areas = useAreaNames();
   const chat = useChat(connectionId, myId, useIsFocused());
   const [draft, setDraft] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);

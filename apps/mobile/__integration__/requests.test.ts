@@ -33,7 +33,7 @@ test('a sent request shows as outgoing and pending with its Mode and note, and a
     note: 'Badminton at Baner?',
   });
   await expect(sendRequest(ravi.id, 'friends')).rejects.toThrow(
-    "You're already connected with this member, or a request between you is waiting.",
+    "You're already connected with this Member, or a request between you is waiting.",
   );
 });
 
@@ -46,7 +46,7 @@ test('a recent decline refuses another request, with friendly copy', async () =>
   // A declined request leaves the sender's lists; nothing says it was declined.
   expect(await conversationWith(ravi)).toBeUndefined();
   await expect(sendRequest(ravi.id, 'friends')).rejects.toThrow(
-    "You can't send this member another request yet.",
+    "You can't send this Member another request yet.",
   );
 });
 
@@ -54,7 +54,7 @@ test('a member who blocked me reads as not available, never as a Block', async (
   await kabir.client.rpc('block_user', { member_id: me.id });
   const error = await sendRequest(kabir.id, 'friends').catch(e => e);
   expect(error.message).toBe(
-    "This member isn't available for requests right now.",
+    "This Member isn't available for requests right now.",
   );
   expect(error.message).not.toMatch(/block/i);
 });

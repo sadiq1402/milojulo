@@ -6,6 +6,7 @@ import {
   BottomSheet,
   Button,
   Chip,
+  Tag,
   Text,
   TextArea,
 } from '../../components';
@@ -89,12 +90,7 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
         </View>
       ) : only ? (
         <View style={styles.chips}>
-          <Chip
-            label={modeLabels[only]}
-            tint={modeTints[only]}
-            selected
-            onPress={noop}
-          />
+          <Tag label={modeLabels[only]} tone={only} />
         </View>
       ) : (
         <Text color={colors.secondary}>
@@ -147,8 +143,6 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
     </>
   );
 }
-
-const noop = () => {};
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

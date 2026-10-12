@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -13,7 +13,7 @@ import {
   Text,
 } from '../../components';
 import type { Conversation } from '../../features/chat/api';
-import { fetchAreaNames } from '../../features/catalog/api';
+import { useAreaNames } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
 import { modeLabels } from '../../features/modes';
 import { respondRequest } from '../../features/requests/api';
@@ -24,12 +24,7 @@ import { colors, fontFamily, fonts, layout, spacing } from '../../theme';
 // The Inbox's Requests tab: incoming ones to answer, then the caller's own still pending.
 export function RequestList() {
   const { conversations, waiting, sent } = useRequests();
-  const areas = useQuery({
-    queryKey: ['areas'],
-    queryFn: fetchAreaNames,
-    staleTime: Infinity,
-    enabled: waiting.length + sent.length > 0,
-  });
+  const areas = useAreaNames();
   const areaOf = (c: Conversation) =>
     (c.otherAreaId && areas.data?.[c.otherAreaId]) || undefined;
 

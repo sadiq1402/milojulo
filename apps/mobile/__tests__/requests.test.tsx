@@ -202,9 +202,11 @@ describe('send request sheet', () => {
     expect(
       screen.getByRole('header', { name: 'Say hi to Isha' }),
     ).toBeOnTheScreen();
+    // The only Eligible Mode is shown as a tag, not a choice.
+    expect(screen.getByText('Friends')).toBeOnTheScreen();
     expect(
-      screen.getByRole('button', { name: 'Friends', selected: true }),
-    ).toBeOnTheScreen();
+      screen.queryByRole('button', { name: 'Friends' }),
+    ).not.toBeOnTheScreen();
     await fireEvent.changeText(
       screen.getByLabelText('Add a short note (optional)'),
       'Badminton at Baner?',
@@ -247,13 +249,13 @@ describe('send request sheet', () => {
     jest
       .mocked(requests.sendRequest)
       .mockRejectedValue(
-        new Error("This member isn't available for requests right now."),
+        new Error("This Member isn't available for requests right now."),
       );
     const { onSent, onClose } = await renderSheet(['friends']);
     await fireEvent.press(screen.getByRole('button', { name: 'Send request' }));
     expect(
       await screen.findByText(
-        "This member isn't available for requests right now.",
+        "This Member isn't available for requests right now.",
       ),
     ).toBeOnTheScreen();
     expect(onSent).not.toHaveBeenCalled();
