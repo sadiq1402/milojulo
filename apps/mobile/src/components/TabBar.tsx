@@ -12,7 +12,14 @@ import {
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
-export type TabItem = { key: string; label: string; icon: IconName };
+// badge counts what's waiting on the tab; badgeLabel words it for screen readers ("2 waiting").
+export type TabItem = {
+  key: string;
+  label: string;
+  icon: IconName;
+  badge?: number;
+  badgeLabel?: string;
+};
 
 type Props = {
   items: TabItem[];
@@ -30,17 +37,29 @@ export function TabBar({ items, activeKey, onSelect, bottomInset }: Props) {
       {items.map(item => {
         const active = item.key === activeKey;
         const tint = active ? colors.orchid : colors.secondary;
+        const badge = item.badge ?? 0;
         return (
           <Pressable
             key={item.key}
             onPress={() => onSelect(item.key)}
             accessibilityRole="tab"
-            accessibilityLabel={item.label}
+            accessibilityLabel={
+              badge > 0
+                ? `${item.label}, ${badge} ${item.badgeLabel ?? 'new'}`
+                : item.label
+            }
             accessibilityState={{ selected: active }}
             style={styles.tab}
           >
             <View style={[styles.pill, active && styles.pillActive]}>
               <Icon name={item.icon} color={tint} />
+              {badge > 0 ? (
+                <View style={styles.badge}>
+                  <Text variant="caption" color={colors.white}>
+                    {badge > 99 ? '99+' : badge}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <Text
               variant="caption"
@@ -81,6 +100,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pillActive: { backgroundColor: colors.tint },
+  badge: {
+    position: 'absolute',
+    top: -spacing.xxs,
+    right: 0,
+    minWidth: sizes.tabBadge.min,
+    minHeight: sizes.tabBadge.min,
+    borderRadius: sizes.tabBadge.min / 2,
+    paddingHorizontal: sizes.tabBadge.paddingX,
+    backgroundColor: colors.orchid,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: { fontFamily: fontFamily(fonts.text, '500') },
   labelActive: { fontFamily: fontFamily(fonts.text, '700') },
 });

@@ -5,6 +5,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { TabBar, type TabItem } from '../components';
+import { useRequests } from '../features/requests/queries';
 import { ChatScreen } from '../screens/chat/ChatScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
 import { PlaceholderScreen } from '../screens/PlaceholderScreen';
@@ -22,9 +23,14 @@ const tabs: TabItem[] = [
 ];
 
 function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
+  const waiting = useRequests().waiting.length;
   return (
     <TabBar
-      items={tabs}
+      items={tabs.map(tab =>
+        tab.key === 'Inbox'
+          ? { ...tab, badge: waiting, badgeLabel: 'waiting' }
+          : tab,
+      )}
       activeKey={state.routes[state.index].name}
       onSelect={name => navigation.navigate(name)}
       bottomInset={insets.bottom}
@@ -39,9 +45,15 @@ const MeScreen = () => <PlaceholderScreen title="Me" canSignOut />;
 // Until the Safety Centre ticket (#43).
 const SafetyCentreScreen = () => <PlaceholderScreen title="Safety Centre" />;
 
+// Rendered as a component so its hooks (the Inbox badge) have their own place.
+const renderTabBar = (props: BottomTabBarProps) => <NavTabBar {...props} />;
+
 function MainTabs() {
   return (
-    <Tabs.Navigator screenOptions={{ headerShown: false }} tabBar={NavTabBar}>
+    <Tabs.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={renderTabBar}
+    >
       <Tabs.Screen name="Discover" component={DiscoverScreen} />
       <Tabs.Screen name="Activities" component={ActivitiesScreen} />
       <Tabs.Screen name="Circles" component={CirclesScreen} />
