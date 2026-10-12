@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/__integration__'],
   globalSetup: '<rootDir>/__integration__/support/globalSetup.js',
+  setupFiles: ['<rootDir>/__integration__/support/hermes.ts'],
   setupFilesAfterEnv: ['<rootDir>/__integration__/support/afterEnv.ts'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/__integration__/support/reactNative.ts',

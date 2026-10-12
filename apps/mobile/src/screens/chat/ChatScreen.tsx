@@ -112,11 +112,13 @@ export function ChatScreen({
         style={styles.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        {/* Inverted so the newest message stays in view above the composer and keyboard. */}
         <FlatList
-          data={chat.items}
+          inverted
+          data={[...chat.items].reverse()}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.messages}
-          ListHeaderComponent={<SafetyNote />}
+          ListFooterComponent={<SafetyNote />}
           renderItem={({ item }: { item: ChatItem }) => (
             <MessageBubble
               item={item}
@@ -200,7 +202,8 @@ const styles = StyleSheet.create({
   who: { flex: 1 },
   messages: {
     paddingHorizontal: layout.pageMargin,
-    paddingBottom: spacing.md,
+    // Inverted: this is the gap above the composer.
+    paddingTop: spacing.md,
     gap: spacing.xs,
   },
   note: {

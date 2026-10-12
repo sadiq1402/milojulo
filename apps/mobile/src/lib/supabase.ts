@@ -15,6 +15,8 @@ export const supabase = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: false,
     },
+    // Protocol 2.0.0 decodes binary frames with TextDecoder, which Hermes lacks; 1.0.0 is JSON.
+    realtime: { vsn: '1.0.0' },
   },
 );
 
