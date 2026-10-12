@@ -165,7 +165,7 @@ select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => 'cha
   '23514', null, 'a voice note longer than 2 minutes is refused');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => 'chat/x/7.m4a'),
   '23514', null, 'a voice note needs its duration');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'activity_card', activity => gen_random_uuid()),
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'activity_card', activity => public.post_activity('Card', 'sports', 'baner', now() + interval '1 day')),
   'an Activity card naming its Activity is accepted');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'activity_card'),
   '23514', null, 'an Activity card needs its Activity');

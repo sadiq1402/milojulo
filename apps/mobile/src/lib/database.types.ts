@@ -23,7 +23,53 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "areas": {
+            "activities": {
+                  Row: {
+                    "area_id": string,"capacity": number,"created_at": string,"description": string | null,"ends_at": string | null,"hidden_at": string | null,"host_id": string,"id": string,"starts_at": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"activity_ends_at": string | null
+                  }
+                  ComputedFields: "activity_ends_at"
+                  Insert: {
+                    "area_id": string,"capacity": number,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id": string,"id"?: string,"starts_at": string,"status"?: Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"]
+                  }
+                  Update: {
+                    "area_id"?: string,"capacity"?: number,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id"?: string,"id"?: string,"starts_at"?: string,"status"?: Database["public"]['Enums']["activity_status"],"title"?: string,"type"?: Database["public"]['Enums']["activity_type"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activities_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activities_host_id_fkey"
+      columns: ["host_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activity_venues": {
+                  Row: {
+                    "activity_id": string,"created_at": string,"venue_detail": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activity_id": string,"created_at"?: string,"venue_detail": string
+                  }
+                  Update: {
+                    "activity_id"?: string,"created_at"?: string,"venue_detail"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_venues_activity_id_fkey"
+      columns: ["activity_id"]
+isOneToOne: true
+      referencedRelation: "activities"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"areas": {
                   Row: {
                     "center": unknown,"created_at": string,"id": string,"is_active": boolean,"name": string
                   }
@@ -254,6 +300,12 @@ isOneToOne: true
                   }
                   Relationships: [
                     {
+      foreignKeyName: "messages_activity_id_fkey"
+      columns: ["activity_id"]
+isOneToOne: false
+      referencedRelation: "activities"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "messages_connection_id_fkey"
       columns: ["connection_id"]
 isOneToOne: false
@@ -402,14 +454,40 @@ isOneToOne: false
             "accept_consents":
 { Args: { "birth_date": string,"document_ids": (string)[] }; Returns: undefined
                            },
+"activity_board":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "area_id": string,"capacity": number,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+            }[]
+                           },
+"activity_ends_at":
+{ Args: { "activity": Omit<Database["public"]['Tables']["activities"]['Row'], Database["public"]['Tables']["activities"]['ComputedFields']> }; Returns: string
+                           },
+"activity_is_locked":
+{ Args: { "activity_id": string }; Returns: boolean
+                           },
+"activity_spots_left":
+{ Args: { "activity_id": string }; Returns: number
+                           },
+"activity_starts_when":
+{ Args: { "starts_at": string }; Returns: string
+                           },
 "age_of":
 { Args: { "birth_date": string }; Returns: number
                            },
 "block_user":
 { Args: { "member_id": string }; Returns: undefined
                            },
+"can_see_activity":
+{ Args: { "activity": Omit<Database["public"]['Tables']["activities"]['Row'], Database["public"]['Tables']["activities"]['ComputedFields']>,"viewer": string }; Returns: boolean
+                           },
 "can_send_in":
 { Args: { "connection_id": string }; Returns: boolean
+                           },
+"cancel_activity":
+{ Args: { "activity_id": string }; Returns: undefined
+                           },
+"check_activity":
+{ Args: { "capacity": number,"ends_at": string,"start_changed": boolean,"starts_at": string,"title": string }; Returns: undefined
                            },
 "check_invite":
 { Args: { "invite_code": string }; Returns: boolean
@@ -431,8 +509,16 @@ isOneToOne: false
 "english_list":
 { Args: { "items": (string)[] }; Returns: string
                            },
+"expire_activities":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "fits_dating_preferences":
 { Args: { "candidate": string,"seeker": string }; Returns: boolean
+                           },
+"get_activity":
+{ Args: { "activity_id": string }; Returns: {
+              "area_id": string,"capacity": number,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_locked": boolean,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
+            }[]
                            },
 "get_profile":
 { Args: { "member_id": string }; Returns: {
@@ -460,6 +546,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "connection_id": string,"direction": Database["public"]['Enums']["connection_direction"],"last_message_at": string,"last_message_body": string,"last_message_type": Database["public"]['Enums']["message_type"],"mode": Database["public"]['Enums']["mode"],"note": string,"other_area_id": string,"other_id": string,"other_name": string,"other_photo_id": string,"status": Database["public"]['Enums']["connection_status"],"unread_count": number
             }[]
+                           },
+"post_activity":
+{ Args: { "area_id": string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail"?: string }; Returns: string
                            },
 "profile_minimum_gap":
 { Args: { "member_id": string }; Returns: string
@@ -503,10 +592,13 @@ isOneToOne: false
       } },
 "submit_profile":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"update_activity":
+{ Args: { "activity_id": string,"area_id"?: string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at"?: string,"title"?: string,"venue_detail"?: string }; Returns: undefined
                            }
           }
           Enums: {
-            "account_status": "active"|"banned","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","tag_kind": "interest"|"activity"
+            "account_status": "active"|"banned","activity_status": "open"|"cancelled"|"expired"|"removed","activity_type": "sports"|"food_chai"|"outdoors"|"games"|"learning","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","tag_kind": "interest"|"activity"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -626,7 +718,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "account_status": ["active", "banned"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"tag_kind": ["interest", "activity"]
+            "account_status": ["active", "banned"],"activity_status": ["open", "cancelled", "expired", "removed"],"activity_type": ["sports", "food_chai", "outdoors", "games", "learning"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"tag_kind": ["interest", "activity"]
           }
         }
 } as const
