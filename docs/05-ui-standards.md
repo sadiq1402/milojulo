@@ -50,7 +50,8 @@ Visual size at least 40; hit area at least 48 x 48 (iOS minimum is 44, Android 4
 | Progress (onboarding) | 4 high segments, 6 gaps, 20 side margins |
 | Chat bubble | Radius 22 (6 on tail corner), padding 10 14, 16/22, max width 78%; incoming bubbles on a soft shadow |
 | Chat media | Max 240 wide, 4:3 |
-| Composer | Input 48 high, radius 24; buttons 48 x 48; bottom padding 10 + 34 inset |
+| Composer | Input 48 high, radius 24; buttons 48 x 48; padding 10 12, bottom 10 + 34 inset |
+| Unread dot | 10, orchid |
 
 ## Web admin
 8-point grid, sidebar 232 wide, table rows 48 to 56, same colour and type tokens.

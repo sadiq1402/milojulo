@@ -84,7 +84,19 @@ export const sizes = {
   checkboxRadius: 6,
   optionCardMin: 64,
   progress: { height: 4, gap: 6 },
-  chat: { bubbleMaxWidthPct: 78, bubbleTailRadius: 6, bubblePaddingY: 10, bubblePaddingX: 14, mediaMaxW: 240, composerInput: 48 },
+  chat: {
+    bubbleMaxWidthPct: 78,
+    bubbleRadius: 22,
+    bubbleTailRadius: 6,
+    bubblePaddingY: 10,
+    bubblePaddingX: 14,
+    bubbleLineHeight: 22,
+    mediaMaxW: 240,
+    composerInput: 48,
+    composerPaddingY: 10,
+    composerPaddingX: 12,
+  },
+  unreadDot: 10,
 } as const;
 
 export const shadows = {

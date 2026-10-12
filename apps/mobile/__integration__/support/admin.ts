@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../../src/lib/database.types';
 
 // Service-role client for test setup only (what an admin or the dashboard would do); never used by the app.
-const admin = createClient(
+export const admin = createClient<Database>(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {

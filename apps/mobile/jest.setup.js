@@ -10,3 +10,42 @@ jest.mock('react-native-safe-area-context', () => {
 
 // Unit tests never reach Supabase; they mock the feature data modules instead.
 jest.mock('./src/lib/supabase', () => ({ supabase: {} }));
+
+// React Native's mock is a jest.fn that resetMocks would empty between tests.
+require('react-native').AppState.addEventListener = () => ({
+  remove: () => {},
+});
+
+// FlatList renders rows in timed batches, which land mid-test as unwrapped updates. Unit tests
+// check what is shown, not virtualisation, so render every row at once instead.
+jest.mock('react-native/Libraries/Lists/FlatList', () => {
+  const React = require('react');
+  const { ScrollView, View } = require('react-native');
+  const element = Component =>
+    !Component ? null : React.isValidElement(Component) ? (
+      Component
+    ) : (
+      <Component />
+    );
+  function FlatList({
+    data,
+    renderItem,
+    keyExtractor,
+    ListHeaderComponent,
+    ListFooterComponent,
+    contentContainerStyle,
+  }) {
+    return (
+      <ScrollView contentContainerStyle={contentContainerStyle}>
+        {element(ListHeaderComponent)}
+        {(data ?? []).map((item, index) => (
+          <View key={keyExtractor ? keyExtractor(item, index) : index}>
+            {renderItem({ item, index })}
+          </View>
+        ))}
+        {element(ListFooterComponent)}
+      </ScrollView>
+    );
+  }
+  return { __esModule: true, default: FlatList };
+});

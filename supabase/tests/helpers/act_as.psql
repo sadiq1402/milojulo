@@ -1,6 +1,10 @@
 -- Shared test helpers; include with \ir from a test file inside its transaction.
 create extension if not exists pgtap with schema extensions;
 
+-- The local database may hold development data (seeded or from the app); hide those Members so
+-- each test sees only its own. The test's transaction is rolled back, so nothing real changes.
+update public.profiles set hidden_at = now() where hidden_at is null;
+
 create function pg_temp.act_as_member(member_id uuid, user_metadata jsonb default '{}') returns void
 language sql as $$
   select set_config('request.jwt.claims', jsonb_build_object(
