@@ -58,7 +58,12 @@ export function ChatScreen({
   );
   const name = conversation?.otherName ?? '';
   const accepted = conversation?.status === 'accepted';
-  const modeChange = useModeChange(connectionId);
+  const [choosingMode, setChoosingMode] = useState(false);
+  const modeChange = useModeChange(
+    connectionId,
+    conversation?.otherId,
+    choosingMode,
+  );
   const menuAction = useMutation({
     mutationFn: (action: () => Promise<void>) => action(),
     onSuccess: () => {
@@ -182,8 +187,10 @@ export function ChatScreen({
         name={name}
         accepted={accepted}
         muted={chat.muted}
-        otherId={conversation?.otherId ?? ''}
-        currentMode={conversation?.mode}
+        modeOptions={modeChange.eligibleModes?.filter(
+          mode => mode !== conversation?.mode,
+        )}
+        onChoosingModes={setChoosingMode}
         onPropose={mode => modeChange.propose.mutateAsync(mode)}
         onMute={muted => menuAction.mutate(() => setMuted(connectionId, muted))}
         onBlock={() =>

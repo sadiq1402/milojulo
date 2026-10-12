@@ -8,7 +8,6 @@ import {
 import * as account from '../src/features/account/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
-import * as modeChange from '../src/features/chat/modeChange';
 import type { Conversation, Message } from '../src/features/chat/api';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -16,7 +15,6 @@ jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
-jest.mock('../src/features/chat/modeChange');
 
 const me = sessionFor('asha@example.com');
 const myId = me.user.id;
@@ -88,27 +86,29 @@ beforeEach(() => {
     live = handlers;
     return () => {};
   });
-  jest.mocked(modeChange.fetchOpenModeChange).mockResolvedValue(null);
+  jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
   jest
-    .mocked(modeChange.fetchEligibleModes)
+    .mocked(chat.fetchEligibleModes)
     .mockResolvedValue(['friends', 'activities', 'networking']);
   let n = 0;
   jest.mocked(chat.newMessageId).mockImplementation(() => `new-${++n}`);
 });
 
 async function openInbox() {
-  await renderApp(me);
+  const app = await renderApp(me);
   await fireEvent.press(await screen.findByRole('tab', { name: 'Inbox' }));
+  return app;
 }
 
 async function openChatWith(name: string) {
-  await openInbox();
+  const app = await openInbox();
   await fireEvent.press(
     await screen.findByRole('button', { name: new RegExp(`^${name}`) }),
   );
   await screen.findByLabelText('Chat menu');
   // Let the screen's loads (area names, messages, read state) land before the test goes on.
   await screen.findByText(name === 'Isha' ? 'Baner' : name);
+  return app;
 }
 
 describe('chat list', () => {
@@ -374,8 +374,8 @@ describe('Mode Change', () => {
   });
 
   test('Change Mode offers only the other Eligible Modes, and a proposal then waits for an answer', async () => {
-    jest.mocked(modeChange.proposeModeChange).mockImplementation(async () => {
-      jest.mocked(modeChange.fetchOpenModeChange).mockResolvedValue({
+    jest.mocked(chat.proposeModeChange).mockImplementation(async () => {
+      jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
         id: 'mc1',
         proposedBy: myId,
         fromMode: 'friends',
@@ -399,7 +399,7 @@ describe('Mode Change', () => {
     ).not.toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Activities' }));
-    expect(modeChange.proposeModeChange).toHaveBeenCalledWith(
+    expect(chat.proposeModeChange).toHaveBeenCalledWith(
       'conn-isha',
       'activities',
     );
@@ -412,9 +412,9 @@ describe('Mode Change', () => {
 
   test('a refused proposal says why', async () => {
     jest
-      .mocked(modeChange.proposeModeChange)
+      .mocked(chat.proposeModeChange)
       .mockRejectedValue(
-        new Error("There's already a Mode change waiting for an answer."),
+        new Error("There's already a Mode Change waiting for an answer."),
       );
     await openChatWith('Isha');
     await fireEvent.press(screen.getByLabelText('Chat menu'));
@@ -426,21 +426,21 @@ describe('Mode Change', () => {
     );
     expect(
       await screen.findByText(
-        "There's already a Mode change waiting for an answer.",
+        "There's already a Mode Change waiting for an answer.",
       ),
     ).toBeOnTheScreen();
   });
 
   test('the other side can accept, and the header moves to the new Mode', async () => {
-    jest.mocked(modeChange.fetchOpenModeChange).mockResolvedValue({
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
       id: 'mc2',
       proposedBy: 'isha',
       fromMode: 'friends',
       toMode: 'activities',
       proposedAt: '2026-10-12T10:00:00.000Z',
     });
-    jest.mocked(modeChange.respondModeChange).mockImplementation(async () => {
-      jest.mocked(modeChange.fetchOpenModeChange).mockResolvedValue(null);
+    jest.mocked(chat.respondModeChange).mockImplementation(async () => {
+      jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
       jest
         .mocked(chat.fetchConversations)
         .mockResolvedValue([{ ...isha, mode: 'activities' }]);
@@ -452,27 +452,55 @@ describe('Mode Change', () => {
       ),
     ).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Accept' }));
-    expect(modeChange.respondModeChange).toHaveBeenCalledWith('mc2', true);
+    expect(chat.respondModeChange).toHaveBeenCalledWith('mc2', true);
     expect(await screen.findByText('Activities')).toBeOnTheScreen();
     expect(
       screen.queryByText(/would like to move this chat/),
     ).not.toBeOnTheScreen();
   });
 
+  test('when the other side accepts my proposal, my header moves to the new Mode', async () => {
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
+      id: 'mc4',
+      proposedBy: myId,
+      fromMode: 'friends',
+      toMode: 'activities',
+      proposedAt: '2026-10-12T10:00:00.000Z',
+    });
+    const { client } = await openChatWith('Isha');
+    expect(
+      await screen.findByText(
+        'You suggested moving to Activities. Waiting for Isha.',
+      ),
+    ).toBeOnTheScreen();
+
+    // Isha accepts on her phone; this phone's next check finds no open proposal.
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
+    jest
+      .mocked(chat.fetchConversations)
+      .mockResolvedValue([{ ...isha, mode: 'activities' }]);
+    await act(async () => {
+      await client.invalidateQueries({
+        queryKey: ['mode-change', 'conn-isha'],
+      });
+    });
+    expect(await screen.findByText('Activities')).toBeOnTheScreen();
+  });
+
   test('the other side can decline', async () => {
-    jest.mocked(modeChange.fetchOpenModeChange).mockResolvedValue({
+    jest.mocked(chat.fetchOpenModeChange).mockResolvedValue({
       id: 'mc3',
       proposedBy: 'isha',
       fromMode: 'friends',
       toMode: 'activities',
       proposedAt: '2026-10-12T10:00:00.000Z',
     });
-    jest.mocked(modeChange.respondModeChange).mockResolvedValue();
+    jest.mocked(chat.respondModeChange).mockResolvedValue();
     await openChatWith('Isha');
     await fireEvent.press(
       await screen.findByRole('button', { name: 'Decline' }),
     );
-    expect(modeChange.respondModeChange).toHaveBeenCalledWith('mc3', false);
+    expect(chat.respondModeChange).toHaveBeenCalledWith('mc3', false);
   });
 
   test('a closed chat offers no Mode Change', async () => {

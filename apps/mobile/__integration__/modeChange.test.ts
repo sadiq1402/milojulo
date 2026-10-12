@@ -1,11 +1,11 @@
 import { signOut } from '../src/features/auth/api';
-import { fetchConversations } from '../src/features/chat/api';
 import {
+  fetchConversations,
   fetchEligibleModes,
   fetchOpenModeChange,
   proposeModeChange,
   respondModeChange,
-} from '../src/features/chat/modeChange';
+} from '../src/features/chat/api';
 import { admin } from './support/admin';
 import { connect, createMember, type TestMember } from './support/members';
 
@@ -59,7 +59,7 @@ test('only one open proposal at a time, refused with friendly copy', async () =>
     toMode: 'friends',
   });
   await expect(proposeModeChange(connectionId, 'friends')).rejects.toThrow(
-    "There's already a Mode change waiting for an answer.",
+    "There's already a Mode Change waiting for an answer.",
   );
 });
 
@@ -70,7 +70,7 @@ test('after a decline the proposer waits, told so in friendly copy', async () =>
     accept: false,
   });
   await expect(proposeModeChange(connectionId, 'friends')).rejects.toThrow(
-    'Your last Mode change was declined. You can suggest another in 7 days.',
+    'Your last Mode Change was declined. You can suggest another in 7 days.',
   );
 });
 

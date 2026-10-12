@@ -29,5 +29,5 @@ export async function renderApp(session: Session | null) {
   });
   const result = await render(<App client={client} />);
   const setSession = (next: Session | null) => emit(next);
-  return { ...result, setSession };
+  return { ...result, setSession, client };
 }

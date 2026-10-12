@@ -1,8 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BottomSheet, Button, Text } from '../../components';
-import { fetchEligibleModes } from '../../features/chat/modeChange';
 import { modeLabels, type Mode } from '../../features/modes';
 import { colors, spacing } from '../../theme';
 
@@ -13,8 +11,10 @@ type Props = {
   // The Connection is accepted, so its Mode can change and it can still be closed.
   accepted: boolean;
   muted: boolean;
-  otherId: string;
-  currentMode?: Mode;
+  // Eligible Modes other than the current one; undefined while loading.
+  modeOptions?: Mode[];
+  // Whether the Change Mode view is open, so the screen loads the options only then.
+  onChoosingModes: (choosing: boolean) => void;
   onPropose: (mode: Mode) => Promise<void>;
   onMute: (muted: boolean) => void;
   onBlock: () => void;
@@ -29,31 +29,28 @@ export function ChatMenu({
   name,
   accepted,
   muted,
-  otherId,
-  currentMode,
+  modeOptions,
+  onChoosingModes,
   onPropose,
   onMute,
   onBlock,
   onCloseChat,
   onSafety,
 }: Props) {
-  const [view, setView] = useState<'menu' | 'modes' | 'block' | 'close'>(
+  const [view, setViewState] = useState<'menu' | 'modes' | 'block' | 'close'>(
     'menu',
   );
+  const setView = (next: typeof view) => {
+    setViewState(next);
+    onChoosingModes(next === 'modes');
+  };
   const [proposeError, setProposeError] = useState<string>();
-  // Loaded only when Change Mode is opened; the database refuses anything else anyway.
-  const eligible = useQuery({
-    queryKey: ['eligible-modes', otherId],
-    queryFn: () => fetchEligibleModes(otherId),
-    enabled: view === 'modes',
-  });
-  const modeOptions = eligible.data?.filter(mode => mode !== currentMode);
   const dismiss = () => {
     setView('menu');
     setProposeError(undefined);
     onClose();
   };
-  const then = (action: () => void) => () => {
+  const andClose = (action: () => void) => () => {
     action();
     dismiss();
   };
@@ -103,7 +100,7 @@ export function ChatMenu({
             They won't be able to message you or see you in Discover, and this
             chat closes. They aren't told.
           </Text>
-          <Button label="Block" variant="danger" onPress={then(onBlock)} />
+          <Button label="Block" variant="danger" onPress={andClose(onBlock)} />
           {cancel}
         </View>
       ) : view === 'close' ? (
@@ -116,7 +113,7 @@ export function ChatMenu({
           <Button
             label="Close chat"
             variant="danger"
-            onPress={then(onCloseChat)}
+            onPress={andClose(onCloseChat)}
           />
           {cancel}
         </View>
@@ -132,7 +129,7 @@ export function ChatMenu({
           <Button
             label={muted ? 'Unmute notifications' : 'Mute notifications'}
             variant="secondary"
-            onPress={then(() => onMute(!muted))}
+            onPress={andClose(() => onMute(!muted))}
           />
           {accepted ? (
             <Button
@@ -149,7 +146,7 @@ export function ChatMenu({
           <Button
             label="Safety Centre"
             variant="text"
-            onPress={then(onSafety)}
+            onPress={andClose(onSafety)}
           />
         </View>
       )}

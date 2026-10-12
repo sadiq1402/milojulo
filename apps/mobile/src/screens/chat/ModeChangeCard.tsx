@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from '../../components';
-import type { ModeChange } from '../../features/chat/modeChange';
+import type { ModeChange } from '../../features/chat/api';
 import { modeLabels } from '../../features/modes';
 import { colors, layout, radius, spacing } from '../../theme';
 
