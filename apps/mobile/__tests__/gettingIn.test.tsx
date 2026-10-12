@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as auth from '../src/features/auth/api';
 import * as consents from '../src/features/consents/api';
@@ -136,8 +136,6 @@ describe('6-digit code', () => {
     await screen.findByLabelText('6-digit code');
   }
 
-  afterEach(() => jest.useRealTimers());
-
   test('verify waits for all six digits', async () => {
     await openCodeScreen();
     await fireEvent.changeText(screen.getByLabelText('6-digit code'), '12345');
@@ -145,13 +143,27 @@ describe('6-digit code', () => {
   });
 
   test('a new code can be sent after 30 seconds', async () => {
-    jest.useFakeTimers();
     await openCodeScreen();
     expect(screen.getByText("Didn't get it? Resend in 0:30")).toBeOnTheScreen();
-    await act(() => jest.advanceTimersByTime(30_000));
-    await fireEvent.press(screen.getByRole('button', { name: 'Resend code' }));
-    expect(auth.sendCode).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("Didn't get it? Resend in 0:30")).toBeOnTheScreen();
+    // Real timers with the clock moved on (fake timers hang on Node 22): the next
+    // one-second tick sees the deadline has passed.
+    const later = Date.now() + 31_000;
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(later);
+    try {
+      await fireEvent.press(
+        await screen.findByRole(
+          'button',
+          { name: 'Resend code' },
+          { timeout: 2000 },
+        ),
+      );
+      expect(auth.sendCode).toHaveBeenCalledTimes(2);
+      expect(
+        await screen.findByText("Didn't get it? Resend in 0:30"),
+      ).toBeOnTheScreen();
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   test('a wrong code shows why', async () => {
