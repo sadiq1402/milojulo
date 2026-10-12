@@ -10,6 +10,7 @@ export { Icon, type IconName } from './Icon';
 export { IconButton } from './IconButton';
 export { Input, TextArea } from './Input';
 export { List, ListRow } from './ListRow';
+export { PhotoPlaceholder } from './PhotoPlaceholder';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export { TabBar, type TabItem } from './TabBar';

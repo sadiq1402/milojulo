@@ -241,7 +241,8 @@ export async function closeConnection(connectionId: string): Promise<void> {
 export async function blockMember(memberId: string): Promise<void> {
   const { error } = await supabase.rpc('block_user', { member_id: memberId });
   if (error) {
-    throw error;
+    // block_user has no refusals of its own, so any failure is the connection.
+    throw new Error("That didn't work. Check your connection and try again.");
   }
 }
 
