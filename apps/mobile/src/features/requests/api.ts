@@ -10,12 +10,12 @@ const friendly: Record<string, string> = {
     'Your profile is paused. Unpause it to send requests.',
   'your profile is not visible':
     "Your profile isn't visible right now, so you can't send requests.",
-  'you cannot send a request to this Member':
+  'you cannot send a request to this member':
     "This Member isn't available for requests right now.",
   'that mode is not open between you': "That Mode isn't open between you two.",
-  'you already have a connection or request with this Member':
+  'you already have a connection or request with this member':
     "You're already connected with this Member, or a request between you is waiting.",
-  'this Member declined your request recently':
+  'this member declined your request recently':
     "You can't send this Member another request yet.",
   'you have sent 10 requests in the last 24 hours':
     "You've sent 10 requests in the last 24 hours, the most allowed. Try again later.",
