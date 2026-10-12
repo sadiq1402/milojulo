@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(59);
+select plan(64);
 
 -- d1 hosts; d2 browses. Both hold only Friends.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000d1');
@@ -234,6 +234,28 @@ select throws_ok($$ insert into public.activities (host_id, title, type, area_id
   '42501', null, 'an Activity cannot be inserted directly');
 select throws_ok($$ update public.activities set status = 'open' $$, '42501', null,
   'an Activity cannot be updated directly');
+select throws_ok('delete from public.activities', '42501', null, 'an Activity cannot be deleted directly');
+select throws_ok($$ insert into public.activity_venues (activity_id, venue_detail) values (pg_temp.mine(), 'Here') $$,
+  '42501', null, 'a venue cannot be written directly');
+
+-- Placeholders until Join Requests (#14): a new Activity is unlocked with every spot free.
+select results_eq('select is_locked, spots_left = capacity from public.get_activity(pg_temp.mine())',
+  $$ values (false, true) $$, 'a new Activity is unlocked and has all its spots left');
+
+-- An Auto-hidden host's Activities leave the board (Reports, decision 23); a Paused host's stay.
+reset role;
+update public.profiles set hidden_at = now() where id = '00000000-0000-0000-0000-0000000000d1';
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d2');
+select ok(not exists (select 1 from public.activity_board() where host_id = '00000000-0000-0000-0000-0000000000d1'),
+  'an Auto-hidden host''s Activities leave the board');
+reset role;
+update public.profiles set hidden_at = null, paused_at = now() where id = '00000000-0000-0000-0000-0000000000d1';
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d2');
+select ok(exists (select 1 from public.activity_board() where host_id = '00000000-0000-0000-0000-0000000000d1'),
+  'a Paused host''s Activities stay on the board');
+reset role;
+update public.profiles set paused_at = null where id = '00000000-0000-0000-0000-0000000000d1';
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 
 -- Changing an Activity: nulls keep a field, an empty description or venue clears it.
 create function pg_temp.change(

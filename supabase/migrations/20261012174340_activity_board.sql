@@ -114,8 +114,10 @@ as $$
     and activity.hidden_at is null
     and public.activity_ends_at(activity) > now()
     and not public.is_blocked(viewer, activity.host_id)
+    -- A Paused host's plans still stand; an Auto-hidden or banned host's leave the board.
     and exists (select 1 from public.profiles h
-                where h.id = activity.host_id and h.status <> 'banned' and h.deleted_at is null);
+                where h.id = activity.host_id and h.status <> 'banned' and h.deleted_at is null
+                  and h.hidden_at is null);
 $$;
 
 -- The board's tabs, by the calendar in India. One that began before today and is still running counts as tonight.
@@ -259,11 +261,7 @@ begin
   new_capacity := coalesce(update_activity.capacity, old.capacity);
   new_area := coalesce(update_activity.area_id, old.area_id);
 
-  if public.activity_is_locked(old.id)
-     and (new_start <> old.starts_at or new_end is distinct from old.ends_at or new_area <> old.area_id
-          or new_venue is distinct from old_venue or new_capacity < old.capacity) then
-    raise exception 'this activity is locked: only its description and a higher number of spots can change';
-  end if;
+  -- Locked Activity rules arrive with Join Requests (#14), the first way an Activity can lock.
   perform public.check_activity(coalesce(update_activity.title, old.title), new_start, new_end, new_capacity,
                                 new_start <> old.starts_at);
 
