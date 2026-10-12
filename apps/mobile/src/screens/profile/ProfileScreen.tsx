@@ -99,6 +99,7 @@ function ProfileBody({ profile }: { profile: Profile }) {
   const areas = useAreaNames();
   const tags = useTagNames();
   const questions = usePromptQuestions();
+  const areaName = areas.data?.[profile.areaId];
   const tagLabels = profile.tagIds
     .map(id => tags.data?.[id])
     .filter((label): label is string => Boolean(label));
@@ -111,9 +112,11 @@ function ProfileBody({ profile }: { profile: Profile }) {
         initialSize={heroInitialSize}
         style={styles.hero}
       >
-        <View style={styles.area}>
-          <Tag label={areas.data?.[profile.areaId] ?? ''} tone="onPhoto" />
-        </View>
+        {areaName ? (
+          <View style={styles.area}>
+            <Tag label={areaName} tone="onPhoto" />
+          </View>
+        ) : null}
         <View style={styles.modes}>
           {profile.modes.map(mode => (
             <Tag key={mode} label={modeLabels[mode]} tone={mode} />

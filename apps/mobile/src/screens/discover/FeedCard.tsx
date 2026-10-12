@@ -28,9 +28,11 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
           initialSize={initialSize}
           style={styles.media}
         >
-          <View style={styles.area}>
-            <Tag label={areaName} tone="onPhoto" />
-          </View>
+          {areaName ? (
+            <View style={styles.area}>
+              <Tag label={areaName} tone="onPhoto" />
+            </View>
+          ) : null}
           <View style={styles.modes}>
             {card.modes.map(mode => (
               <Tag key={mode} label={modeLabels[mode]} tone={mode} />
