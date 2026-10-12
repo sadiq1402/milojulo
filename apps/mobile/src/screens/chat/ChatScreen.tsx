@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Icon, IconButton, Text } from '../../components';
+import { Avatar, Icon, IconButton, Tag, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import { fetchAreaNames } from '../../features/catalog/api';
 import {
@@ -21,6 +21,8 @@ import {
 } from '../../features/chat/api';
 import { chatKeys, useConversations } from '../../features/chat/queries';
 import { useChat, type ChatItem } from '../../features/chat/useChat';
+import { useModeChange } from '../../features/chat/useModeChange';
+import { modeLabels } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
 import {
   colors,
@@ -32,6 +34,7 @@ import {
 } from '../../theme';
 import { ChatMenu } from './ChatMenu';
 import { MessageBubble } from './MessageBubble';
+import { ModeChangeCard } from './ModeChangeCard';
 
 export function ChatScreen({
   navigation,
@@ -55,6 +58,7 @@ export function ChatScreen({
   );
   const name = conversation?.otherName ?? '';
   const accepted = conversation?.status === 'accepted';
+  const modeChange = useModeChange(connectionId);
   const menuAction = useMutation({
     mutationFn: (action: () => Promise<void>) => action(),
     onSuccess: () => {
@@ -84,11 +88,19 @@ export function ChatScreen({
           <Text variant="title" accessibilityRole="header" numberOfLines={1}>
             {name}
           </Text>
-          {conversation?.otherAreaId ? (
-            <Text variant="caption" color={colors.secondary}>
-              {areas.data?.[conversation.otherAreaId] ?? ''}
-            </Text>
-          ) : null}
+          <View style={styles.subline}>
+            {conversation?.otherAreaId ? (
+              <Text variant="caption" color={colors.secondary}>
+                {areas.data?.[conversation.otherAreaId] ?? ''}
+              </Text>
+            ) : null}
+            {conversation ? (
+              <Tag
+                label={modeLabels[conversation.mode]}
+                tone={conversation.mode}
+              />
+            ) : null}
+          </View>
         </View>
         <IconButton
           icon="more"
@@ -126,6 +138,18 @@ export function ChatScreen({
             That didn't work. Check your connection and try again.
           </Text>
         ) : null}
+        {accepted && modeChange.open ? (
+          <ModeChangeCard
+            change={modeChange.open}
+            mine={modeChange.open.proposedBy === myId}
+            name={name}
+            pending={modeChange.respond.isPending}
+            error={modeChange.respond.error?.message}
+            onRespond={accept =>
+              modeChange.respond.mutate({ id: modeChange.open!.id, accept })
+            }
+          />
+        ) : null}
         {accepted ? (
           <View style={styles.composer}>
             <TextInput
@@ -158,6 +182,9 @@ export function ChatScreen({
         name={name}
         accepted={accepted}
         muted={chat.muted}
+        otherId={conversation?.otherId ?? ''}
+        currentMode={conversation?.mode}
+        onPropose={mode => modeChange.propose.mutateAsync(mode)}
         onMute={muted => menuAction.mutate(() => setMuted(connectionId, muted))}
         onBlock={() =>
           conversation &&
@@ -195,6 +222,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   who: { flex: 1 },
+  subline: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actionError: {
     paddingHorizontal: layout.pageMargin,
     paddingBottom: spacing.xs,
