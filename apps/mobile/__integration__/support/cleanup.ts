@@ -10,6 +10,9 @@ export async function deleteTestAccounts() {
   for (const user of data.users.filter(u =>
     u.email?.endsWith('@test.milojulo'),
   )) {
-    await admin.auth.admin.deleteUser(user.id);
+    const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+    if (deleteError) {
+      throw deleteError;
+    }
   }
 }
