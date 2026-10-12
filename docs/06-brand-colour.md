@@ -33,6 +33,7 @@ A clean pink-tinted white carries bright orchid, with butter and lilac as sticke
 
 Mode tints (tags and chips only, never buttons): Friends #CFF1E5 / #0B4A3E; Activities #FFF1B8 / #2B1233; Networking #D6ECFF / #1F4E79; Dating and Serious #FFE3F1 / #8E1F60; Casual #E3D4FF / #4B2BB8.
 Photo placeholder tones: #FFD1E8, #E3D4FF, #FFE9A8, #CFF1E5.
+Activity card tones (by type, as in the Activities mockup): Sports #FFE9A8, Food & chai #CFF1E5, Outdoors #E3D4FF, Games #FFD1E8, Learning #D6ECFF.
 Balance: tinted whites about 70% of a screen, orchid about 16%, butter and lilac about 14%.
 
 ## Style

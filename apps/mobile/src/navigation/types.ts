@@ -10,4 +10,7 @@ export type MemberParams = {
   Chat: { connectionId: string };
   Profile: { memberId: string };
   SafetyCentre: undefined;
+  ActivityDetail: { activityId: string };
+  CreateActivity: undefined;
+  EditActivity: { activityId: string };
 };

@@ -42,6 +42,15 @@ export const modeTints = {
 
 export const photoTones = ['#FFD1E8', '#E3D4FF', '#FFE9A8', '#CFF1E5'] as const;
 
+// Activity card backgrounds by type (Activities mockup): the photo tones plus the Networking tint.
+export const activityTones = {
+  sports: '#FFE9A8',
+  food_chai: '#CFF1E5',
+  outdoors: '#E3D4FF',
+  games: '#FFD1E8',
+  learning: '#D6ECFF',
+} as const;
+
 export const spacing = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 20, xl: 24, xxl: 32, x3: 40, x4: 48, x5: 64 } as const;
 export const layout = { pageMargin: 20, blockGap: 16, sectionGap: 24, gridGutter: 12, cardPadding: 16, statusBar: 48, bottomInset: 34 } as const;
 
