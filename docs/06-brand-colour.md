@@ -29,6 +29,7 @@ A clean pink-tinted white carries bright orchid, with butter and lilac as sticke
 | track | #F6DFEC | Unfilled progress segment |
 | scrim | ink at 50% | Behind bottom sheets |
 | photoInitial | ink at 42% | Initial on a photo placeholder |
+| lilacSoft | #E3D4FF | Second prompt card on a profile (same hex as the Casual tint, as in the ProfileDetail mockup) |
 
 Mode tints (tags and chips only, never buttons): Friends #CFF1E5 / #0B4A3E; Activities #FFF1B8 / #2B1233; Networking #D6ECFF / #1F4E79; Dating and Serious #FFE3F1 / #8E1F60; Casual #E3D4FF / #4B2BB8.
 Photo placeholder tones: #FFD1E8, #E3D4FF, #FFE9A8, #CFF1E5.

@@ -33,11 +33,14 @@ jest.mock('react-native/Libraries/Lists/FlatList', () => {
     keyExtractor,
     ListHeaderComponent,
     ListFooterComponent,
-    contentContainerStyle,
+    ListEmptyComponent,
+    ...rest
   }) {
+    // Other props (testID, onEndReached, refreshControl) reach the ScrollView, so tests can fire them.
     return (
-      <ScrollView contentContainerStyle={contentContainerStyle}>
+      <ScrollView {...rest}>
         {element(ListHeaderComponent)}
+        {!data?.length && element(ListEmptyComponent)}
         {(data ?? []).map((item, index) => (
           <View key={keyExtractor ? keyExtractor(item, index) : index}>
             {renderItem({ item, index })}

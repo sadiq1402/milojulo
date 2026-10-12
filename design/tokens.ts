@@ -14,6 +14,7 @@ export const colors = {
   butter: '#FFE27A',
   butterSoft: '#FFF1B8',
   lilac: '#C8B6FF',
+  lilacSoft: '#E3D4FF', // Second prompt card on a profile
   violet: '#7B4DFF',
   danger: '#C62828',
   warnTint: '#FFE3DC',
