@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/__integration__'],
   globalSetup: '<rootDir>/__integration__/support/globalSetup.js',
+  setupFilesAfterEnv: ['<rootDir>/__integration__/support/afterEnv.ts'],
   moduleNameMapper: {
     '^react-native$': '<rootDir>/__integration__/support/reactNative.ts',
     '^react-native-url-polyfill/auto$':
