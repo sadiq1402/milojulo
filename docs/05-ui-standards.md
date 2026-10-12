@@ -52,6 +52,7 @@ Visual size at least 40; hit area at least 48 x 48 (iOS minimum is 44, Android 4
 | Chat media | Max 240 wide, 4:3 |
 | Composer | Input 48 high, radius 24; buttons 48 x 48; padding 10 12, bottom 10 + 34 inset |
 | Unread dot | 10, orchid |
+| Tab badge | 20 min (pill), padding 0 4, orchid with white 12/16 caption, on the icon pill's top-right corner |
 
 ## Web admin
 8-point grid, sidebar 232 wide, table rows 48 to 56, same colour and type tokens.

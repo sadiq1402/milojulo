@@ -97,6 +97,7 @@ export const sizes = {
     composerPaddingX: 12,
   },
   unreadDot: 10,
+  tabBadge: { min: 20, paddingX: 4 }, // Count on a tab icon, orchid with white caption
 } as const;
 
 export const shadows = {

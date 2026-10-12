@@ -15,13 +15,13 @@ import type { Conversation } from '../../features/chat/api';
 import { formatChatTime, previewText } from '../../features/chat/messages';
 import { useConversations } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
+import { RequestList } from '../requests/RequestList';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
 
 type Segment = 'requests' | 'chats';
 
-// Requests arrive with the Connection Requests screens (#41); until then the tab opens on Chats.
 export function InboxScreen() {
-  const [segment, setSegment] = useState<Segment>('chats');
+  const [segment, setSegment] = useState<Segment>('requests');
   return (
     <Screen>
       <Text variant="h1" accessibilityRole="header" style={styles.title}>
@@ -35,13 +35,7 @@ export function InboxScreen() {
         value={segment}
         onChange={setSegment}
       />
-      {segment === 'chats' ? (
-        <ChatList />
-      ) : (
-        <Text color={colors.secondary}>
-          Connection Requests will show here soon.
-        </Text>
-      )}
+      {segment === 'chats' ? <ChatList /> : <RequestList />}
     </Screen>
   );
 }

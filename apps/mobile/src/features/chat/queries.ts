@@ -13,5 +13,7 @@ export function useConversations() {
   return useQuery({
     queryKey: chatKeys.conversations,
     queryFn: fetchConversations,
+    // Requests aren't broadcast, so the Inbox badge and lists check now and then.
+    refetchInterval: 30_000,
   });
 }

@@ -96,7 +96,9 @@ beforeEach(() => {
 
 async function openInbox() {
   const app = await renderApp(me);
-  await fireEvent.press(await screen.findByRole('tab', { name: 'Inbox' }));
+  // The Inbox tab's name also counts waiting requests, and it opens on Requests.
+  await fireEvent.press(await screen.findByRole('tab', { name: /^Inbox/ }));
+  await fireEvent.press(screen.getByRole('tab', { name: 'Chats' }));
   return app;
 }
 

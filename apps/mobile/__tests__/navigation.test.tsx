@@ -1,9 +1,11 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
+import * as chat from '../src/features/chat/api';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/account/api');
+jest.mock('../src/features/chat/api');
 
 test('a signed-out visitor starts at welcome', async () => {
   await renderApp(null);
@@ -22,6 +24,7 @@ test('a Member who has given consent but not built a profile resumes at profile 
 
 test('a Member with a Submitted Profile lands on Discover and can switch tabs', async () => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
+  jest.mocked(chat.fetchConversations).mockResolvedValue([]);
   await renderApp(sessionFor('asha@example.com'));
   expect(
     await screen.findByRole('tab', { name: 'Discover', selected: true }),
@@ -31,6 +34,7 @@ test('a Member with a Submitted Profile lands on Discover and can switch tabs', 
     await screen.findByRole('tab', { name: 'Inbox', selected: true }),
   ).toBeOnTheScreen();
   expect(screen.getByRole('header', { name: 'Inbox' })).toBeOnTheScreen();
+  expect(await screen.findByText(/No requests waiting/)).toBeOnTheScreen();
 });
 
 test('when the account cannot be loaded the app offers a retry', async () => {
