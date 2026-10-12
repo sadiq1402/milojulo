@@ -20,6 +20,15 @@ A clean pink-tinted white carries bright orchid, with butter and lilac as sticke
 | violet | #7B4DFF | "Julo" in the wordmark |
 | danger | #C62828 | Report and delete only |
 | warnTint | #FFE3DC | Warning background |
+| warnInk | #8B1D1D | Text on warnTint |
+| field | #E9CFE0 | Input, chip and secondary-button borders |
+| tagNeutral | #FBEAF3 | Plain tag, segmented-control track |
+| tagNeutralInk | #4A2F55 | Text on a plain tag |
+| selected | #FFF1F8 | Selected option card, match note |
+| handle | #EBD3E2 | Bottom-sheet handle |
+| track | #F6DFEC | Unfilled progress segment |
+| scrim | ink at 50% | Behind bottom sheets |
+| photoInitial | ink at 42% | Initial on a photo placeholder |
 
 Mode tints (tags and chips only, never buttons): Friends #CFF1E5 / #0B4A3E; Activities #FFF1B8 / #2B1233; Networking #D6ECFF / #1F4E79; Dating and Serious #FFE3F1 / #8E1F60; Casual #E3D4FF / #4B2BB8.
 Photo placeholder tones: #FFD1E8, #E3D4FF, #FFE9A8, #CFF1E5.
