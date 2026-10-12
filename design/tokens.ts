@@ -18,6 +18,15 @@ export const colors = {
   danger: '#C62828',
   warnTint: '#FFE3DC',
   white: '#FFFFFF',
+  field: '#E9CFE0', // Input, chip and secondary-button borders
+  tagNeutral: '#FBEAF3', // Plain tag and segmented-control track
+  tagNeutralInk: '#4A2F55', // Text on a plain tag
+  selected: '#FFF1F8', // Selected option card, match note
+  handle: '#EBD3E2', // Bottom-sheet handle
+  track: '#F6DFEC', // Unfilled progress segment
+  warnInk: '#8B1D1D', // Text on warnTint
+  scrim: 'rgba(43,18,51,0.5)', // Behind bottom sheets
+  photoInitial: 'rgba(43,18,51,0.42)', // Initial on a photo placeholder
 } as const;
 
 // Tags and chips only, never buttons.
@@ -81,4 +90,5 @@ export const shadows = {
   primaryButton: { color: 'rgba(204,46,134,0.28)', offsetY: 10, blur: 22 },
   tabBar: { color: 'rgba(142,31,96,0.10)', offsetY: -8, blur: 24 },
   sheet: { color: 'rgba(43,18,51,0.14)', offsetY: -8, blur: 30 },
+  segment: { color: 'rgba(43,18,51,0.12)', offsetY: 1, blur: 3 },
 } as const;

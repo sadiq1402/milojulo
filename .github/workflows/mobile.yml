@@ -1,0 +1,54 @@
+name: Mobile app
+
+on:
+  pull_request:
+    paths: ['apps/mobile/**', 'design/**', 'supabase/**', '.github/workflows/mobile.yml']
+  push:
+    branches: [main]
+    paths: ['apps/mobile/**', 'design/**', 'supabase/**', '.github/workflows/mobile.yml']
+
+defaults:
+  run:
+    working-directory: apps/mobile
+
+jobs:
+  app-checks:
+    name: app-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
+
+  # Data modules against a local Supabase stack with every migration applied.
+  app-integration:
+    name: app-integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - name: Start Supabase (database, Auth, REST, mail)
+        working-directory: .
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,storage-api,realtime,postgres-meta
+      - name: Export local Supabase settings
+        working-directory: .
+        run: |
+          supabase status -o env \
+            | sed -nE 's/^(API_URL|ANON_KEY|MAILPIT_URL)="?([^"]*)"?$/\1=\2/p' \
+            | sed -E 's/^API_URL=/SUPABASE_URL=/; s/^ANON_KEY=/SUPABASE_ANON_KEY=/' >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run test:integration
