@@ -451,6 +451,16 @@ isOneToOne: false
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
                            },
+"my_blocks":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "blocked_at": string,"display_name": string,"member_id": string
+            }[]
+                           },
+"my_connections":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "connection_id": string,"direction": Database["public"]['Enums']["connection_direction"],"last_message_at": string,"last_message_body": string,"last_message_type": Database["public"]['Enums']["message_type"],"mode": Database["public"]['Enums']["mode"],"note": string,"other_area_id": string,"other_id": string,"other_name": string,"other_photo_id": string,"status": Database["public"]['Enums']["connection_status"],"unread_count": number
+            }[]
+                           },
 "profile_minimum_gap":
 { Args: { "member_id": string }; Returns: string
                            },
@@ -496,7 +506,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_status": "active"|"banned","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","tag_kind": "interest"|"activity"
+            "account_status": "active"|"banned","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","tag_kind": "interest"|"activity"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -616,7 +626,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "account_status": ["active", "banned"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"tag_kind": ["interest", "activity"]
+            "account_status": ["active", "banned"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"tag_kind": ["interest", "activity"]
           }
         }
 } as const
