@@ -3,7 +3,7 @@
 ## Build-affecting
 - [ ] **Progressive reveal and Blind Match.** Blueprint signature features; V1 as scoped shows names and photos as soon as a profile is submitted. Decide whether a light version is in V1.
 - [x] **Chat media moderation and retention:** decided 2026-10-07 (Decision 17): report-only; video 30 s / 20 MB, voice 2 min; chat media deleted from R2 after 90 days; reported media copied to evidence and kept for the safety-retention period (period still a legal decision).
-- [ ] **Verification for Dating and Casual:** is email OTP plus invite codes and after-the-fact moderation enough (manual approval was dropped in decision 15), or must phone or selfie verification come first?
+- [ ] **Verification for Dating and Casual:** is email OTP with open sign-up (decision 27) and after-the-fact moderation enough (manual approval was dropped in decision 15), or must phone or selfie verification come first?
 - [ ] **Circle conversation:** the screens are designed activities-only (tap a member, send a request, chat 1:1 after acceptance). Confirm that, or add a text-only circle chat later (group chat is outside V1).
 - [ ] **Screenshot blocking:** Android can block; iOS can only detect. What does the app promise?
 

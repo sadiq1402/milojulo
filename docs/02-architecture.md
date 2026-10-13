@@ -16,7 +16,7 @@ Edge Functions ──► FCM (HTTP v1)            Auth ──► email provider 
 
 ## Two paths
 1. Simple reads and writes (own profile, chat) go straight to Supabase under RLS.
-2. Anything privileged is a Postgres function: discovery feed and scoring, connection requests, accept, block, report, invite redemption, circle join, meetup feedback.
+2. Anything privileged is a Postgres function: discovery feed and scoring, connection requests, accept, block, report, age gate and consents (which create the profile), circle join, meetup feedback.
 Edge Functions only do what SQL cannot: sign R2 URLs, send push notifications, handle database webhooks, run media checks, perform admin actions.
 
 ## Components

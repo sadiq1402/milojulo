@@ -20,9 +20,9 @@ Use this to design the database from the screens. docs/12-db-schema.md is the re
 | Screen (file) | Reads | Writes | Notes and gaps |
 |---|---|---|---|
 | Welcome (Main) | none | none | Static |
-| Invite code (InviteCode) | invite_codes (validity) | invite_redemptions NEW (code, user, redeemed_at); decrements uses_left | Reviewer demo account bypasses the code |
+| Invite code (InviteCode) | none | none | **Dropped** (decision 27: open sign-up) |
 | Email, Verify code (Email, Otp) | auth | auth.users | Supabase Auth only |
-| Age and consent (AgeConsent) | consent document versions NEW (terms, guidelines, data notice) | profiles.date_of_birth; consents (document, version, accepted_at) x3 | Reject under 18. Never expose DOB to others; expose age only |
+| Age and consent (AgeConsent) | consent document versions NEW (terms, guidelines, data notice) | profiles row (created here) with date_of_birth; consents (document, version, accepted_at) x3 | Reject under 18; a refusal leaves no profile. Never expose DOB to others; expose age only |
 | Profile basics (Setup1Basics) | areas | profiles.display_name, area | |
 | Photos (Setup2Photos) | photos | photos (R2 key, position NEW, uploaded_at; position 1 is the cover) | 2 to 4 photos, 4:5 |
 | Prompts (Setup3Prompts) | prompt_questions NEW | profile_prompts NEW (user, question, answer up to 140 chars) | Two answers required |
@@ -49,7 +49,7 @@ Use this to design the database from the screens. docs/12-db-schema.md is the re
 | Moderation queue (Admin) | reports with target, reporter, reason, age, response target (created_at + 24 h), status; auto-hidden profiles, photos and Activities; recently joined Members (spot checks); users; admin_actions | reports.status and handler; profiles.status (ban); photos/messages removed_at; hidden_at cleared; admin_actions (action, target, note) | Internal note field: store on admin_actions or reports.internal_note NEW |
 
 ## Additions to the 17-table model (found from the screens)
-New tables: `areas`, `prompt_questions`, `profile_prompts`, `invite_redemptions`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails). That brings the schema to about 27 tables.
+New tables: `areas`, `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails). That brings the schema to about 26 tables (docs/12 has the final count).
 
 New columns:
 - profiles: submitted_at, approved_at, approved_by, paused_at, banned_reason, preferences (age_min, age_max, interested_in, max_distance_km), profession, industry, area_id, coarse_cell.

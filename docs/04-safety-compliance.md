@@ -12,7 +12,7 @@ Safety is a differentiator and a launch blocker. Treat trust and safety as core 
 | Timely action on reports | Admin report queue reviewed daily, 24-hour target for removal or ban |
 | Published contact information | Support email in the app, on the store listing and on the website |
 | Account deletion | In-app Delete account. Google also requires a public web page to request deletion without reinstalling, declared in the Data safety form. Deactivation alone does not count |
-| Reviewer access | Seed a demo account that bypasses the invite code so reviewers can log in |
+| Reviewer access | Seed a demo account (Reviewer Account) that is already past the age gate and consents so reviewers can log in |
 
 Confirm against Apple's App Review Guidelines (1.2 user-generated content, 5.1.1(v) account deletion) and Google's UGC and Child Safety Standards policies before the first submission.
 
@@ -36,6 +36,6 @@ Data minimisation: no religion or community fields, coarse area only (never exac
 
 ## Elevated exposure to design for
 - **Casual mode and media in chat** raise moderation and store-review exposure: chat images and video in Casual need both people to allow media in that chat, reported media is copied to evidence for moderators, label Casual clearly, and read Google's and Apple's rules for dating apps before submitting.
-- **Email-only verification** is easy to fake: invite codes, disposable-email blocklist, Turnstile, rate limits, auto-hide on reports, and an admin spot-check list of recently joined Members (manual approval was dropped in decision 15).
+- **Email-only verification** is easy to fake, and sign-up is open (decision 27): disposable-email blocklist (#71), Turnstile (#70), rate limits, auto-hide on reports, and an admin spot-check list of recently joined Members (manual approval was dropped in decision 15).
 - **Screenshots:** Android can block them in a chat screen; as far as is known iOS can only detect them. Decide what the app promises before promising it.
-- **Gender mix:** track from day one and meter invites to stay balanced.
+- **Gender mix:** track from day one; with open sign-up, balance it through outreach and offline events rather than metered invites.

@@ -1,8 +1,8 @@
 # Data model and access rules
 
-**Superseded for schema detail by docs/12-db-schema.md** (29 tables, no pre-approval, Connections carry a Mode). The screens need more than the tables below: see docs/11-screen-data-map.md for the per-screen data map and the additions (about 27 tables in total) that supersede this first list.
+**Superseded for schema detail by docs/12-db-schema.md** (27 tables, no pre-approval, no invite codes, Connections carry a Mode). The screens need more than the tables below: see docs/11-screen-data-map.md for the per-screen data map and the additions (about 26 tables in total) that supersede this first list.
 
-Seventeen tables in Supabase Postgres. RLS on every table, default deny.
+Sixteen tables in Supabase Postgres. RLS on every table, default deny.
 
 | Table | Key fields | Who can access |
 |---|---|---|
@@ -17,7 +17,6 @@ Seventeen tables in Supabase Postgres. RLS on every table, default deny.
 | blocks | blocker, blocked | Blocker writes; checked in every function and policy |
 | reports | reporter, target type and id, reason, details, status, handler | Reporter creates; admins read and resolve |
 | consents | user, document, version, accepted at | Owner reads; written at onboarding |
-| invite_codes | code, issuer, event tag, uses left, expiry | Admins; redeemed through a function |
 | meetup_feedback | activity or connection, user, did meet, keep connection | Owner writes; admins read for metrics |
 | admin_actions | admin, action, target, time | Admins only (audit log) |
 | circles | name, area, interest, description, status | Admins create/edit; approved users read active circles |
@@ -33,7 +32,7 @@ Seventeen tables in Supabase Postgres. RLS on every table, default deny.
 7. Every rule has an automated test that runs in CI before each migration is applied.
 
 ## Functions to implement (SQL)
-`is_blocked(a, b)`, `discover_feed(mode_filter, limit, cursor)`, `match_reason(a, b)` (templated text), `send_request(to, note)`, `respond_request(id, accept)`, `block_user(id)`, `report(target_type, target_id, reason, details)`, `redeem_invite(code)`, `join_activity_request(activity)`, `join_circle(circle)`, `submit_meetup_feedback(...)`, `delete_account()` (also triggers R2 cleanup), `expire_activities()` (pg_cron).
+`is_blocked(a, b)`, `discover_feed(mode_filter, limit, cursor)`, `match_reason(a, b)` (templated text), `send_request(to, note)`, `respond_request(id, accept)`, `block_user(id)`, `report(target_type, target_id, reason, details)`, `accept_consents(birth_date, document_ids)` (creates the profile; open sign-up, decision 27), `join_activity_request(activity)`, `join_circle(circle)`, `submit_meetup_feedback(...)`, `delete_account()` (also triggers R2 cleanup), `expire_activities()` (pg_cron).
 
 ## Matching (rule-based, SQL)
 Candidates: same or nearby area/cell, overlapping modes, not blocked, visible, availability overlap. Score: shared intent, shared interests/activity tags, availability overlap, distance. "Why you match" is a template filled from the overlap (for example "You both want friends, like badminton and cafés, and are free on weekends"). Keep matching in one module/function so AI can later become one more signal.

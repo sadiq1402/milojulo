@@ -2,7 +2,7 @@
 
 Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-map.md, revised after the 2026-10-07 design session (glossary in CONTEXT.md, decisions 15 to 17, docs/adr/). V1 only: no columns for deferred features. Where this differs from docs/03 or docs/11, this file wins.
 
-29 tables in `public`, plus a policy on `realtime.messages`. Every table has RLS enabled, default deny.
+27 tables in `public`, plus a policy on `realtime.messages`. Every table has RLS enabled, default deny.
 
 ## Conventions
 - Primary keys: `uuid default gen_random_uuid()`, except user-keyed tables (`profiles.id = auth.users.id`) and messages (client-generated id).
@@ -50,7 +50,7 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 | `blocked_email_domains` | `domain text pk`. Admin only; read by the signup hook |
 
 ### People
-**`profiles`**: one row per Member, created by `redeem_invite()`.
+**`profiles`**: one row per Member, created by `accept_consents()` (open sign-up, decision 27).
 | Column | Notes |
 |---|---|
 | `id uuid pk` → auth.users | |
@@ -81,11 +81,9 @@ Owner can select own row and update: display_name, area_id, modes, availability,
 | `profile_tags` | pk (user_id, tag_id) | owner CRUD; others via functions |
 | `photos` | `id`, `user_id`, `provider text default 'r2'`, `object_key`, `position 1..4` (1 = cover; lists use the first live photo, so a hidden or removed cover gives way to the next), `width`, `height`, `uploaded_at`, `hidden_at`, `removed_at`, `removed_by`; unique (user_id, position) | Row inserted by the upload Edge Function with `uploaded_at` null; `confirm_photo_upload()` sets it after checking the object exists. Live = uploaded, not hidden, not removed. Owner selects, reorders, deletes. Others never read the table; they get signed URLs from functions |
 | `consents` | pk (user_id, document_id), `accepted_at`, `withdrawn_at` | owner reads; written by `accept_consents()`, withdrawn by `withdraw_consent()` |
-| `invite_codes` | `code text pk`, `issued_by` (nullable), `event_tag`, `uses_left`, `expires_at` | admin only; `check_invite()` / `redeem_invite()` |
-| `invite_redemptions` | `user_id pk`, `code`, `redeemed_at` | admin only |
 | `device_tokens` | `token text pk`, `user_id`, `platform` (android, ios), `last_seen_at` | owner CRUD; read by the push Edge Function (service role) |
 
-Reviewer Account: seeded per environment by `supabase/seed/reviewer.sql` (service role, not a migration) with a redemption under the reserved code `REVIEWER` (`uses_left = 0`, so it cannot be redeemed in the app). Metrics queries exclude redemptions of `REVIEWER`.
+Reviewer Account: seeded per environment by `supabase/seed/reviewer.sql` (service role, not a migration) through `seed_reviewer()`, which gives it a profile with an adult date of birth and the current consents. Metrics queries exclude it by its account id.
 
 ### Connections and chat
 | Table | Columns | Access |
@@ -144,9 +142,7 @@ Shared helpers (security definer, fixed `search_path`, few and tested):
 Business functions:
 | Function | Notes |
 |---|---|
-| `check_invite(code)` | callable by anon (InviteCode comes before sign-in); returns valid or not, nothing else |
-| `redeem_invite(code)` | decrements uses_left, writes the redemption, creates the profile row |
-| `accept_consents(dob, document_ids[])` | rejects under 18, stores DOB and consents |
+| `accept_consents(dob, document_ids[])` | rejects under 18 or a missing current document; creates the caller's profile row if there is none, stores DOB and consents (a refusal leaves no profile) |
 | `submit_profile()` | requires the age gate and consents to be passed; checks the profile minimum; sets submitted_at; the Member is visible at once |
 | `confirm_photo_upload(photo_id)` | service role only: the upload Edge Function calls it after checking the object exists in R2 |
 | `set_paused(paused)` | |
@@ -180,6 +176,7 @@ Edge Functions (service role, thin): sign R2 upload/download URLs, push via FCM,
 - Added `connections.mode` and `activity_id`; pair uniqueness is partial (active only).
 - Added `profiles.gender`, `career_stage`, `industry_id`, `deleted_at`; `reports.target_user_id`, `evidence_media_key`.
 - `meetup_feedback` is per pair of people (`other_user_id`), not per connection or activity.
+- No invite codes (decision 27): `invite_codes` and `invite_redemptions` dropped; `accept_consents()` creates the profile row.
 
 ## Open points
 1. Safety-retention period for reports and evidence media (lawyer).
