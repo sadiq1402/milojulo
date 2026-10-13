@@ -16,10 +16,13 @@ import {
   type BoardActivity,
   type StartsWhen,
 } from '../../features/activities/model';
-import { useBoard } from '../../features/activities/queries';
+import { activityKeys, useBoard } from '../../features/activities/queries';
+import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaNames } from '../../features/catalog/queries';
+import { useMyDiscoverState } from '../../features/discover/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, sizes, spacing } from '../../theme';
+import { PausedNotice } from '../shared/PausedNotice';
 import { ActivityCard } from './ActivityCard';
 
 type Row =
@@ -29,6 +32,7 @@ type Row =
 export function ActivitiesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const board = useBoard();
+  const me = useMyDiscoverState(useSession().session!.user.id);
   const areas = useAreaNames();
   const rows: Row[] = groupBoard(board.data ?? []).flatMap(section => [
     { kind: 'heading' as const, when: section.when },
@@ -46,7 +50,14 @@ export function ActivitiesScreen() {
           Activities
         </Text>
       </View>
-      {board.isError ? (
+      {me.data?.paused ? (
+        <View style={styles.padded}>
+          <PausedNotice
+            explanation="While you're Paused, the Activity Board stays empty and you can't post. Your Connections and chats carry on as usual."
+            alsoRefresh={activityKeys.all}
+          />
+        </View>
+      ) : board.isError ? (
         <View style={styles.padded}>
           <Text color={colors.danger}>{board.error.message}</Text>
           <Button

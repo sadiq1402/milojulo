@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, TopBar } from '../../components';
+import { Button, Text, TopBar } from '../../components';
 import { updateActivity } from '../../features/activities/api';
 import type {
   Activity,
@@ -12,7 +12,7 @@ import type {
 import { activityKeys, useActivity } from '../../features/activities/queries';
 import { indiaParts } from '../../features/activities/time';
 import type { MemberParams } from '../../navigation/types';
-import { colors, layout } from '../../theme';
+import { colors, layout, spacing } from '../../theme';
 import {
   ActivityForm,
   endsAtOf,
@@ -83,12 +83,21 @@ export function EditActivityScreen({ navigation, route }: Props) {
       <SafeAreaView edges={['top']} style={styles.screen}>
         <TopBar onBack={navigation.goBack} />
         <View style={styles.message}>
-          {activity.isPending ? (
+          {activity.isError ? (
+            <>
+              <Text color={colors.danger}>{activity.error.message}</Text>
+              <Button
+                label="Try again"
+                variant="text"
+                compact
+                onPress={() => activity.refetch()}
+              />
+            </>
+          ) : activity.isPending ? (
             <ActivityIndicator color={colors.orchid} />
           ) : (
             <Text color={colors.secondary}>
-              {activity.error?.message ??
-                "This Activity isn't available any more."}
+              This Activity isn't available any more.
             </Text>
           )}
         </View>
@@ -121,5 +130,5 @@ export function EditActivityScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.ground },
-  message: { paddingHorizontal: layout.pageMargin },
+  message: { paddingHorizontal: layout.pageMargin, gap: spacing.xs },
 });

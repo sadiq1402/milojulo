@@ -121,3 +121,7 @@ export const fieldMessages = {
   endsAt: 'The end has to be after the start.',
   capacity: `Spots must be between ${minSpots} and ${maxSpots}.`,
 } as const;
+
+export function hostLine(activity: Pick<BoardActivity, 'isMine' | 'hostName'>) {
+  return activity.isMine ? 'Hosted by you' : `Hosted by ${activity.hostName}`;
+}

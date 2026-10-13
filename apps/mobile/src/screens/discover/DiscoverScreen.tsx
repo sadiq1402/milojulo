@@ -1,6 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,19 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Chip, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
-import {
-  unpause,
-  type FeedCard as FeedCardData,
-} from '../../features/discover/api';
+import type { FeedCard as FeedCardData } from '../../features/discover/api';
 import { useAreaNames, useTagNames } from '../../features/catalog/queries';
-import {
-  discoverKeys,
-  useFeed,
-  useMyDiscoverState,
-} from '../../features/discover/queries';
+import { useFeed, useMyDiscoverState } from '../../features/discover/queries';
 import { modeLabels, type Mode } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, modeTints, sizes, spacing } from '../../theme';
+import { PausedNotice } from '../shared/PausedNotice';
 import { FeedCard } from './FeedCard';
 
 export function DiscoverScreen() {
@@ -53,7 +46,9 @@ export function DiscoverScreen() {
       {me.isError ? (
         <LoadError message={me.error.message} onRetry={() => me.refetch()} />
       ) : paused ? (
-        <PausedNotice />
+        <View style={styles.padded}>
+          <PausedNotice explanation="While you're Paused, nobody new sees you and Discover stays empty. Your Connections and chats carry on as usual." />
+        </View>
       ) : paused === false ? (
         <>
           <ModeFilter modes={me.data!.modes} value={mode} onChange={setMode} />
@@ -171,39 +166,6 @@ function Feed({ mode }: { mode: Mode | null }) {
   );
 }
 
-function PausedNotice() {
-  const client = useQueryClient();
-  const resume = useMutation({
-    mutationFn: unpause,
-    onSuccess: () => client.invalidateQueries({ queryKey: discoverKeys.all }),
-  });
-  return (
-    <View style={styles.padded}>
-      <Card style={styles.paused}>
-        <Text variant="h2">Your profile is paused</Text>
-        <Text color={colors.secondary}>
-          While you're Paused, nobody new sees you and Discover stays empty.
-          Your Connections and chats carry on as usual.
-        </Text>
-        <Button
-          label="Unpause"
-          loading={resume.isPending}
-          onPress={() => resume.mutate()}
-        />
-        {resume.isError ? (
-          <Text
-            variant="bodySmall"
-            color={colors.danger}
-            accessibilityLiveRegion="polite"
-          >
-            {resume.error.message}
-          </Text>
-        ) : null}
-      </Card>
-    </View>
-  );
-}
-
 function LoadError({
   message,
   onRetry,
@@ -239,5 +201,4 @@ const styles = StyleSheet.create({
   },
   emptyBody: { marginTop: spacing.xs },
   padded: { paddingHorizontal: layout.pageMargin, gap: spacing.xs },
-  paused: { gap: spacing.sm },
 });

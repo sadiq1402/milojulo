@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Avatar, Card, Icon, Tag, Text } from '../../components';
 import {
   activityTypeLabels,
+  hostLine,
   spotsLeftLabel,
   type BoardActivity,
 } from '../../features/activities/model';
@@ -10,10 +11,6 @@ import { formatWhen } from '../../features/activities/time';
 import { activityTones, sizes, spacing } from '../../theme';
 
 type Props = { activity: BoardActivity; areaName: string; onPress: () => void };
-
-export function hostLine(activity: Pick<BoardActivity, 'isMine' | 'hostName'>) {
-  return activity.isMine ? 'Hosted by you' : `Hosted by ${activity.hostName}`;
-}
 
 export function ActivityCard({ activity, areaName, onPress }: Props) {
   const when = formatWhen(activity.startsAt, null);

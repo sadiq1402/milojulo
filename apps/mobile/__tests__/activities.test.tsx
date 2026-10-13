@@ -182,6 +182,24 @@ describe('the Activity Board', () => {
     ).toBeOnTheScreen();
   });
 
+  test('a Paused Member is told why the board is empty and can unpause', async () => {
+    jest
+      .mocked(discover.fetchMyDiscoverState)
+      .mockResolvedValue({ modes: ['friends'], paused: true });
+    jest.mocked(activities.fetchBoard).mockResolvedValue([]);
+    jest.mocked(discover.unpause).mockImplementation(async () => {
+      jest
+        .mocked(discover.fetchMyDiscoverState)
+        .mockResolvedValue({ modes: ['friends'], paused: false });
+      jest.mocked(activities.fetchBoard).mockResolvedValue([chai]);
+    });
+    await openBoard();
+    expect(await screen.findByText('Your profile is paused')).toBeOnTheScreen();
+    expect(screen.queryByText('No Activities yet')).not.toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Unpause' }));
+    expect(await cardFor('Chai and board games')).toBeOnTheScreen();
+  });
+
   test('a failed load offers a retry', async () => {
     jest
       .mocked(activities.fetchBoard)

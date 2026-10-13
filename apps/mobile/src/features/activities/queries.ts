@@ -8,7 +8,12 @@ export const activityKeys = {
 };
 
 export function useBoard() {
-  return useQuery({ queryKey: activityKeys.board, queryFn: fetchBoard });
+  return useQuery({
+    queryKey: activityKeys.board,
+    queryFn: fetchBoard,
+    // Activities end while the board is open; the database hides them, so check now and then.
+    refetchInterval: 60_000,
+  });
 }
 
 export function useActivity(activityId: string) {

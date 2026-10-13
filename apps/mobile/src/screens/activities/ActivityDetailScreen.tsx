@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import {
 import { cancelActivity } from '../../features/activities/api';
 import {
   activityTypeLabels,
+  hostLine,
   spotsLeftLabel,
   type Activity,
   type ActivityStatus,
@@ -26,7 +27,6 @@ import { formatWhen } from '../../features/activities/time';
 import { useAreaNames } from '../../features/catalog/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, sizes, spacing } from '../../theme';
-import { hostLine } from './ActivityCard';
 
 type Props = NativeStackScreenProps<MemberParams, 'ActivityDetail'>;
 
@@ -210,24 +210,17 @@ function CancelSheet({
   onCancelled: () => void;
 }) {
   const client = useQueryClient();
-  const [cancelling, setCancelling] = useState(false);
-  const [error, setError] = useState<string>();
-  const dismiss = () => {
-    setError(undefined);
-    onClose();
-  };
-  const cancel = async () => {
-    setCancelling(true);
-    setError(undefined);
-    try {
-      await cancelActivity(activityId);
+  const cancel = useMutation({
+    mutationFn: () => cancelActivity(activityId),
+    onSuccess: () => {
       client.invalidateQueries({ queryKey: activityKeys.all });
       onCancelled();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setCancelling(false);
-    }
+    },
+  });
+  const error = cancel.error?.message;
+  const dismiss = () => {
+    cancel.reset();
+    onClose();
   };
 
   return (
@@ -240,8 +233,8 @@ function CancelSheet({
         <Button
           label="Yes, cancel it"
           variant="danger"
-          loading={cancelling}
-          onPress={cancel}
+          loading={cancel.isPending}
+          onPress={() => cancel.mutate()}
         />
         {error ? (
           <Text

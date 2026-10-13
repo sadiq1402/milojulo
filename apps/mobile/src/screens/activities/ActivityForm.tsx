@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -130,8 +131,19 @@ export function ActivityForm({
   const areas = useAreaNames();
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
-  const [general, setGeneral] = useState<string>();
-  const [sending, setSending] = useState(false);
+  // Field refusals show beside their field; anything else under the button.
+  const send = useMutation({
+    mutationFn: onSubmit,
+    onError: e => {
+      if (e instanceof ActivityError && e.field) {
+        setErrors({ [e.field]: e.message });
+      }
+    },
+  });
+  const general =
+    send.error && !(send.error instanceof ActivityError && send.error.field)
+      ? send.error.message
+      : undefined;
   // Changing a field clears its error.
   const set = (changes: Partial<FormValues>) => {
     setValues(v => ({ ...v, ...changes }));
@@ -177,23 +189,12 @@ export function ActivityForm({
     return found;
   };
 
-  const submit = async () => {
+  const submit = () => {
     const found = check();
     setErrors(found);
-    setGeneral(undefined);
-    if (Object.keys(found).length > 0) {
-      return;
-    }
-    setSending(true);
-    try {
-      await onSubmit(values);
-    } catch (e) {
-      setSending(false);
-      if (e instanceof ActivityError && e.field) {
-        setErrors({ [e.field]: e.message });
-      } else {
-        setGeneral((e as Error).message);
-      }
+    send.reset();
+    if (Object.keys(found).length === 0) {
+      send.mutate(values);
     }
   };
 
@@ -212,7 +213,11 @@ export function ActivityForm({
               {general}
             </Text>
           ) : null}
-          <Button label={submitLabel} loading={sending} onPress={submit} />
+          <Button
+            label={submitLabel}
+            loading={send.isPending || send.isSuccess}
+            onPress={submit}
+          />
         </>
       }
     >
