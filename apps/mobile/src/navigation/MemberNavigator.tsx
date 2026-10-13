@@ -29,7 +29,8 @@ const tabs: TabItem[] = [
 ];
 
 function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
-  const waiting = useRequests().waiting.length;
+  const requests = useRequests();
+  const waiting = requests.waiting.length + requests.joinWaiting.length;
   return (
     <TabBar
       items={tabs.map(tab =>

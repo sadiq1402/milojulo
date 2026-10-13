@@ -6,6 +6,7 @@ import {
   within,
 } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
+import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
@@ -17,6 +18,7 @@ jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
+jest.mock('../src/features/activities/api');
 jest.mock('../src/features/discover/api');
 // The request sheet belongs to Connection Requests (#41); this checks what Discover hands it.
 jest.mock('../src/screens/requests/SendRequestSheet', () => ({
@@ -91,6 +93,7 @@ const conversation = (overrides: Partial<Conversation>): Conversation => ({
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
+  jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   jest
     .mocked(catalog.fetchAreaNames)
     .mockResolvedValue({ baner: 'Baner', wakad: 'Wakad' });

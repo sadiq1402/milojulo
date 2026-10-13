@@ -10,6 +10,8 @@ import {
   Card,
   Icon,
   type IconName,
+  List,
+  ListRow,
   Tag,
   Text,
   TopBar,
@@ -21,12 +23,30 @@ import {
   spotsLeftLabel,
   type Activity,
   type ActivityStatus,
+  type JoinRequestStatus,
 } from '../../features/activities/model';
-import { activityKeys, useActivity } from '../../features/activities/queries';
+import {
+  activityKeys,
+  useActivity,
+  useAskToJoin,
+  useJoinRequests,
+  useWithdrawJoinRequest,
+} from '../../features/activities/queries';
 import { formatWhen } from '../../features/activities/time';
 import { useAreaNames } from '../../features/catalog/queries';
+import { chatKeys } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
-import { colors, layout, radius, shadow, sizes, spacing } from '../../theme';
+import {
+  colors,
+  fontFamily,
+  fonts,
+  layout,
+  radius,
+  shadow,
+  sizes,
+  spacing,
+} from '../../theme';
+import { JoinRequestCard } from './JoinRequestCard';
 
 type Props = NativeStackScreenProps<MemberParams, 'ActivityDetail'>;
 
@@ -36,12 +56,28 @@ const statusNotes: Record<Exclude<ActivityStatus, 'open'>, string> = {
   removed: 'This Activity was taken down by MiloJulo.',
 };
 
+// One Join Request per Activity, so an answered or withdrawn one ends the asking.
+const closedRequestNotes: Record<
+  Exclude<JoinRequestStatus, 'requested' | 'accepted'>,
+  string
+> = {
+  declined: "Your request to join wasn't accepted this time.",
+  cancelled: 'You cancelled your request to join.',
+  withdrawn: 'You withdrew from this Activity.',
+};
+
 export function ActivityDetailScreen({ navigation, route }: Props) {
   const { activityId } = route.params;
   const activity = useActivity(activityId);
+  const client = useQueryClient();
   const [cancelOpen, setCancelOpen] = useState(false);
   const data = activity.data;
   const hostCanAct = data?.isMine && data.status === 'open';
+  // The chat reads its Connection from the chat list, so ask for a fresh one on the way.
+  const openChat = (connectionId: string) => {
+    client.invalidateQueries({ queryKey: chatKeys.conversations });
+    navigation.navigate('Chat', { connectionId });
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
@@ -67,6 +103,7 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
           <ActivityBody
             activity={data}
             onSafetyTips={() => navigation.navigate('SafetyCentre')}
+            onOpenChat={openChat}
           />
           {hostCanAct ? (
             <View style={styles.action}>
@@ -93,7 +130,9 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
               />
             </View>
           ) : null}
-          {/* Non-hosts get the Join Request button here with #47. */}
+          {data.isMine ? null : (
+            <JoinActions activity={data} onOpenChat={openChat} />
+          )}
         </>
       ) : (
         <ActivityIndicator color={colors.orchid} />
@@ -102,12 +141,26 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
   );
 }
 
+function venueNote(activity: Activity): string {
+  if (activity.venueDetail) {
+    return activity.venueDetail;
+  }
+  if (activity.isMine) {
+    return 'No exact spot added yet.';
+  }
+  return activity.myRequest?.status === 'accepted'
+    ? "The host hasn't added the exact spot yet."
+    : 'The exact spot is shared once the host accepts you.';
+}
+
 function ActivityBody({
   activity,
   onSafetyTips,
+  onOpenChat,
 }: {
   activity: Activity;
   onSafetyTips: () => void;
+  onOpenChat: (connectionId: string) => void;
 }) {
   const areas = useAreaNames();
   const taken = activity.capacity - activity.spotsLeft;
@@ -133,12 +186,7 @@ function ActivityBody({
         <Fact
           icon="pin"
           title={areas.data?.[activity.areaId] ?? ''}
-          note={
-            activity.isMine
-              ? activity.venueDetail ?? 'No exact spot added yet.'
-              : activity.venueDetail ??
-                'The exact spot is shared once the host accepts you.'
-          }
+          note={venueNote(activity)}
         />
         <Fact
           icon="circles"
@@ -152,6 +200,9 @@ function ActivityBody({
         </Text>
       </Card>
       {activity.description ? <Text>{activity.description}</Text> : null}
+      {activity.isMine ? (
+        <HostJoinRequests activity={activity} onOpenChat={onOpenChat} />
+      ) : null}
       <Card style={styles.safety}>
         <Icon
           name="shieldCheck"
@@ -198,6 +249,276 @@ function Fact({
   );
 }
 
+// The host's side: requests waiting for an answer, then who is going. Accepting here keeps the
+// host on the Activity (several may be waiting); the joiner moves to Going with Open chat.
+function HostJoinRequests({
+  activity,
+  onOpenChat,
+}: {
+  activity: Activity;
+  onOpenChat: (connectionId: string) => void;
+}) {
+  const requests = useJoinRequests(activity.id, true);
+  const areas = useAreaNames();
+  const areaOf = (areaId: string | null) =>
+    (areaId && areas.data?.[areaId]) || undefined;
+
+  if (requests.isError) {
+    return (
+      <View style={styles.section}>
+        <Text color={colors.danger}>{requests.error.message}</Text>
+        <Button
+          label="Try again"
+          variant="text"
+          compact
+          onPress={() => requests.refetch()}
+        />
+      </View>
+    );
+  }
+  if (!requests.data) {
+    return null;
+  }
+  const waiting = requests.data.filter(r => r.status === 'requested');
+  const going = requests.data.filter(r => r.status === 'accepted');
+  const open = activity.status === 'open';
+
+  return (
+    <>
+      {open || waiting.length > 0 ? (
+        <View style={styles.section} testID="join-requests">
+          <Text variant="bodySmall" style={styles.heading}>
+            Join requests
+          </Text>
+          {waiting.length === 0 ? (
+            <Text color={colors.secondary}>
+              No one is waiting. When someone asks to join, they show here.
+            </Text>
+          ) : (
+            waiting.map((request, i) => (
+              <JoinRequestCard
+                key={request.id}
+                requestId={request.id}
+                name={request.requesterName}
+                detail={areaOf(request.requesterAreaId)}
+                tone={i}
+              />
+            ))
+          )}
+        </View>
+      ) : null}
+      <View style={styles.section} testID="going">
+        <Text variant="bodySmall" style={styles.heading}>
+          Going
+        </Text>
+        {going.length === 0 ? (
+          <Text color={colors.secondary}>No one has joined yet.</Text>
+        ) : (
+          <List>
+            {going.map((joiner, i) => (
+              <ListRow
+                key={joiner.id}
+                title={joiner.requesterName}
+                subtitle={areaOf(joiner.requesterAreaId)}
+                left={<Avatar name={joiner.requesterName} tone={i + 2} />}
+                right={
+                  joiner.connectionId ? (
+                    <Button
+                      label="Open chat"
+                      accessibilityLabel={`Open chat with ${joiner.requesterName}`}
+                      variant="secondary"
+                      compact
+                      onPress={() => onOpenChat(joiner.connectionId!)}
+                    />
+                  ) : undefined
+                }
+              />
+            ))}
+          </List>
+        )}
+      </View>
+    </>
+  );
+}
+
+// Everyone but the host: ask, wait, go, or a note on how it ended.
+function JoinActions({
+  activity,
+  onOpenChat,
+}: {
+  activity: Activity;
+  onOpenChat: (connectionId: string) => void;
+}) {
+  const ask = useAskToJoin(activity.id);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const request = activity.myRequest;
+  const open = activity.status === 'open';
+  // The phone's clock only decides what to offer; the database checks the start itself.
+  const started = Date.parse(activity.startsAt) <= Date.now();
+  const canChange = open && !started;
+
+  let content: React.ReactNode;
+  if (!request) {
+    if (!open) {
+      return null;
+    }
+    content = started ? (
+      <Note text="This Activity has already started." />
+    ) : activity.spotsLeft <= 0 ? (
+      <Note text="No spots left. This Activity is full." />
+    ) : (
+      <>
+        <Button
+          label="Ask to join"
+          loading={ask.isPending}
+          onPress={() => ask.mutate()}
+        />
+        {ask.error ? <ErrorText text={ask.error.message} /> : null}
+      </>
+    );
+  } else if (request.status === 'requested') {
+    content = (
+      <>
+        <View style={styles.state}>
+          <Tag label="Requested" tone="match" />
+          <Text
+            variant="bodySmall"
+            color={colors.secondary}
+            style={styles.grow}
+          >
+            Waiting for {activity.hostName} to answer.
+          </Text>
+        </View>
+        {canChange ? (
+          <Button
+            label="Cancel request"
+            variant="secondary"
+            onPress={() => setWithdrawOpen(true)}
+          />
+        ) : null}
+      </>
+    );
+  } else if (request.status === 'accepted') {
+    content = (
+      <>
+        <View style={styles.state}>
+          <Tag label="Going" tone="match" />
+          <Text
+            variant="bodySmall"
+            color={colors.secondary}
+            style={styles.grow}
+          >
+            {activity.hostName} accepted you.
+          </Text>
+        </View>
+        {activity.connectionId ? (
+          <Button
+            label="Open chat"
+            accessibilityLabel={`Open chat with ${activity.hostName}`}
+            onPress={() => onOpenChat(activity.connectionId!)}
+          />
+        ) : null}
+        {canChange ? (
+          <Button
+            label="Withdraw"
+            variant="text"
+            onPress={() => setWithdrawOpen(true)}
+          />
+        ) : null}
+      </>
+    );
+  } else {
+    content = <Note text={closedRequestNotes[request.status]} />;
+  }
+
+  return (
+    <View style={styles.action}>
+      {content}
+      {request ? (
+        <WithdrawSheet
+          visible={withdrawOpen}
+          requestId={request.id}
+          accepted={request.status === 'accepted'}
+          hostName={activity.hostName}
+          onClose={() => setWithdrawOpen(false)}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function Note({ text }: { text: string }) {
+  return (
+    <Text
+      color={colors.secondary}
+      accessibilityLiveRegion="polite"
+      style={styles.note}
+    >
+      {text}
+    </Text>
+  );
+}
+
+function ErrorText({ text }: { text: string }) {
+  return (
+    <Text
+      variant="bodySmall"
+      color={colors.danger}
+      accessibilityLiveRegion="polite"
+    >
+      {text}
+    </Text>
+  );
+}
+
+// Cancelling a pending request and withdrawing an accepted one both end the asking for good.
+function WithdrawSheet({
+  visible,
+  requestId,
+  accepted,
+  hostName,
+  onClose,
+}: {
+  visible: boolean;
+  requestId: string;
+  accepted: boolean;
+  hostName: string;
+  onClose: () => void;
+}) {
+  const withdraw = useWithdrawJoinRequest();
+  const dismiss = () => {
+    withdraw.reset();
+    onClose();
+  };
+
+  return (
+    <BottomSheet visible={visible} onClose={dismiss}>
+      <View style={styles.sheet} testID="confirm-withdraw">
+        <Text variant="h2">
+          {accepted ? 'Withdraw from this Activity?' : 'Cancel your request?'}
+        </Text>
+        <Text color={colors.secondary}>
+          {accepted
+            ? `Your spot opens up for someone else and you can't ask to join again. Your chat with ${hostName} stays.`
+            : "You can't ask to join this Activity again."}
+        </Text>
+        <Button
+          label={accepted ? 'Yes, withdraw' : 'Yes, cancel my request'}
+          variant="danger"
+          loading={withdraw.isPending}
+          onPress={() => withdraw.mutate(requestId, { onSuccess: onClose })}
+        />
+        {withdraw.error ? <ErrorText text={withdraw.error.message} /> : null}
+        <Button
+          label={accepted ? 'Keep my spot' : 'Keep my request'}
+          variant="text"
+          onPress={dismiss}
+        />
+      </View>
+    </BottomSheet>
+  );
+}
+
 function CancelSheet({
   visible,
   activityId,
@@ -236,15 +557,7 @@ function CancelSheet({
           loading={cancel.isPending}
           onPress={() => cancel.mutate()}
         />
-        {error ? (
-          <Text
-            variant="bodySmall"
-            color={colors.danger}
-            accessibilityLiveRegion="polite"
-          >
-            {error}
-          </Text>
-        ) : null}
+        {error ? <ErrorText text={error} /> : null}
         <Button label="Keep it" variant="text" onPress={dismiss} />
       </View>
     </BottomSheet>
@@ -270,6 +583,8 @@ const styles = StyleSheet.create({
   fact: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   grow: { flex: 1 },
   host: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  section: { gap: spacing.sm },
+  heading: { fontFamily: fontFamily(fonts.text, '600') },
   safety: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -285,5 +600,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     ...shadow('tabBar'),
   },
+  state: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  note: { paddingVertical: spacing.sm },
   sheet: { gap: spacing.xs },
 });
