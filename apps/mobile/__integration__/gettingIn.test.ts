@@ -66,6 +66,7 @@ describe('date of birth and consents', () => {
     ).rejects.toThrow(
       'Please accept the Terms, Community Guidelines and data notice to continue.',
     );
+    expect(await hasProfileRow(userId)).toBe(false);
     expect(await fetchAccountStage(userId)).toBe('consent');
   });
 });

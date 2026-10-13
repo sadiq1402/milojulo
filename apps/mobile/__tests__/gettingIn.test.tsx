@@ -29,7 +29,12 @@ describe('welcome', () => {
 
   test('one way in, for new and returning people alike', async () => {
     await renderApp(null);
-    expect(await screen.findAllByRole('button')).toHaveLength(1);
+    expect(
+      await screen.findByRole('button', { name: 'Get started' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'I already have an account' }),
+    ).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Get started' }));
     expect(
       await screen.findByRole('header', { name: "What's your email?" }),
