@@ -16,7 +16,7 @@ Contract both sides build against (messages are the database's exact text; the a
 
 - [x] #14 agent: migration, pgTAP tests (allow and deny per rule), docs/12 and CONTEXT where they change
 - [x] #47 agent: detail screen (Ask to join, pending with Cancel, accepted with venue, Open chat and Withdraw, declined note; host's requests and joiners with Accept / Decline / Open chat), Inbox Requests tab section for join requests (incoming answerable, outgoing listed), badge counts incoming join requests too
-- [ ] Merge both, regenerate types, integration tests, full suites, review per ticket, one PR each
+- [x] Merge both, regenerate types, integration tests, full suites, review per ticket, one PR each
 
 # Requests (#41) ‖ Discover (#39), in parallel
 
