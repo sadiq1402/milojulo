@@ -11,11 +11,11 @@ begin;
 select id as me from auth.users where email = :'email' \gset
 select '00000000-0000-0000-0000-0000000015ab' as isha \gset
 
--- The account must have redeemed an invite and given consent in the app first.
+-- The account must have given its date of birth and consents in the app first.
 select exists (select 1 from public.profiles where id = :'me' and date_of_birth is not null) as ready \gset
 \if :ready
 \else
-  \echo 'Sign up in the app first: invite code, email code, date of birth and consents.'
+  \echo 'Sign up in the app first: email, code, date of birth and consents.'
   rollback;
   \quit
 \endif
