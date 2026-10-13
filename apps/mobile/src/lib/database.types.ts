@@ -49,6 +49,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"activity_requests": {
+                  Row: {
+                    "activity_id": string,"created_at": string,"id": string,"requester_id": string,"responded_at": string | null,"status": Database["public"]['Enums']["request_status"],"withdrawn_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activity_id": string,"created_at"?: string,"id"?: string,"requester_id": string,"responded_at"?: string | null,"status"?: Database["public"]['Enums']["request_status"],"withdrawn_at"?: string | null
+                  }
+                  Update: {
+                    "activity_id"?: string,"created_at"?: string,"id"?: string,"requester_id"?: string,"responded_at"?: string | null,"status"?: Database["public"]['Enums']["request_status"],"withdrawn_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_requests_activity_id_fkey"
+      columns: ["activity_id"]
+isOneToOne: false
+      referencedRelation: "activities"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activity_requests_requester_id_fkey"
+      columns: ["requester_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"activity_venues": {
                   Row: {
                     "activity_id": string,"created_at": string,"venue_detail": string
@@ -163,17 +189,23 @@ isOneToOne: false
                   ]
                 },"connections": {
                   Row: {
-                    "addressee_id": string,"closed_at": string | null,"closed_by": string | null,"created_at": string,"id": string,"mode": Database["public"]['Enums']["mode"],"note": string | null,"requester_id": string,"responded_at": string | null,"status": Database["public"]['Enums']["connection_status"]
+                    "activity_id": string | null,"addressee_id": string,"closed_at": string | null,"closed_by": string | null,"created_at": string,"id": string,"mode": Database["public"]['Enums']["mode"],"note": string | null,"requester_id": string,"responded_at": string | null,"status": Database["public"]['Enums']["connection_status"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "addressee_id": string,"closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"id"?: string,"mode": Database["public"]['Enums']["mode"],"note"?: string | null,"requester_id": string,"responded_at"?: string | null,"status"?: Database["public"]['Enums']["connection_status"]
+                    "activity_id"?: string | null,"addressee_id": string,"closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"id"?: string,"mode": Database["public"]['Enums']["mode"],"note"?: string | null,"requester_id": string,"responded_at"?: string | null,"status"?: Database["public"]['Enums']["connection_status"]
                   }
                   Update: {
-                    "addressee_id"?: string,"closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"id"?: string,"mode"?: Database["public"]['Enums']["mode"],"note"?: string | null,"requester_id"?: string,"responded_at"?: string | null,"status"?: Database["public"]['Enums']["connection_status"]
+                    "activity_id"?: string | null,"addressee_id"?: string,"closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"id"?: string,"mode"?: Database["public"]['Enums']["mode"],"note"?: string | null,"requester_id"?: string,"responded_at"?: string | null,"status"?: Database["public"]['Enums']["connection_status"]
                   }
                   Relationships: [
                     {
+      foreignKeyName: "connections_activity_id_fkey"
+      columns: ["activity_id"]
+isOneToOne: false
+      referencedRelation: "activities"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "connections_addressee_id_fkey"
       columns: ["addressee_id"]
 isOneToOne: false
@@ -454,6 +486,12 @@ isOneToOne: false
             "accept_consents":
 { Args: { "birth_date": string,"document_ids": (string)[] }; Returns: undefined
                            },
+"accepted_connection_id":
+{ Args: { "a": string,"b": string }; Returns: string
+                           },
+"active_connection_id":
+{ Args: { "a": string,"b": string }; Returns: string
+                           },
 "activity_board":
 { Args: Record<PropertyKey, never>; Returns: {
               "area_id": string,"capacity": number,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
@@ -464,6 +502,11 @@ isOneToOne: false
                            },
 "activity_is_locked":
 { Args: { "activity_id": string }; Returns: boolean
+                           },
+"activity_join_requests":
+{ Args: { "activity_id": string }; Returns: {
+              "connection_id": string,"created_at": string,"request_id": string,"requester_area_id": string,"requester_id": string,"requester_name": string,"requester_photo_id": string,"status": Database["public"]['Enums']["request_status"]
+            }[]
                            },
 "activity_spots_left":
 { Args: { "activity_id": string }; Returns: number
@@ -498,6 +541,9 @@ isOneToOne: false
 "confirm_photo_upload":
 { Args: { "photo_id": string }; Returns: undefined
                            },
+"cover_photo_id":
+{ Args: { "member_id": string }; Returns: string
+                           },
 "discover_feed":
 { Args: { "after"?: string,"mode_filter"?: Database["public"]['Enums']["mode"],"page_size"?: number }; Returns: {
               "age": number,"area_id": string,"cover_photo_id": string,"cursor": string,"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"shared_tag_ids": (number)[],"user_id": string,"why_you_match": string
@@ -517,7 +563,7 @@ isOneToOne: false
                            },
 "get_activity":
 { Args: { "activity_id": string }; Returns: {
-              "area_id": string,"capacity": number,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_locked": boolean,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
+              "area_id": string,"capacity": number,"connection_id": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
             }[]
                            },
 "get_profile":
@@ -525,14 +571,23 @@ isOneToOne: false
               "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"tag_ids": (number)[],"user_id": string,"why_you_match": string
             }[]
                            },
+"hosts_activity":
+{ Args: { "activity_id": string }; Returns: boolean
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_blocked":
 { Args: { "a": string,"b": string }; Returns: boolean
                            },
+"is_reachable":
+{ Args: { "member_id": string }; Returns: boolean
+                           },
 "is_visible":
 { Args: { "member_id": string }; Returns: boolean
+                           },
+"join_activity_request":
+{ Args: { "activity_id": string }; Returns: string
                            },
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
@@ -547,6 +602,11 @@ isOneToOne: false
               "connection_id": string,"direction": Database["public"]['Enums']["connection_direction"],"last_message_at": string,"last_message_body": string,"last_message_type": Database["public"]['Enums']["message_type"],"mode": Database["public"]['Enums']["mode"],"note": string,"other_area_id": string,"other_id": string,"other_name": string,"other_photo_id": string,"status": Database["public"]['Enums']["connection_status"],"unread_count": number
             }[]
                            },
+"my_join_requests":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "activity_id": string,"activity_starts_at": string,"activity_title": string,"created_at": string,"direction": Database["public"]['Enums']["connection_direction"],"other_id": string,"other_name": string,"other_photo_id": string,"request_id": string
+            }[]
+                           },
 "post_activity":
 { Args: { "area_id": string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail"?: string }; Returns: string
                            },
@@ -558,6 +618,9 @@ isOneToOne: false
                            },
 "redeem_invite":
 { Args: { "invite_code": string }; Returns: undefined
+                           },
+"respond_activity_request":
+{ Args: { "accept": boolean,"request_id": string }; Returns: string
                            },
 "respond_mode_change":
 { Args: { "accept": boolean,"change_id": string }; Returns: undefined
@@ -595,10 +658,13 @@ isOneToOne: false
                            },
 "update_activity":
 { Args: { "activity_id": string,"area_id"?: string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at"?: string,"title"?: string,"venue_detail"?: string }; Returns: undefined
+                           },
+"withdraw_activity_request":
+{ Args: { "request_id": string }; Returns: undefined
                            }
           }
           Enums: {
-            "account_status": "active"|"banned","activity_status": "open"|"cancelled"|"expired"|"removed","activity_type": "sports"|"food_chai"|"outdoors"|"games"|"learning","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","tag_kind": "interest"|"activity"
+            "account_status": "active"|"banned","activity_status": "open"|"cancelled"|"expired"|"removed","activity_type": "sports"|"food_chai"|"outdoors"|"games"|"learning","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","request_status": "requested"|"accepted"|"declined"|"cancelled"|"withdrawn","tag_kind": "interest"|"activity"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -718,7 +784,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "account_status": ["active", "banned"],"activity_status": ["open", "cancelled", "expired", "removed"],"activity_type": ["sports", "food_chai", "outdoors", "games", "learning"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"tag_kind": ["interest", "activity"]
+            "account_status": ["active", "banned"],"activity_status": ["open", "cancelled", "expired", "removed"],"activity_type": ["sports", "food_chai", "outdoors", "games", "learning"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"request_status": ["requested", "accepted", "declined", "cancelled", "withdrawn"],"tag_kind": ["interest", "activity"]
           }
         }
 } as const

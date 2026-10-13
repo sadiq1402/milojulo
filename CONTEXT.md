@@ -79,7 +79,7 @@ A posted plan to do something at a time in an Area, with a fixed number of spots
 _Avoid_: Event, meetup (for the post itself)
 
 **Join Request**:
-A Member's request to take one of an Activity's spots; the host accepts or declines it.
+A Member's request to take one of an Activity's spots; the host accepts or declines it. A Member asks once per Activity.
 _Avoid_: Activity request
 
 **Spots**:
