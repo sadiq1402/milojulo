@@ -238,7 +238,7 @@ select throws_ok('delete from public.activities', '42501', null, 'an Activity ca
 select throws_ok($$ insert into public.activity_venues (activity_id, venue_detail) values (pg_temp.mine(), 'Here') $$,
   '42501', null, 'a venue cannot be written directly');
 
--- Placeholders until Join Requests (#14): a new Activity is unlocked with every spot free.
+-- A new Activity is unlocked with every spot free.
 select results_eq('select is_locked, spots_left = capacity from public.get_activity(pg_temp.mine())',
   $$ values (false, true) $$, 'a new Activity is unlocked and has all its spots left');
 
