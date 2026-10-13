@@ -8,9 +8,13 @@ import {
   type BoardActivity,
 } from '../../features/activities/model';
 import { formatWhen } from '../../features/activities/time';
-import { activityTones, sizes, spacing } from '../../theme';
+import { activityTones, photoTones, sizes, spacing } from '../../theme';
 
 type Props = { activity: BoardActivity; areaName: string; onPress: () => void };
+
+// The avatar's tone must differ from the card's, or a pink Games card hides a pink avatar.
+const hostTone = (activity: BoardActivity) =>
+  photoTones[0] === activityTones[activity.type] ? 1 : 0;
 
 export function ActivityCard({ activity, areaName, onPress }: Props) {
   const when = formatWhen(activity.startsAt, null);
@@ -42,7 +46,11 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
         </View>
         <View style={styles.bottom}>
           <View style={styles.host}>
-            <Avatar name={activity.hostName} size="inline" />
+            <Avatar
+              name={activity.hostName}
+              size="inline"
+              tone={hostTone(activity)}
+            />
             <Text variant="bodySmall">{hostLine(activity)}</Text>
           </View>
           <Tag label={type} tone="onPhoto" />
