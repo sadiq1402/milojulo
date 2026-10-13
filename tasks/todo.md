@@ -1,3 +1,21 @@
+# Media links (#35) ‖ Profile setup (#38), in parallel
+
+Founder choices (2026-10-14): build these next; image library react-native-image-crop-picker (pick, crop locked to 4:5, compress). Scope: profile photos only; chat media links come with #12 ‖ #45, R2 cleanup on account deletion with #20. R2 signing is hand-rolled AWS SigV4 with Web Crypto (no new dependency). Contract:
+
+- Edge Function `media` (POST, JSON, `Authorization: Bearer <user JWT>`; signed-out → 401 `{ error: 'sign in first' }`; other refusals 400/403/404 `{ error: '<message>' }`):
+  - `{ action: 'photo-upload', position: 1..4, contentType: 'image/jpeg', size: bytes }` → `{ photoId, uploadUrl, expiresIn }`. JPEG only, size ≤ 5 MB (`photo must be a JPEG of at most 5 MB`). The app PUTs the file to `uploadUrl` (header `Content-Type: image/jpeg`) within `expiresIn` seconds (300).
+  - `{ action: 'photo-confirm', photoId }` → `{ ok: true }` after checking the object exists in R2 within the limits; the photo then takes `position`, replacing any photo already there (old object deleted from R2). Refusals: `no photo upload to confirm`, `the photo didn't arrive; try again`.
+  - `{ action: 'photo-urls', photoIds: uuid[] (≤ 60) }` → `{ urls: { [photoId]: string }, expiresIn }` (signed GET, 600 s). Ids the caller may not see are left out, never an error, so a Block is never revealed. R2 keys never leave the function.
+- Who may see a photo (SQL, security definer, service role only, tested in pgTAP): the owner (any confirmed, unremoved photo); otherwise confirmed photos that aren't hidden or removed, of a Member who is not blocked either way, not banned, deleted or Auto-hidden, and whom the caller may see in Discover/profile view or shares a Connection, Join Request or Activity with. Pending (unconfirmed) photos: owner only, and only as upload state.
+- Function code: thin handler over injected dependencies (database client, R2 client, clock) so the rules are unit-tested with Deno and the database rules in pgTAP; secrets `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` from the function environment (local: `supabase/functions/.env`, gitignored).
+- App data module `src/features/photos/api.ts` (#38 builds it against this contract): `uploadPhoto(position, localUri): Promise<string>` (photo-upload → PUT → photo-confirm, returns the photo id), `deletePhoto(photoId)`, `movePhoto(photoId, position)` (direct under RLS, as today), `fetchMyPhotos()`, `fetchPhotoUrls(ids): Promise<Record<string, string>>` (batched, ≤ 60 per call). Refusal messages map to friendly copy.
+- Profile setup (#38): five steps per the mockups Setup1Basics to Setup5Interests, saving as you go, ending in `submit_profile()` and landing on Discover; photos picked and cropped to 4:5 at 1080 x 1350, JPEG quality 0.8.
+- Shared local Supabase: never `db reset`; integration tests through `flock /tmp/milojulo-integration.lock`.
+
+- [ ] #35 agent: migration (upload slots, confirm/replace, photo visibility), Edge Function with Deno tests, pgTAP tests, CI step for the function tests, docs
+- [ ] #38 agent: image-crop-picker, photos data module, five setup steps, resume, submit, tests
+- [ ] Merge, regenerate types, full suites, try upload against the real bucket, phone check, review per ticket, one PR each, then deploy the function and push the migration to the cloud
+
 # Open sign-up (#68) ‖ app without invites (#69), in parallel
 
 Decision 27 (founder, 2026-10-13): open sign-up, invite codes removed completely. Contract:
