@@ -36,3 +36,9 @@ Format: decision, why, alternatives rejected. Update this file whenever a decisi
     - Date and time without a date-picker dependency: day chips (Today, Tomorrow, then the next five weekdays), a start-time Stepper in 30-minute steps and a length Stepper (30 minutes to 12 hours, or no set end). Everything is in India time whatever the phone's zone. The Stepper is a new shared component (docs/05).
     - Editing can't change the type (`update_activity` has no type) or remove a set end (null keeps it). A Locked Activity's form shows only the details and Spots (which can only go up), with a note saying why.
 
+26. **Join Request screens (2026-10-13).**
+    - Accepting a Join Request from the Inbox opens the chat with the joiner, as accepting a Connection Request does; accepting on the Activity itself keeps the host there (several may be waiting) and moves the joiner to a Going list with Open chat.
+    - Cancel request and Withdraw both ask first and say the Member can't ask to join that Activity again (one Join Request per Member per Activity); a declined, cancelled or withdrawn request leaves a short note instead of the button.
+    - "Ask to join" (the mockup says "Request to join"), so the button doesn't read like a Connection Request. A full Activity shows "No spots left" instead of the button.
+    - The phone's clock decides only what to offer once an Activity has started (no Ask to join, Cancel or Withdraw); the database enforces the start itself.
+    - Incoming Join Requests sit with Connection Requests under "Waiting for you" and count towards the Inbox badge; the caller's own pending ones are listed under "Sent" and open their Activity.
