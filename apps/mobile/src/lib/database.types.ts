@@ -501,6 +501,9 @@ isOneToOne: false
 "cover_photo_id":
 { Args: { "member_id": string }; Returns: string
                            },
+"current_consent_documents":
+{ Args: Record<PropertyKey, never>; Returns: string[]
+                           },
 "discover_feed":
 { Args: { "after"?: string,"mode_filter"?: Database["public"]['Enums']["mode"],"page_size"?: number }; Returns: {
               "age": number,"area_id": string,"cover_photo_id": string,"cursor": string,"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"shared_tag_ids": (number)[],"user_id": string,"why_you_match": string

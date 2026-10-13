@@ -1,5 +1,7 @@
 # No pre-approval of profiles or photos
 
+_The invite-code parts of this record are superseded by decision 27 (open sign-up, 2026-10-13); the rest stands as the historical record._
+
 Founder decision (2026-10-07): Members go live as soon as their profile is submitted; there is no admin approval of profiles or photos at any point, and moderation is after the fact (reports with a 24-hour target, bans, word filter, invite codes). This reverses Decision 7 in docs/08-decisions.md, which made manual approval the main trust layer for the first few hundred users.
 
 ## Consequences

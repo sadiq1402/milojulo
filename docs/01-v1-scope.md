@@ -1,4 +1,4 @@
-# V1 scope: Pune closed beta
+# V1 scope: Pune beta
 
 ## In V1
 | Area | What ships |
