@@ -1,4 +1,10 @@
-import { act, fireEvent, screen, within } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
@@ -207,8 +213,9 @@ describe('the Discover feed', () => {
       .mockResolvedValue({ cards: [rohan], nextCursor: null });
     const { refreshControl } = screen.getByTestId('discover-feed').props;
     await act(() => refreshControl.props.onRefresh());
+    // Rohan was already in the first page, so wait for Isha to go.
+    await waitFor(() => expect(screen.queryByText('Isha, 27')).toBeNull());
     expect(await cardFor('Rohan')).toBeOnTheScreen();
-    expect(screen.queryByText('Isha, 27')).toBeNull();
   });
 
   test('when nobody matches, says so', async () => {
