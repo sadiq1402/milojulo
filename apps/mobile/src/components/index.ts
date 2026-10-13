@@ -5,6 +5,7 @@ export { Card } from './Card';
 export { Checkbox } from './Checkbox';
 export { Chip } from './Chip';
 export { CodeInput } from './CodeInput';
+export { ErrorText } from './ErrorText';
 export { FlowScreen } from './FlowScreen';
 export { Icon, type IconName } from './Icon';
 export { IconButton } from './IconButton';

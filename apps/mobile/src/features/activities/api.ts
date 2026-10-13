@@ -8,6 +8,8 @@ import {
   type ActivityField,
   type ActivityFields,
   type BoardActivity,
+  type JoinRequest,
+  type MyJoinRequest,
   type StartsWhen,
 } from './model';
 
@@ -109,6 +111,10 @@ export async function fetchActivity(
     status: row.status,
     venueDetail: row.venue_detail ?? null,
     isLocked: row.is_locked,
+    myRequest: row.my_request_id
+      ? { id: row.my_request_id, status: row.my_request_status }
+      : null,
+    connectionId: row.connection_id ?? null,
   };
 }
 
@@ -158,4 +164,104 @@ export async function cancelActivity(activityId: string): Promise<void> {
   if (error) {
     throw refusal(error);
   }
+}
+
+// Keys are the database's exact messages; `refusals` words the shared ones for posting.
+const joinRefusals: Record<string, string> = {
+  'unpause your profile to join activities':
+    'Your profile is paused. Unpause it to join Activities.',
+  'your profile is not visible':
+    "Your profile isn't visible right now, so you can't join Activities.",
+  // Also a Block, so the copy never mentions one.
+  'no activity to join': "This Activity isn't open to join any more.",
+  'you cannot join your own activity': "You're hosting this Activity.",
+  'this activity has already started': 'This Activity has already started.',
+  'you already asked to join this activity':
+    "You've already asked to join this Activity.",
+  'no spots left': 'There are no spots left on this Activity.',
+  'you have sent 10 join requests in the last 24 hours':
+    "You've sent 10 Join Requests in the last 24 hours, the most allowed. Try again later.",
+  'no join request to answer':
+    'This Join Request is no longer waiting for an answer.',
+  'no join request to withdraw':
+    "This Join Request can't be cancelled or withdrawn any more.",
+};
+
+function joinRefusal(error: { message: string }): Error {
+  return new Error(joinRefusals[error.message] ?? fallback);
+}
+
+export async function askToJoin(activityId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('join_activity_request', {
+    activity_id: activityId,
+  });
+  if (error) {
+    throw joinRefusal(error);
+  }
+  return data;
+}
+
+// Accepting returns the Activity Connection's id; declining returns null.
+export async function respondJoinRequest(
+  requestId: string,
+  accept: boolean,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc('respond_activity_request', {
+    request_id: requestId,
+    accept,
+  });
+  if (error) {
+    throw joinRefusal(error);
+  }
+  return data ?? null;
+}
+
+// Cancels a waiting request or withdraws an accepted one; both are final.
+export async function withdrawJoinRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('withdraw_activity_request', {
+    request_id: requestId,
+  });
+  if (error) {
+    throw joinRefusal(error);
+  }
+}
+
+// The host's view; empty for anyone else.
+export async function fetchJoinRequests(
+  activityId: string,
+): Promise<JoinRequest[]> {
+  const { data, error } = await supabase.rpc('activity_join_requests', {
+    activity_id: activityId,
+  });
+  if (error) {
+    throw new Error(couldNotLoad);
+  }
+  return data.map(row => ({
+    id: row.request_id,
+    requesterId: row.requester_id,
+    requesterName: row.requester_name,
+    requesterPhotoId: row.requester_photo_id ?? null,
+    requesterAreaId: row.requester_area_id ?? null,
+    status: row.status,
+    createdAt: row.created_at,
+    connectionId: row.connection_id ?? null,
+  }));
+}
+
+export async function fetchMyJoinRequests(): Promise<MyJoinRequest[]> {
+  const { data, error } = await supabase.rpc('my_join_requests');
+  if (error) {
+    throw new Error(couldNotLoad);
+  }
+  return data.map(row => ({
+    id: row.request_id,
+    activityId: row.activity_id,
+    activityTitle: row.activity_title,
+    activityStartsAt: row.activity_starts_at,
+    otherId: row.other_id,
+    otherName: row.other_name,
+    otherPhotoId: row.other_photo_id ?? null,
+    direction: row.direction,
+    createdAt: row.created_at,
+  }));
 }
