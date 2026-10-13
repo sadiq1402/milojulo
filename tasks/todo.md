@@ -1,3 +1,17 @@
+# Open sign-up (#68) ‖ app without invites (#69), in parallel
+
+Decision 27 (founder, 2026-10-13): open sign-up, invite codes removed completely. Contract:
+
+- `accept_consents(birth_date date, document_ids uuid[]) returns void`, same signature and the same refusals (`members must be 18 or older`, `accept the current terms, guidelines and data notice`): creates the caller's profile row when there is none, so a refusal leaves no profile behind; `redeem an invite first` is gone. Signed-out visitors still can't call it.
+- Dropped: `check_invite`, `redeem_invite`, `invite_codes`, `invite_redemptions`. `seed_reviewer` keeps its signature and still makes a ready demo Member.
+- App account stages: `consent` (no profile row, or no date of birth) → `profile` → `member`; `invite` is gone. Flow: Welcome ("Get started") → Email → code → Date of birth and consents → profile setup.
+- Ownership: #68 owns everything under `supabase/` (including `supabase/seed/dev`) and all docs (decision 27; docs/00, 01, 02, 03, 04, 07, 09, 10, 11, 12 and the .mmd; CONTEXT.md; the "invite-only" line of CLAUDE.md), and regenerates `apps/mobile/src/lib/database.types.ts`. #69 owns the rest of `apps/mobile` (including `__integration__/support`) and hand-edits `database.types.ts` until #68 lands.
+- Shared local Supabase: never `db reset`; integration tests through `flock /tmp/milojulo-integration.lock`.
+
+- [ ] #68 agent: migration, pgTAP tests, seeds, docs
+- [ ] #69 agent: screens, stages, navigation, tests
+- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each, then push the migration to the cloud
+
 # Join Requests (#14) ‖ Join screens (#47), in parallel
 
 Contract both sides build against (messages are the database's exact text; the app maps them to copy):
