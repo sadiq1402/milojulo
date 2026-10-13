@@ -166,14 +166,13 @@ export async function cancelActivity(activityId: string): Promise<void> {
   }
 }
 
-// Keys are the database's exact messages; kept apart from `refusals`, which words the shared
-// ones ("your profile is not visible") for posting. "no activity to join" also covers a Block,
-// so its copy never mentions one.
+// Keys are the database's exact messages; `refusals` words the shared ones for posting.
 const joinRefusals: Record<string, string> = {
   'unpause your profile to join activities':
     'Your profile is paused. Unpause it to join Activities.',
   'your profile is not visible':
     "Your profile isn't visible right now, so you can't join Activities.",
+  // Also a Block, so the copy never mentions one.
   'no activity to join': "This Activity isn't open to join any more.",
   'you cannot join your own activity': "You're hosting this Activity.",
   'this activity has already started': 'This Activity has already started.',
@@ -181,18 +180,17 @@ const joinRefusals: Record<string, string> = {
     "You've already asked to join this Activity.",
   'no spots left': 'There are no spots left on this Activity.',
   'you have sent 10 join requests in the last 24 hours':
-    "You've sent 10 join requests in the last 24 hours, the most allowed. Try again later.",
+    "You've sent 10 Join Requests in the last 24 hours, the most allowed. Try again later.",
   'no join request to answer':
-    'This join request is no longer waiting for an answer.',
+    'This Join Request is no longer waiting for an answer.',
   'no join request to withdraw':
-    "This join request can't be cancelled or withdrawn any more.",
+    "This Join Request can't be cancelled or withdrawn any more.",
 };
 
 function joinRefusal(error: { message: string }): Error {
   return new Error(joinRefusals[error.message] ?? fallback);
 }
 
-// Returns the new Join Request's id.
 export async function askToJoin(activityId: string): Promise<string> {
   const { data, error } = await supabase.rpc('join_activity_request', {
     activity_id: activityId,
@@ -203,8 +201,7 @@ export async function askToJoin(activityId: string): Promise<string> {
   return data;
 }
 
-// Accepting returns the Activity Connection's id (a new one, or the pair's existing one);
-// declining returns null.
+// Accepting returns the Activity Connection's id; declining returns null.
 export async function respondJoinRequest(
   requestId: string,
   accept: boolean,
@@ -219,7 +216,7 @@ export async function respondJoinRequest(
   return data ?? null;
 }
 
-// Cancels a pending request, or withdraws an accepted one; either way it can't be asked again.
+// Cancels a waiting request or withdraws an accepted one; both are final.
 export async function withdrawJoinRequest(requestId: string): Promise<void> {
   const { error } = await supabase.rpc('withdraw_activity_request', {
     request_id: requestId,

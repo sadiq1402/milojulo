@@ -10,8 +10,7 @@ import {
   withdrawJoinRequest,
 } from './api';
 
-// Everything sits under 'activities', so invalidating `all` refreshes the board, details and
-// both join request lists at once.
+// All under 'activities', so invalidating `all` also refreshes both Join Request lists.
 export const activityKeys = {
   all: ['activities'],
   board: ['activities', 'board'],
@@ -40,12 +39,11 @@ export function useActivity(activityId: string) {
   });
 }
 
-// Only the host gets any rows, so the screen asks only when it is theirs.
-export function useJoinRequests(activityId: string, enabled: boolean) {
+// The host's view; anyone else gets no rows.
+export function useJoinRequests(activityId: string) {
   return useQuery({
     queryKey: activityKeys.joinRequests(activityId),
     queryFn: () => fetchJoinRequests(activityId),
-    enabled,
   });
 }
 
@@ -53,12 +51,12 @@ export function useMyJoinRequests() {
   return useQuery({
     queryKey: activityKeys.myJoinRequests,
     queryFn: fetchMyJoinRequests,
-    // Join Requests aren't broadcast, so the Inbox badge and lists check now and then.
+    // Join Requests aren't broadcast, so the Inbox badge polls.
     refetchInterval: 30_000,
   });
 }
 
-// Spots, the board, both request lists and (on accept) the chat list all move together.
+// Refreshes after a refusal too, since a refusal often means the Activity changed.
 function useRefreshAfterJoinChange() {
   const client = useQueryClient();
   return () =>
@@ -72,12 +70,14 @@ export function useAskToJoin(activityId: string) {
   const refresh = useRefreshAfterJoinChange();
   return useMutation({
     mutationFn: () => askToJoin(activityId),
-    onSuccess: refresh,
+    onSettled: refresh,
   });
 }
 
-// Resolves once the chat list holds the Activity Connection, so a chat opened next finds it.
-export function useRespondJoinRequest() {
+// onAccepted runs here, not in mutate(), so it still runs once the answered card has unmounted.
+export function useRespondJoinRequest(
+  onAccepted?: (connectionId: string) => void,
+) {
   const refresh = useRefreshAfterJoinChange();
   return useMutation({
     mutationFn: ({
@@ -87,7 +87,14 @@ export function useRespondJoinRequest() {
       requestId: string;
       accept: boolean;
     }) => respondJoinRequest(requestId, accept),
-    onSuccess: refresh,
+    onError: refresh,
+    onSuccess: async connectionId => {
+      // The chat reads its Connection from the chat list, so wait for it first.
+      await refresh();
+      if (connectionId) {
+        onAccepted?.(connectionId);
+      }
+    },
   });
 }
 
@@ -95,6 +102,6 @@ export function useWithdrawJoinRequest() {
   const refresh = useRefreshAfterJoinChange();
   return useMutation({
     mutationFn: (requestId: string) => withdrawJoinRequest(requestId),
-    onSuccess: refresh,
+    onSettled: refresh,
   });
 }

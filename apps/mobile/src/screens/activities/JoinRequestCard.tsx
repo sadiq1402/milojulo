@@ -1,11 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Avatar, Button, Card, Icon, Text } from '../../components';
 import { useRespondJoinRequest } from '../../features/activities/queries';
-import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
+import { AnswerCard } from '../requests/AnswerCard';
 
-// A waiting Join Request for the host to answer, on the Activity and in the Inbox. With
-// onOpen, the requester line also opens the Activity it is for.
+// A waiting Join Request for the host, on the Activity and in the Inbox.
 export function JoinRequestCard({
   requestId,
   name,
@@ -14,6 +11,7 @@ export function JoinRequestCard({
   onOpen,
   openLabel,
   onAccepted,
+  canAnswer,
 }: {
   requestId: string;
   name: string;
@@ -22,101 +20,21 @@ export function JoinRequestCard({
   onOpen?: () => void;
   openLabel?: string;
   onAccepted?: (connectionId: string) => void;
+  canAnswer?: boolean;
 }) {
-  const answer = useRespondJoinRequest();
-  const busy = answer.isPending;
-  const respond = (accept: boolean) =>
-    answer.mutate(
-      { requestId, accept },
-      {
-        onSuccess: connectionId => {
-          if (accept && connectionId) {
-            onAccepted?.(connectionId);
-          }
-        },
-      },
-    );
-
-  const who = (
-    <>
-      <Avatar name={name} tone={tone} />
-      <View style={styles.grow}>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
-        {detail ? (
-          <Text variant="bodySmall" color={colors.secondary}>
-            {detail}
-          </Text>
-        ) : null}
-      </View>
-      {onOpen ? (
-        <Icon
-          name="chevronRight"
-          size={sizes.icon.inline}
-          color={colors.secondary}
-        />
-      ) : null}
-    </>
-  );
-
+  const answer = useRespondJoinRequest(onAccepted);
   return (
-    <Card style={styles.card}>
-      {onOpen ? (
-        <Pressable
-          onPress={onOpen}
-          accessibilityRole="button"
-          accessibilityLabel={openLabel}
-          style={styles.who}
-        >
-          {who}
-        </Pressable>
-      ) : (
-        <View style={styles.who}>{who}</View>
-      )}
-      {answer.error ? (
-        <Text
-          variant="bodySmall"
-          color={colors.danger}
-          accessibilityLiveRegion="polite"
-        >
-          {answer.error.message}
-        </Text>
-      ) : null}
-      <View style={styles.actions}>
-        <Button
-          label="Accept"
-          accessibilityLabel={`Accept ${name}'s join request`}
-          compact
-          loading={busy && answer.variables?.accept === true}
-          disabled={busy}
-          onPress={() => respond(true)}
-          style={styles.grow}
-        />
-        <Button
-          label="Decline"
-          accessibilityLabel={`Decline ${name}'s join request`}
-          variant="secondary"
-          compact
-          loading={busy && answer.variables?.accept === false}
-          disabled={busy}
-          onPress={() => respond(false)}
-          style={styles.grow}
-        />
-      </View>
-    </Card>
+    <AnswerCard
+      name={name}
+      detail={detail}
+      tone={tone}
+      onOpen={onOpen}
+      openLabel={openLabel}
+      error={answer.error?.message}
+      answering={answer.isPending ? answer.variables?.accept : undefined}
+      onAnswer={accept => answer.mutate({ requestId, accept })}
+      answerLabel={verb => `${verb} ${name}'s Join Request`}
+      canAnswer={canAnswer}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  card: { gap: spacing.sm },
-  who: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: sizes.hitArea,
-  },
-  grow: { flex: 1, minWidth: 0 },
-  name: { fontFamily: fontFamily(fonts.text, '600') },
-  actions: { flexDirection: 'row', gap: spacing.xs },
-});

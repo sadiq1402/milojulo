@@ -509,13 +509,13 @@ describe('joining an Activity', () => {
       .mocked(activities.askToJoin)
       .mockRejectedValue(
         new Error(
-          "You've sent 10 join requests in the last 24 hours, the most allowed. Try again later.",
+          "You've sent 10 Join Requests in the last 24 hours, the most allowed. Try again later.",
         ),
       );
     await openDetail('Badminton doubles');
     await fireEvent.press(screen.getByRole('button', { name: 'Ask to join' }));
     expect(
-      await screen.findByText(/You've sent 10 join requests/),
+      await screen.findByText(/You've sent 10 Join Requests/),
     ).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Ask to join' })).toBeEnabled();
   });
@@ -600,7 +600,7 @@ describe('joining an Activity', () => {
       .mocked(activities.withdrawJoinRequest)
       .mockRejectedValue(
         new Error(
-          "This join request can't be cancelled or withdrawn any more.",
+          "This Join Request can't be cancelled or withdrawn any more.",
         ),
       );
     await openDetail('Badminton doubles');
@@ -610,7 +610,7 @@ describe('joining an Activity', () => {
     );
     expect(
       await screen.findByText(
-        "This join request can't be cancelled or withdrawn any more.",
+        "This Join Request can't be cancelled or withdrawn any more.",
       ),
     ).toBeOnTheScreen();
     expect(screen.getByTestId('confirm-withdraw')).toBeOnTheScreen();
@@ -626,6 +626,47 @@ describe('joining an Activity', () => {
       screen.getByRole('button', { name: 'Open chat with Isha' }),
     ).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Withdraw' })).toBeNull();
+  });
+
+  test('a request still waiting at the start says it went unanswered, with nothing to cancel', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue({
+      ...requested,
+      startsAt: new Date(Date.now() - 30 * 60_000).toISOString(),
+    });
+    await openDetail('Badminton doubles');
+    expect(
+      screen.getByText(
+        "Isha didn't answer your Join Request before the start.",
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Waiting for Isha to answer.')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cancel request' })).toBeNull();
+  });
+
+  test('an accepted joiner whose chat was closed is told so', async () => {
+    jest
+      .mocked(activities.fetchActivity)
+      .mockResolvedValue({ ...accepted, connectionId: null });
+    await openDetail('Badminton doubles');
+    expect(
+      screen.getByText('Your chat with Isha was closed.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /Open chat/ })).toBeNull();
+  });
+
+  test('a refusal reloads the Activity, so a full one shows as full', async () => {
+    jest.mocked(activities.askToJoin).mockImplementation(async () => {
+      jest
+        .mocked(activities.fetchActivity)
+        .mockResolvedValue(detail({ spotsLeft: 0 }));
+      throw new Error('There are no spots left on this Activity.');
+    });
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Ask to join' }));
+    expect(
+      await screen.findByText('No spots left. This Activity is full.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Full')).toBeOnTheScreen();
   });
 
   test.each([
@@ -646,7 +687,7 @@ describe('joining an Activity', () => {
   );
 });
 
-describe("the host's join requests", () => {
+describe("the host's Join Requests", () => {
   const joinRequest = (overrides: Partial<JoinRequest>): JoinRequest => ({
     id: 'req-kabir',
     requesterId: 'kabir',
@@ -679,7 +720,7 @@ describe("the host's join requests", () => {
     expect(waiting.getByText('Kabir')).toBeOnTheScreen();
     expect(await waiting.findByText('Wakad')).toBeOnTheScreen();
     expect(
-      waiting.getByRole('button', { name: "Accept Kabir's join request" }),
+      waiting.getByRole('button', { name: "Accept Kabir's Join Request" }),
     ).toBeOnTheScreen();
     const going = within(screen.getByTestId('going'));
     expect(going.getByText('Neha')).toBeOnTheScreen();
@@ -707,7 +748,7 @@ describe("the host's join requests", () => {
     await openDetail('Sinhagad trek');
     await fireEvent.press(
       await screen.findByRole('button', {
-        name: "Accept Kabir's join request",
+        name: "Accept Kabir's Join Request",
       }),
     );
     expect(activities.respondJoinRequest).toHaveBeenCalledWith(
@@ -737,7 +778,7 @@ describe("the host's join requests", () => {
     await openDetail('Sinhagad trek');
     await fireEvent.press(
       await screen.findByRole('button', {
-        name: "Decline Kabir's join request",
+        name: "Decline Kabir's Join Request",
       }),
     );
     expect(activities.respondJoinRequest).toHaveBeenCalledWith(
@@ -757,13 +798,34 @@ describe("the host's join requests", () => {
     await openDetail('Sinhagad trek');
     await fireEvent.press(
       await screen.findByRole('button', {
-        name: "Accept Kabir's join request",
+        name: "Accept Kabir's Join Request",
       }),
     );
     expect(
       await screen.findByText('There are no spots left on this Activity.'),
     ).toBeOnTheScreen();
   });
+
+  test.each([
+    [
+      'has started',
+      { startsAt: new Date(Date.now() - 30 * 60_000).toISOString() },
+    ],
+    ['was cancelled', { status: 'cancelled' as const }],
+  ])(
+    'once the Activity %s, waiting requests can no longer be answered',
+    async (_, change) => {
+      jest
+        .mocked(activities.fetchActivity)
+        .mockResolvedValue({ ...myActivity, ...change });
+      await openDetail('Sinhagad trek');
+      const waiting = within(await screen.findByTestId('join-requests'));
+      expect(waiting.getByText('Kabir')).toBeOnTheScreen();
+      expect(
+        waiting.queryByRole('button', { name: /Join Request$/ }),
+      ).toBeNull();
+    },
+  );
 
   test('Open chat takes the host to the chat with that joiner', async () => {
     await openDetail('Sinhagad trek');

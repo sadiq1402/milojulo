@@ -33,7 +33,7 @@ test.each([
   ['no spots left', 'There are no spots left on this Activity.'],
   [
     'you have sent 10 join requests in the last 24 hours',
-    "You've sent 10 join requests in the last 24 hours, the most allowed. Try again later.",
+    "You've sent 10 Join Requests in the last 24 hours, the most allowed. Try again later.",
   ],
   ['something else', "That didn't work. Check your connection and try again."],
 ])('asking to join refused with "%s" reads "%s"', async (message, copy) => {
@@ -47,7 +47,7 @@ test.each([
 test.each([
   [
     'no join request to answer',
-    'This join request is no longer waiting for an answer.',
+    'This Join Request is no longer waiting for an answer.',
   ],
   ['no spots left', 'There are no spots left on this Activity.'],
 ])('answering refused with "%s" reads "%s"', async (message, copy) => {
@@ -58,7 +58,7 @@ test.each([
 test('withdrawing refused reads as too late to change', async () => {
   refuse('no join request to withdraw');
   await expect(withdrawJoinRequest('r1')).rejects.toThrow(
-    "This join request can't be cancelled or withdrawn any more.",
+    "This Join Request can't be cancelled or withdrawn any more.",
   );
   expect(rpc).toHaveBeenCalledWith('withdraw_activity_request', {
     request_id: 'r1',

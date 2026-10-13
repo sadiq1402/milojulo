@@ -16,6 +16,13 @@ export function useAreaNames() {
   });
 }
 
+// Undefined until the catalog loads, or for no Area.
+export function useAreaName() {
+  const areas = useAreaNames();
+  return (areaId: string | null) =>
+    (areaId && areas.data?.[areaId]) || undefined;
+}
+
 export function useTagNames() {
   return useQuery({
     queryKey: catalogKeys.tags,

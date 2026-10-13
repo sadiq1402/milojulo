@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -201,7 +202,7 @@ describe('Inbox requests', () => {
   });
 });
 
-describe('Inbox join requests', () => {
+describe('Inbox Join Requests', () => {
   beforeEach(() => {
     jest
       .mocked(activities.fetchMyJoinRequests)
@@ -214,24 +215,25 @@ describe('Inbox join requests', () => {
       screen.getByText(/^Asks to join Badminton doubles, \w+ 15 Jan, 7:00 pm$/),
     ).toBeOnTheScreen();
     expect(
-      screen.getByRole('button', { name: "Accept Kabir's join request" }),
+      screen.getByRole('button', { name: "Accept Kabir's Join Request" }),
     ).toBeOnTheScreen();
     expect(
-      screen.getByRole('button', { name: "Decline Kabir's join request" }),
+      screen.getByRole('button', { name: "Decline Kabir's Join Request" }),
     ).toBeOnTheScreen();
     const sent = within(screen.getByTestId('sent-requests'));
     expect(sent.getByText('Sinhagad trek')).toBeOnTheScreen();
-    expect(sent.getByText('Join request, hosted by Neha')).toBeOnTheScreen();
+    expect(sent.getByText('Join Request, hosted by Neha')).toBeOnTheScreen();
+    expect(sent.getByText('Waiting')).toBeOnTheScreen();
   });
 
-  test('the Inbox tab counts join requests waiting for me too', async () => {
+  test('the Inbox tab counts Join Requests waiting for me too', async () => {
     await renderApp(me);
     expect(
       await screen.findByRole('tab', { name: 'Inbox, 3 waiting' }),
     ).toBeOnTheScreen();
   });
 
-  test('accepting a join request opens the chat with the joiner', async () => {
+  test('accepting a Join Request opens the chat with the joiner', async () => {
     const kabir = conversation({
       connectionId: 'conn-kabir',
       otherId: 'kabir',
@@ -249,7 +251,7 @@ describe('Inbox join requests', () => {
     });
     await openInbox();
     await fireEvent.press(
-      screen.getByRole('button', { name: "Accept Kabir's join request" }),
+      screen.getByRole('button', { name: "Accept Kabir's Join Request" }),
     );
     expect(activities.respondJoinRequest).toHaveBeenCalledWith(
       'join-kabir',
@@ -259,7 +261,38 @@ describe('Inbox join requests', () => {
     expect(screen.getByRole('header', { name: 'Kabir' })).toBeOnTheScreen();
   });
 
-  test('declining a join request removes it and opens nothing', async () => {
+  test('accepting still opens the chat when the card leaves the list before the refresh ends', async () => {
+    const kabir = conversation({
+      connectionId: 'conn-kabir',
+      otherId: 'kabir',
+      otherName: 'Kabir',
+      status: 'accepted',
+      mode: 'activities',
+      note: null,
+    });
+    jest.mocked(activities.respondJoinRequest).mockImplementation(async () => {
+      jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
+      // The chat list answers late, so the card is gone before the accept finishes.
+      const after = [rohan, anaya, meera, kabir];
+      jest
+        .mocked(chat.fetchConversations)
+        .mockImplementationOnce(
+          () => new Promise(resolve => setTimeout(() => resolve(after), 50)),
+        )
+        .mockResolvedValue(after);
+      return 'conn-kabir';
+    });
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', { name: "Accept Kabir's Join Request" }),
+    );
+    expect(await screen.findByLabelText('Chat menu')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Kabir' })).toBeOnTheScreen();
+    // Let the chat's own loads land inside act before the test ends.
+    await act(() => new Promise<void>(resolve => setTimeout(resolve, 100)));
+  });
+
+  test('declining a Join Request removes it and opens nothing', async () => {
     jest.mocked(activities.respondJoinRequest).mockImplementation(async () => {
       jest
         .mocked(activities.fetchMyJoinRequests)
@@ -268,7 +301,7 @@ describe('Inbox join requests', () => {
     });
     await openInbox();
     await fireEvent.press(
-      screen.getByRole('button', { name: "Decline Kabir's join request" }),
+      screen.getByRole('button', { name: "Decline Kabir's Join Request" }),
     );
     expect(activities.respondJoinRequest).toHaveBeenCalledWith(
       'join-kabir',
@@ -290,14 +323,14 @@ describe('Inbox join requests', () => {
       );
     await openInbox();
     await fireEvent.press(
-      screen.getByRole('button', { name: "Accept Kabir's join request" }),
+      screen.getByRole('button', { name: "Accept Kabir's Join Request" }),
     );
     expect(
       await screen.findByText('There are no spots left on this Activity.'),
     ).toBeOnTheScreen();
   });
 
-  test('tapping a join request opens its Activity', async () => {
+  test('tapping a Join Request opens its Activity', async () => {
     jest.mocked(activities.fetchActivity).mockResolvedValue({
       id: 'badminton',
       hostId: me.user.id,

@@ -77,7 +77,7 @@ export type JoinRequest = {
   connectionId: string | null;
 };
 
-// A pending Join Request, to one of my Activities (incoming) or from me (outgoing).
+// A waiting Join Request, to one of my Activities (incoming) or from me (outgoing).
 export type MyJoinRequest = {
   id: string;
   activityId: string;

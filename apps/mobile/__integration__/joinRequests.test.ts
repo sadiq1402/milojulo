@@ -158,7 +158,7 @@ test('the host lists requests, accepts one into an Activity Connection and decli
     isLocked: true,
   });
   await expect(respondJoinRequest(fromKabir, true)).rejects.toThrow(
-    'This join request is no longer waiting for an answer.',
+    'This Join Request is no longer waiting for an answer.',
   );
 });
 
@@ -187,7 +187,7 @@ test('an accepted joiner sees the venue and the chat; withdrawing ends it for go
     "You've already asked to join this Activity.",
   );
   await expect(withdrawJoinRequest(requestId)).rejects.toThrow(
-    "This join request can't be cancelled or withdrawn any more.",
+    "This Join Request can't be cancelled or withdrawn any more.",
   );
 });
 
@@ -255,6 +255,6 @@ test('the 11th join request in 24 hours is refused (Join Cap)', async () => {
   await expect(
     askToJoin(await postAs(kabir, { title: 'One too many' })),
   ).rejects.toThrow(
-    "You've sent 10 join requests in the last 24 hours, the most allowed. Try again later.",
+    "You've sent 10 Join Requests in the last 24 hours, the most allowed. Try again later.",
   );
 });

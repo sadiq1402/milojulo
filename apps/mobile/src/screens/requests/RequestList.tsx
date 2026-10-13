@@ -3,18 +3,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import {
-  Avatar,
-  Button,
-  Card,
-  List,
-  ListRow,
-  Tag,
-  Text,
-} from '../../components';
+import { Avatar, Button, List, ListRow, Tag, Text } from '../../components';
 import { formatWhen } from '../../features/activities/time';
 import type { Conversation } from '../../features/chat/api';
-import { useAreaNames } from '../../features/catalog/queries';
+import { useAreaName } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
 import { modeLabels } from '../../features/modes';
 import { respondRequest } from '../../features/requests/api';
@@ -22,16 +14,17 @@ import { useRequests } from '../../features/requests/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, fontFamily, fonts, layout, spacing } from '../../theme';
 import { JoinRequestCard } from '../activities/JoinRequestCard';
+import { AnswerCard } from './AnswerCard';
 
-// The Inbox's Requests tab: incoming ones to answer (Connection Requests, then Join Requests to
-// my Activities), then the caller's own still pending.
+// Sent rows start further along the avatar tones than the cards above them.
+const sentToneStart = 2;
+
+// The Inbox's Requests tab: Connection and Join Requests to answer, then the caller's own.
 export function RequestList() {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const { conversations, joinRequests, waiting, sent, joinWaiting, joinSent } =
     useRequests();
-  const areas = useAreaNames();
-  const areaOf = (c: Conversation) =>
-    (c.otherAreaId && areas.data?.[c.otherAreaId]) || undefined;
+  const areaName = useAreaName();
   const openActivity = (activityId: string) =>
     navigation.navigate('ActivityDetail', { activityId });
 
@@ -63,7 +56,7 @@ export function RequestList() {
         {waiting.length === 0 && joinWaiting.length === 0 ? (
           <Text color={colors.secondary}>
             No requests waiting for you. When someone sends you a Connection
-            Request or asks to join your Activity, it shows here.
+            Request or a Join Request for your Activity, it shows here.
           </Text>
         ) : (
           <View style={styles.cards}>
@@ -71,7 +64,7 @@ export function RequestList() {
               <RequestCard
                 key={request.connectionId}
                 request={request}
-                area={areaOf(request)}
+                area={areaName(request.otherAreaId)}
                 tone={i}
               />
             ))}
@@ -110,8 +103,10 @@ export function RequestList() {
               <ListRow
                 key={request.connectionId}
                 title={request.otherName}
-                subtitle={areaOf(request)}
-                left={<Avatar name={request.otherName} tone={i + 2} />}
+                subtitle={areaName(request.otherAreaId)}
+                left={
+                  <Avatar name={request.otherName} tone={sentToneStart + i} />
+                }
                 right={<Tag label="Pending" />}
               />
             ))}
@@ -119,13 +114,16 @@ export function RequestList() {
               <ListRow
                 key={request.id}
                 title={request.activityTitle}
-                subtitle={`Join request, hosted by ${request.otherName}`}
+                subtitle={`Join Request, hosted by ${request.otherName}`}
                 left={
-                  <Avatar name={request.otherName} tone={sent.length + i + 2} />
+                  <Avatar
+                    name={request.otherName}
+                    tone={sentToneStart + sent.length + i}
+                  />
                 }
-                right={<Tag label="Pending" />}
+                right={<Tag label="Waiting" />}
                 onPress={() => openActivity(request.activityId)}
-                accessibilityLabel={`${request.activityTitle}, join request to ${request.otherName}, pending`}
+                accessibilityLabel={`${request.activityTitle}, Join Request to ${request.otherName}, waiting`}
               />
             ))}
           </List>
@@ -157,56 +155,20 @@ function RequestCard({
       }
     },
   });
-  const busy = answer.isPending;
 
   return (
-    <Card style={styles.card}>
-      <View style={styles.who}>
-        <Avatar name={otherName} tone={tone} />
-        <View style={styles.grow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {otherName}
-          </Text>
-          {area ? (
-            <Text variant="bodySmall" color={colors.secondary}>
-              {area}
-            </Text>
-          ) : null}
-        </View>
-        <Tag label={modeLabels[request.mode]} tone={request.mode} />
-      </View>
+    <AnswerCard
+      name={otherName}
+      detail={area}
+      tone={tone}
+      tag={<Tag label={modeLabels[request.mode]} tone={request.mode} />}
+      error={answer.error?.message}
+      answering={answer.isPending ? answer.variables : undefined}
+      onAnswer={accept => answer.mutate(accept)}
+      answerLabel={verb => `${verb} ${otherName}`}
+    >
       {request.note ? <Text>{request.note}</Text> : null}
-      {answer.error ? (
-        <Text
-          variant="bodySmall"
-          color={colors.danger}
-          accessibilityLiveRegion="polite"
-        >
-          {answer.error.message}
-        </Text>
-      ) : null}
-      <View style={styles.actions}>
-        <Button
-          label="Accept"
-          accessibilityLabel={`Accept ${otherName}`}
-          compact
-          loading={busy && answer.variables === true}
-          disabled={busy}
-          onPress={() => answer.mutate(true)}
-          style={styles.grow}
-        />
-        <Button
-          label="Decline"
-          accessibilityLabel={`Decline ${otherName}`}
-          variant="secondary"
-          compact
-          loading={busy && answer.variables === false}
-          disabled={busy}
-          onPress={() => answer.mutate(false)}
-          style={styles.grow}
-        />
-      </View>
-    </Card>
+    </AnswerCard>
   );
 }
 
@@ -214,9 +176,4 @@ const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   cards: { gap: layout.blockGap },
   heading: { fontFamily: fontFamily(fonts.text, '600') },
-  card: { gap: spacing.sm },
-  who: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  grow: { flex: 1, minWidth: 0 },
-  name: { fontFamily: fontFamily(fonts.text, '600') },
-  actions: { flexDirection: 'row', gap: spacing.xs },
 });

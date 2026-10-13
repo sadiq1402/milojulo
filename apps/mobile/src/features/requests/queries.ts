@@ -1,8 +1,7 @@
 import { useMyJoinRequests } from '../activities/queries';
 import { useConversations } from '../chat/queries';
 
-// Connection Requests are the caller's Connections still in the Requested state; Join Requests
-// come from their own list, pending ones only.
+// Connection Requests come from the chat list, Join Requests from their own.
 export function useRequests() {
   const conversations = useConversations();
   const joinRequests = useMyJoinRequests();

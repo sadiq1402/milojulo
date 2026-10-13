@@ -8,6 +8,7 @@ import {
   BottomSheet,
   Button,
   Card,
+  ErrorText,
   Icon,
   type IconName,
   List,
@@ -33,7 +34,7 @@ import {
   useWithdrawJoinRequest,
 } from '../../features/activities/queries';
 import { formatWhen } from '../../features/activities/time';
-import { useAreaNames } from '../../features/catalog/queries';
+import { useAreaName, useAreaNames } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
 import {
@@ -56,7 +57,7 @@ const statusNotes: Record<Exclude<ActivityStatus, 'open'>, string> = {
   removed: 'This Activity was taken down by MiloJulo.',
 };
 
-// One Join Request per Activity, so an answered or withdrawn one ends the asking.
+// No asking again after these: one Join Request per Activity.
 const closedRequestNotes: Record<
   Exclude<JoinRequestStatus, 'requested' | 'accepted'>,
   string
@@ -73,9 +74,9 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const data = activity.data;
   const hostCanAct = data?.isMine && data.status === 'open';
-  // The chat reads its Connection from the chat list, so ask for a fresh one on the way.
-  const openChat = (connectionId: string) => {
-    client.invalidateQueries({ queryKey: chatKeys.conversations });
+  // The chat reads its Connection from the chat list, so refresh that first.
+  const openChat = async (connectionId: string) => {
+    await client.invalidateQueries({ queryKey: chatKeys.conversations });
     navigation.navigate('Chat', { connectionId });
   };
 
@@ -249,8 +250,14 @@ function Fact({
   );
 }
 
-// The host's side: requests waiting for an answer, then who is going. Accepting here keeps the
-// host on the Activity (several may be waiting); the joiner moves to Going with Open chat.
+// The phone's clock only decides what to offer; the database checks the start itself.
+function beforeStart(activity: Activity): boolean {
+  return (
+    activity.status === 'open' && Date.parse(activity.startsAt) > Date.now()
+  );
+}
+
+// Accepting here keeps the host on the Activity, as several may be waiting (decision 26).
 function HostJoinRequests({
   activity,
   onOpenChat,
@@ -258,10 +265,8 @@ function HostJoinRequests({
   activity: Activity;
   onOpenChat: (connectionId: string) => void;
 }) {
-  const requests = useJoinRequests(activity.id, true);
-  const areas = useAreaNames();
-  const areaOf = (areaId: string | null) =>
-    (areaId && areas.data?.[areaId]) || undefined;
+  const requests = useJoinRequests(activity.id);
+  const areaName = useAreaName();
 
   if (requests.isError) {
     return (
@@ -281,14 +286,14 @@ function HostJoinRequests({
   }
   const waiting = requests.data.filter(r => r.status === 'requested');
   const going = requests.data.filter(r => r.status === 'accepted');
-  const open = activity.status === 'open';
+  const canAnswer = beforeStart(activity);
 
   return (
     <>
-      {open || waiting.length > 0 ? (
+      {activity.status === 'open' || waiting.length > 0 ? (
         <View style={styles.section} testID="join-requests">
           <Text variant="bodySmall" style={styles.heading}>
-            Join requests
+            Join Requests
           </Text>
           {waiting.length === 0 ? (
             <Text color={colors.secondary}>
@@ -300,8 +305,9 @@ function HostJoinRequests({
                 key={request.id}
                 requestId={request.id}
                 name={request.requesterName}
-                detail={areaOf(request.requesterAreaId)}
+                detail={areaName(request.requesterAreaId)}
                 tone={i}
+                canAnswer={canAnswer}
               />
             ))
           )}
@@ -315,25 +321,29 @@ function HostJoinRequests({
           <Text color={colors.secondary}>No one has joined yet.</Text>
         ) : (
           <List>
-            {going.map((joiner, i) => (
-              <ListRow
-                key={joiner.id}
-                title={joiner.requesterName}
-                subtitle={areaOf(joiner.requesterAreaId)}
-                left={<Avatar name={joiner.requesterName} tone={i + 2} />}
-                right={
-                  joiner.connectionId ? (
-                    <Button
-                      label="Open chat"
-                      accessibilityLabel={`Open chat with ${joiner.requesterName}`}
-                      variant="secondary"
-                      compact
-                      onPress={() => onOpenChat(joiner.connectionId!)}
-                    />
-                  ) : undefined
-                }
-              />
-            ))}
+            {going.map(
+              ({ id, requesterName, requesterAreaId, connectionId }, i) => (
+                <ListRow
+                  key={id}
+                  title={requesterName}
+                  subtitle={areaName(requesterAreaId)}
+                  left={
+                    <Avatar name={requesterName} tone={waiting.length + i} />
+                  }
+                  right={
+                    connectionId ? (
+                      <Button
+                        label="Open chat"
+                        accessibilityLabel={`Open chat with ${requesterName}`}
+                        variant="secondary"
+                        compact
+                        onPress={() => onOpenChat(connectionId)}
+                      />
+                    ) : undefined
+                  }
+                />
+              ),
+            )}
           </List>
         )}
       </View>
@@ -352,17 +362,15 @@ function JoinActions({
   const ask = useAskToJoin(activity.id);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const request = activity.myRequest;
-  const open = activity.status === 'open';
-  // The phone's clock only decides what to offer; the database checks the start itself.
-  const started = Date.parse(activity.startsAt) <= Date.now();
-  const canChange = open && !started;
+  const { connectionId, hostName } = activity;
+  const canChange = beforeStart(activity);
 
   let content: React.ReactNode;
   if (!request) {
-    if (!open) {
+    if (activity.status !== 'open') {
       return null;
     }
-    content = started ? (
+    content = !canChange ? (
       <Note text="This Activity has already started." />
     ) : activity.spotsLeft <= 0 ? (
       <Note text="No spots left. This Activity is full." />
@@ -377,7 +385,7 @@ function JoinActions({
       </>
     );
   } else if (request.status === 'requested') {
-    content = (
+    content = canChange ? (
       <>
         <View style={styles.state}>
           <Tag label="Requested" tone="match" />
@@ -386,17 +394,19 @@ function JoinActions({
             color={colors.secondary}
             style={styles.grow}
           >
-            Waiting for {activity.hostName} to answer.
+            Waiting for {hostName} to answer.
           </Text>
         </View>
-        {canChange ? (
-          <Button
-            label="Cancel request"
-            variant="secondary"
-            onPress={() => setWithdrawOpen(true)}
-          />
-        ) : null}
+        <Button
+          label="Cancel request"
+          variant="secondary"
+          onPress={() => setWithdrawOpen(true)}
+        />
       </>
+    ) : (
+      <Note
+        text={`${hostName} didn't answer your Join Request before the start.`}
+      />
     );
   } else if (request.status === 'accepted') {
     content = (
@@ -408,16 +418,18 @@ function JoinActions({
             color={colors.secondary}
             style={styles.grow}
           >
-            {activity.hostName} accepted you.
+            {hostName} accepted you.
           </Text>
         </View>
-        {activity.connectionId ? (
+        {connectionId ? (
           <Button
             label="Open chat"
-            accessibilityLabel={`Open chat with ${activity.hostName}`}
-            onPress={() => onOpenChat(activity.connectionId!)}
+            accessibilityLabel={`Open chat with ${hostName}`}
+            onPress={() => onOpenChat(connectionId)}
           />
-        ) : null}
+        ) : (
+          <Note text={`Your chat with ${hostName} was closed.`} />
+        )}
         {canChange ? (
           <Button
             label="Withdraw"
@@ -439,7 +451,7 @@ function JoinActions({
           visible={withdrawOpen}
           requestId={request.id}
           accepted={request.status === 'accepted'}
-          hostName={activity.hostName}
+          hostName={hostName}
           onClose={() => setWithdrawOpen(false)}
         />
       ) : null}
@@ -459,19 +471,7 @@ function Note({ text }: { text: string }) {
   );
 }
 
-function ErrorText({ text }: { text: string }) {
-  return (
-    <Text
-      variant="bodySmall"
-      color={colors.danger}
-      accessibilityLiveRegion="polite"
-    >
-      {text}
-    </Text>
-  );
-}
-
-// Cancelling a pending request and withdrawing an accepted one both end the asking for good.
+// Cancel and Withdraw are both final: one Join Request per Activity.
 function WithdrawSheet({
   visible,
   requestId,
