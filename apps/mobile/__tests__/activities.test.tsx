@@ -25,9 +25,32 @@ jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
 
+// Only the clock is frozen (a Wednesday, 10:00 in India), so "today at 23:00" is always still ahead;
+// real timers keep React Query and the screens running as usual.
+jest.useFakeTimers({
+  now: new Date('2026-10-14T04:30:00Z'),
+  doNotFake: [
+    'hrtime',
+    'nextTick',
+    'performance',
+    'queueMicrotask',
+    'requestAnimationFrame',
+    'cancelAnimationFrame',
+    'requestIdleCallback',
+    'cancelIdleCallback',
+    'setImmediate',
+    'clearImmediate',
+    'setInterval',
+    'clearInterval',
+    'setTimeout',
+    'clearTimeout',
+  ],
+});
+afterAll(() => jest.useRealTimers());
+
 const me = sessionFor('asha@example.com');
 
-// Times well in the future, so labels are stable; the board's grouping comes from starts_when.
+// Times ahead of the frozen clock; the board's grouping comes from starts_when.
 const inDays = (days: number, hourIndia: number) =>
   indiaInstant(addDays(indiaParts(new Date()).dateKey, days), hourIndia * 60);
 
