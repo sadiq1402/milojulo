@@ -13,6 +13,7 @@ export { List, ListRow } from './ListRow';
 export { PhotoPlaceholder } from './PhotoPlaceholder';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
+export { Stepper } from './Stepper';
 export { TabBar, type TabItem } from './TabBar';
 export { Tag, type TagTone } from './Tag';
 export { Text } from './Text';

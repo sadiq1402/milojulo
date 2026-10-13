@@ -53,6 +53,7 @@ Visual size at least 40; hit area at least 48 x 48 (iOS minimum is 44, Android 4
 | Composer | Input 48 high, radius 24; buttons 48 x 48; padding 10 12, bottom 10 + 34 inset |
 | Unread dot | 10, orchid |
 | Tab badge | 20 min (pill), padding 0 4, orchid with white 12/16 caption, on the icon pill's top-right corner |
+| Stepper | − value +: 48 x 48 round buttons with a 1 field-colour border and 20 icons, value 17/24 centred between them, 8 gaps; label 14/20 semibold 6 above |
 
 ## Web admin
 8-point grid, sidebar 232 wide, table rows 48 to 56, same colour and type tokens.

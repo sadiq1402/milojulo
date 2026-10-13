@@ -1,0 +1,127 @@
+import type { Database } from '../../lib/database.types';
+
+// What the Activity screens share; kept apart from api.ts so tests can mock the calls alone.
+export type ActivityType = Database['public']['Enums']['activity_type'];
+export type ActivityStatus = Database['public']['Enums']['activity_status'];
+// Bucketed by the database in India time (an Activity still running counts as tonight); the
+// phone never works it out.
+export type StartsWhen = 'tonight' | 'this_weekend' | 'later';
+
+export const activityTypes: ActivityType[] = [
+  'sports',
+  'food_chai',
+  'outdoors',
+  'games',
+  'learning',
+];
+
+export const activityTypeLabels: Record<ActivityType, string> = {
+  sports: 'Sports',
+  food_chai: 'Food & chai',
+  outdoors: 'Outdoors',
+  games: 'Games',
+  learning: 'Learning',
+};
+
+export const startsWhenLabels: Record<StartsWhen, string> = {
+  tonight: 'Tonight',
+  this_weekend: 'This weekend',
+  later: 'Later',
+};
+
+export const titleMaxLength = 60;
+export const descriptionMaxLength = 300;
+export const venueMaxLength = 200;
+export const minSpots = 1;
+export const maxSpots = 20;
+
+export type BoardActivity = {
+  id: string;
+  hostId: string;
+  hostName: string;
+  title: string;
+  type: ActivityType;
+  areaId: string;
+  startsAt: string;
+  endsAt: string | null;
+  capacity: number;
+  spotsLeft: number;
+  description: string | null;
+  startsWhen: StartsWhen;
+  isMine: boolean;
+};
+
+export type Activity = BoardActivity & {
+  status: ActivityStatus;
+  // Only the host (and, with #14, accepted joiners) get it.
+  venueDetail: string | null;
+  // Someone has joined: only the description and a higher number of Spots can change.
+  isLocked: boolean;
+};
+
+export type ActivityFields = {
+  title: string;
+  type: ActivityType;
+  areaId: string;
+  startsAt: string;
+  endsAt: string | null;
+  capacity: number;
+  description: string;
+  venueDetail: string;
+};
+
+// Leave a field out to keep it; an empty description or venue clears it.
+export type ActivityChanges = Partial<Omit<ActivityFields, 'type'>>;
+
+export type ActivityField =
+  | 'title'
+  | 'type'
+  | 'areaId'
+  | 'startsAt'
+  | 'endsAt'
+  | 'capacity'
+  | 'description'
+  | 'venueDetail';
+
+// A refusal the form can show under the field it's about; with no field, above the button.
+export class ActivityError extends Error {
+  constructor(message: string, readonly field?: ActivityField) {
+    super(message);
+  }
+}
+
+export type BoardSection = { when: StartsWhen; activities: BoardActivity[] };
+
+// Tonight, This weekend, Later, soonest first; empty groups left out.
+export function groupBoard(activities: BoardActivity[]): BoardSection[] {
+  const order: StartsWhen[] = ['tonight', 'this_weekend', 'later'];
+  return order
+    .map(when => ({
+      when,
+      activities: activities
+        .filter(a => a.startsWhen === when)
+        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
+    }))
+    .filter(section => section.activities.length > 0);
+}
+
+export function spotsLeftLabel(spotsLeft: number): string {
+  if (spotsLeft <= 0) {
+    return 'Full';
+  }
+  return spotsLeft === 1 ? '1 spot left' : `${spotsLeft} spots left`;
+}
+
+// Field errors the form finds itself, worded like the database's refusals.
+export const fieldMessages = {
+  title: 'Give your Activity a title.',
+  type: 'Pick a type.',
+  areaId: 'Pick an Area.',
+  startsAt: 'Pick a start time that is still to come.',
+  endsAt: 'The end has to be after the start.',
+  capacity: `Spots must be between ${minSpots} and ${maxSpots}.`,
+} as const;
+
+export function hostLine(activity: Pick<BoardActivity, 'isMine' | 'hostName'>) {
+  return activity.isMine ? 'Hosted by you' : `Hosted by ${activity.hostName}`;
+}

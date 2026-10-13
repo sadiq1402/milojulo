@@ -6,6 +6,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { TabBar, type TabItem } from '../components';
 import { useRequests } from '../features/requests/queries';
+import { ActivitiesScreen } from '../screens/activities/ActivitiesScreen';
+import { ActivityDetailScreen } from '../screens/activities/ActivityDetailScreen';
+import { CreateActivityScreen } from '../screens/activities/CreateActivityScreen';
+import { EditActivityScreen } from '../screens/activities/EditActivityScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
@@ -40,7 +44,6 @@ function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
   );
 }
 
-const ActivitiesScreen = () => <PlaceholderScreen title="Activities" />;
 const CirclesScreen = () => <PlaceholderScreen title="Circles" />;
 const MeScreen = () => <PlaceholderScreen title="Me" canSignOut />;
 // Until the Safety Centre ticket (#43).
@@ -72,6 +75,9 @@ export function MemberNavigator() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="SafetyCentre" component={SafetyCentreScreen} />
+      <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <Stack.Screen name="EditActivity" component={EditActivityScreen} />
     </Stack.Navigator>
   );
 }
