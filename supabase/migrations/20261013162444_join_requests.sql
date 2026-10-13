@@ -74,8 +74,28 @@ as $$
   order by ph.position limit 1;
 $$;
 
-revoke execute on function public.accepted_connection_id(uuid, uuid), public.cover_photo_id(uuid)
-  from public, anon, authenticated;
+-- The pair's requested or accepted Connection, if any.
+create function public.active_connection_id(a uuid, b uuid) returns uuid
+language sql stable
+set search_path = ''
+as $$
+  select c.id from public.connections c
+  where least(c.requester_id, c.addressee_id) = least(a, b)
+    and greatest(c.requester_id, c.addressee_id) = greatest(a, b)
+    and c.status in ('requested', 'accepted');
+$$;
+
+-- Not banned, deleted or Auto-hidden.
+create function public.is_reachable(member_id uuid) returns boolean
+language sql stable
+set search_path = ''
+as $$
+  select exists (select 1 from public.profiles p
+                 where p.id = member_id and p.status <> 'banned' and p.deleted_at is null and p.hidden_at is null);
+$$;
+
+revoke execute on function public.accepted_connection_id(uuid, uuid), public.active_connection_id(uuid, uuid),
+  public.cover_photo_id(uuid), public.is_reachable(uuid) from public, anon, authenticated;
 
 create function public.join_activity_request(activity_id uuid) returns uuid
 language plpgsql security definer
@@ -123,8 +143,7 @@ $$;
 
 revoke execute on function public.join_activity_request(uuid) from public, anon;
 
--- The host answers a waiting request before the start. Accepting returns the Activity Connection:
--- the pair's accepted Connection as it is, their waiting Connection Request accepted, or a new one.
+-- Host only; accepting returns the pair's Connection (accepted as it stands) or a new Activity Connection.
 create function public.respond_activity_request(request_id uuid, accept boolean) returns uuid
 language plpgsql security definer
 set search_path = ''
@@ -144,7 +163,7 @@ begin
     select * into req from public.activity_requests r where r.id = respond_activity_request.request_id for update;
   end if;
   if act.id is null or req.status is distinct from 'requested' or act.status <> 'open' or act.starts_at <= now()
-     or public.is_blocked(me, req.requester_id) then
+     or public.is_blocked(me, req.requester_id) or not public.is_reachable(req.requester_id) then
     raise exception 'no join request to answer';
   end if;
 
@@ -159,9 +178,7 @@ begin
   update public.activity_requests set status = 'accepted', responded_at = now() where id = req.id;
 
   select * into conn from public.connections c
-  where least(c.requester_id, c.addressee_id) = least(me, req.requester_id)
-    and greatest(c.requester_id, c.addressee_id) = greatest(me, req.requester_id)
-    and c.status in ('requested', 'accepted')
+  where c.id = public.active_connection_id(me, req.requester_id)
   for update;
   if not found then
     insert into public.connections (requester_id, addressee_id, mode, activity_id, status, responded_at)
@@ -176,8 +193,7 @@ $$;
 
 revoke execute on function public.respond_activity_request(uuid, boolean) from public, anon;
 
--- The requester gives up before the start: a waiting request is cancelled, an accepted one withdrawn.
--- The Activity Connection stays.
+-- Requester only, before the start: waiting → cancelled, accepted → withdrawn; the Connection stays.
 create function public.withdraw_activity_request(request_id uuid) returns void
 language plpgsql security definer
 set search_path = ''
@@ -198,8 +214,7 @@ $$;
 
 revoke execute on function public.withdraw_activity_request(uuid) from public, anon;
 
--- One Activity for the caller: as on the board, except that the host always reads their own and an
--- accepted joiner keeps it (even while Paused or after an Auto-hide) until it ends. Both read the venue.
+-- As on the board, plus the host's own and an accepted joiner's until it ends; only they get the venue.
 drop function public.get_activity(uuid);
 create function public.get_activity(activity_id uuid) returns table (
   id uuid,
@@ -243,8 +258,7 @@ $$;
 
 revoke execute on function public.get_activity(uuid) from public, anon;
 
--- The host's waiting and accepted Join Requests, oldest first, without blocked (either way), banned,
--- deleted or Auto-hidden requesters. Empty for anyone else.
+-- Host only: waiting and accepted Join Requests from requesters still reachable, oldest first.
 create function public.activity_join_requests(activity_id uuid) returns table (
   request_id uuid,
   requester_id uuid,
@@ -266,15 +280,14 @@ as $$
   where r.activity_id = activity_join_requests.activity_id
     and a.host_id = auth.uid()
     and r.status in ('requested', 'accepted')
-    and p.status <> 'banned' and p.deleted_at is null and p.hidden_at is null
+    and public.is_reachable(p.id)
     and not public.is_blocked(a.host_id, p.id)
   order by r.created_at, r.id;
 $$;
 
 revoke execute on function public.activity_join_requests(uuid) from public, anon;
 
--- Waiting Join Requests on open Activities not yet started: to my Activities (incoming) and mine
--- (outgoing), with the same exclusions for the other side, newest first.
+-- Waiting Join Requests on open, unstarted Activities, both ways, newest first.
 create function public.my_join_requests() returns table (
   request_id uuid,
   activity_id uuid,
@@ -301,16 +314,14 @@ as $$
   where auth.uid() in (r.requester_id, a.host_id)
     and r.status = 'requested'
     and a.status = 'open' and a.starts_at > now()
-    and o.status <> 'banned' and o.deleted_at is null and o.hidden_at is null
+    and public.is_reachable(o.id)
     and not public.is_blocked(auth.uid(), o.id)
   order by r.created_at desc, r.id desc;
 $$;
 
 revoke execute on function public.my_join_requests() from public, anon;
 
--- The host changes their open Activity. Null keeps a field; an empty description or venue clears it.
--- Once anyone is accepted (Locked Activity) only the description and a higher number of spots change,
--- which is also how spots never drop below accepted joiners.
+-- Null keeps a field, empty clears description or venue; Locked allows only description and more spots.
 create or replace function public.update_activity(
   activity_id uuid,
   title varchar default null,
@@ -354,7 +365,7 @@ begin
           or new_area <> old.area_id or new_venue is distinct from old_venue or new_capacity < old.capacity) then
     raise exception 'this activity is locked: only its description and a higher number of spots can change';
   end if;
-  perform public.check_activity(coalesce(update_activity.title, old.title), new_start, new_end, new_capacity,
+  perform public.check_activity(new_title, new_start, new_end, new_capacity,
                                 new_start <> old.starts_at);
 
   update public.activities a
@@ -376,8 +387,7 @@ begin
 end;
 $$;
 
--- A Block also closes the pair's pending or accepted Connection and cancels or withdraws Join Requests
--- between them, either way round.
+-- A Block also closes the pair's Connection and cancels or withdraws Join Requests between them.
 create or replace function public.block_user(member_id uuid) returns void
 language sql security definer
 set search_path = ''

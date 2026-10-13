@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(64);
+select plan(65);
 
 -- d1 hosts; d2 browses. Both hold only Friends.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000d1');
@@ -292,6 +292,9 @@ select pg_temp.change(venue => 'Gate 4');
 select results_eq('select venue_detail from pg_temp.details()', $$ values ('Gate 4'::varchar) $$,
   'the host adds a venue later');
 
+select pg_temp.change(title => '  Night trek  ');
+select results_eq('select title from pg_temp.details()', $$ values ('Night trek'::varchar) $$,
+  'a changed title is stored trimmed');
 select throws_ok($$ select pg_temp.change(title => ' ') $$, 'P0001', 'an activity needs a title',
   'a change to a blank title is refused');
 select throws_ok($$ select pg_temp.change(starts => now() - interval '1 hour') $$, 'P0001',

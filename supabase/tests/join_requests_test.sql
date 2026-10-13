@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(106);
+select plan(115);
 
 -- e1 hosts; the others join. All hold only Friends.
 create function pg_temp.m(suffix text) returns uuid
@@ -513,6 +513,35 @@ select pg_temp.act_as_anon();
 select throws_ok('select * from public.my_join_requests()', '42501', null,
   'a signed-out visitor cannot list Join Requests');
 
+-- The host cannot answer a banned, deleted or Auto-hidden requester (ea, eb, ec above).
+select pg_temp.as_member('e1');
+select throws_ok($$ select public.respond_activity_request(pg_temp.id('ea brunch'), true) $$, 'P0001',
+  'no join request to answer', 'the host cannot answer a banned requester');
+select throws_ok($$ select public.respond_activity_request(pg_temp.id('eb brunch'), true) $$, 'P0001',
+  'no join request to answer', 'the host cannot answer a deleted requester');
+select throws_ok($$ select public.respond_activity_request(pg_temp.id('ec brunch'), true) $$, 'P0001',
+  'no join request to answer', 'the host cannot answer an Auto-hidden requester');
+reset role;
+update public.profiles set hidden_at = null where id = pg_temp.m('ec');
+select pg_temp.as_member('e1');
+select lives_ok($$ select public.respond_activity_request(pg_temp.id('ec brunch'), true) $$,
+  'the host answers a requester restored by an admin');
+
+-- The host's own waiting Connection Request to the joiner is accepted as it stands.
+reset role;
+select pg_temp.seed('tea', 'e1');
+select pg_temp.as_member('e1');
+select pg_temp.keep('e1 to e8', public.send_request(pg_temp.m('e8'), 'friends', 'Chai?'));
+reset role;
+select pg_temp.join_as('e8', 'tea');
+select pg_temp.as_member('e1');
+select results_eq($$ select public.respond_activity_request(pg_temp.id('e8 tea'), true) $$,
+  $$ values (pg_temp.id('e1 to e8')) $$, 'accepting a Join Request accepts the host''s waiting Connection Request');
+select pg_temp.as_member('e8');
+select results_eq($$ select requester_id, mode, note, status from public.connections where id = pg_temp.id('e1 to e8') $$,
+  $$ values (pg_temp.m('e1'), 'friends'::public.mode, 'Chai?'::varchar, 'accepted'::public.connection_status) $$,
+  'the host''s Connection Request keeps its sender, Mode and note');
+
 -- A Block cancels waiting and withdraws accepted Join Requests between the pair, either way round.
 reset role;
 delete from public.blocks;
@@ -536,6 +565,13 @@ select results_eq($$ select pg_temp.request_status('e3 picnic') $$, $$ values ('
   'the host blocking a requester cancels their waiting Join Request');
 select results_eq($$ select pg_temp.request_status('e4 picnic') $$, $$ values ('accepted'::public.request_status) $$,
   'a Block leaves other Members'' Join Requests alone');
+select results_eq($$ select spots_left from public.get_activity(pg_temp.id('picnic')) $$, $$ values (4) $$,
+  'the picnic has one accepted joiner left');
+select public.block_user(pg_temp.m('e4'));
+select results_eq($$ select status, withdrawn_at is not null from public.activity_requests where id = pg_temp.id('e4 picnic') $$,
+  $$ values ('withdrawn'::public.request_status, true) $$, 'the host blocking an accepted joiner withdraws their Join Request');
+select results_eq($$ select spots_left from public.get_activity(pg_temp.id('picnic')) $$, $$ values (5) $$,
+  'the blocked joiner''s spot is freed');
 
 select * from finish();
 rollback;

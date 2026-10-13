@@ -489,6 +489,9 @@ isOneToOne: false
 "accepted_connection_id":
 { Args: { "a": string,"b": string }; Returns: string
                            },
+"active_connection_id":
+{ Args: { "a": string,"b": string }; Returns: string
+                           },
 "activity_board":
 { Args: Record<PropertyKey, never>; Returns: {
               "area_id": string,"capacity": number,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
@@ -576,6 +579,9 @@ isOneToOne: false
                            },
 "is_blocked":
 { Args: { "a": string,"b": string }; Returns: boolean
+                           },
+"is_reachable":
+{ Args: { "member_id": string }; Returns: boolean
                            },
 "is_visible":
 { Args: { "member_id": string }; Returns: boolean
