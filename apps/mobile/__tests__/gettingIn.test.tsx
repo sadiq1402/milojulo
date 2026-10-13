@@ -2,17 +2,11 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as auth from '../src/features/auth/api';
 import * as consents from '../src/features/consents/api';
-import * as invite from '../src/features/invite/api';
-import {
-  loadPendingInvite,
-  savePendingInvite,
-} from '../src/features/invite/pendingCode';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/consents/api');
-jest.mock('../src/features/invite/api');
 
 const documents = {
   terms: { id: 't1', url: null },
@@ -21,70 +15,31 @@ const documents = {
 };
 
 describe('welcome', () => {
-  test('pitches MiloJulo without promising that a person reviews profiles', async () => {
+  test('pitches MiloJulo as open, without promising that a person reviews profiles', async () => {
     await renderApp(null);
     expect(
       await screen.findByText(
         'Meet people in Pune who want the same kind of hangout.',
       ),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByText('Invite-only while we test in Pune.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('Now open in Pune.')).toBeOnTheScreen();
+    expect(screen.queryByText(/invite/i)).not.toBeOnTheScreen();
     expect(screen.queryByText(/reviewed by a person/)).not.toBeOnTheScreen();
   });
 
-  test('a returning Member can go straight to email sign-in', async () => {
+  test('one way in, for new and returning people alike', async () => {
     await renderApp(null);
-    await fireEvent.press(
-      await screen.findByRole('button', { name: 'I already have an account' }),
-    );
+    expect(await screen.findAllByRole('button')).toHaveLength(1);
+    await fireEvent.press(screen.getByRole('button', { name: 'Get started' }));
     expect(
       await screen.findByRole('header', { name: "What's your email?" }),
     ).toBeOnTheScreen();
   });
 });
 
-describe('invite code before sign-in', () => {
-  async function openInviteScreen() {
-    await renderApp(null);
-    await fireEvent.press(
-      await screen.findByRole('button', { name: 'I have an invite code' }),
-    );
-    return screen.findByLabelText('Invite code');
-  }
-
-  test('a code that does not work says so and stays put', async () => {
-    jest.mocked(invite.checkInvite).mockResolvedValue(false);
-    await fireEvent.changeText(await openInviteScreen(), 'NOPE');
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-    expect(
-      await screen.findByText(invite.invalidInviteMessage),
-    ).toBeOnTheScreen();
-    expect(
-      screen.getByRole('header', { name: 'Enter your invite code' }),
-    ).toBeOnTheScreen();
-  });
-
-  test('"I don\'t have a code" explains the invite-only beta', async () => {
-    await openInviteScreen();
-    await fireEvent.press(
-      screen.getByRole('button', { name: "I don't have a code" }),
-    );
-    expect(
-      await screen.findByText(/invite-only while we test in Pune/),
-    ).toBeOnTheScreen();
-  });
-});
-
-test('a new person checks a code, signs in by email and has it redeemed, then gives age and consent', async () => {
-  jest.mocked(invite.checkInvite).mockResolvedValue(true);
+test('a new person signs in by email, then gives age and consent', async () => {
   jest.mocked(auth.sendCode).mockResolvedValue();
-  jest.mocked(invite.redeemInvite).mockResolvedValue();
-  jest
-    .mocked(account.fetchAccountStage)
-    .mockResolvedValueOnce('invite')
-    .mockResolvedValue('consent');
+  jest.mocked(account.fetchAccountStage).mockResolvedValue('consent');
   jest.mocked(consents.fetchConsentDocuments).mockResolvedValue(documents);
   const { setSession } = await renderApp(null);
   jest
@@ -92,13 +47,8 @@ test('a new person checks a code, signs in by email and has it redeemed, then gi
     .mockImplementation(async (email: string) => setSession(sessionFor(email)));
 
   await fireEvent.press(
-    await screen.findByRole('button', { name: 'I have an invite code' }),
+    await screen.findByRole('button', { name: 'Get started' }),
   );
-  await fireEvent.changeText(
-    await screen.findByLabelText('Invite code'),
-    ' PUNE-EVENT ',
-  );
-  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await fireEvent.changeText(
     await screen.findByLabelText('Email address'),
     'asha@example.com',
@@ -115,10 +65,7 @@ test('a new person checks a code, signs in by email and has it redeemed, then gi
   expect(
     await screen.findByRole('header', { name: 'Before we start' }),
   ).toBeOnTheScreen();
-  expect(invite.checkInvite).toHaveBeenCalledWith('PUNE-EVENT');
   expect(auth.verifyCode).toHaveBeenCalledWith('asha@example.com', '123456');
-  expect(invite.redeemInvite).toHaveBeenCalledWith('PUNE-EVENT');
-  expect(await loadPendingInvite()).toBeNull();
 });
 
 describe('6-digit code', () => {
@@ -126,7 +73,7 @@ describe('6-digit code', () => {
     jest.mocked(auth.sendCode).mockResolvedValue();
     await renderApp(null);
     await fireEvent.press(
-      await screen.findByRole('button', { name: 'I already have an account' }),
+      await screen.findByRole('button', { name: 'Get started' }),
     );
     await fireEvent.changeText(
       await screen.findByLabelText('Email address'),
@@ -175,59 +122,6 @@ describe('6-digit code', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Verify' }));
     expect(
       await screen.findByText('That code is wrong or has expired.'),
-    ).toBeOnTheScreen();
-  });
-});
-
-describe('signed in without a redeemed invite', () => {
-  test('a code kept from before sign-in is redeemed straight away', async () => {
-    await savePendingInvite('PUNE-EVENT');
-    jest.mocked(invite.redeemInvite).mockResolvedValue();
-    jest
-      .mocked(account.fetchAccountStage)
-      .mockResolvedValueOnce('invite')
-      .mockResolvedValue('consent');
-    jest.mocked(consents.fetchConsentDocuments).mockResolvedValue(documents);
-    await renderApp(sessionFor('asha@example.com'));
-    expect(
-      await screen.findByRole('header', { name: 'Before we start' }),
-    ).toBeOnTheScreen();
-    expect(invite.redeemInvite).toHaveBeenCalledWith('PUNE-EVENT');
-  });
-
-  test('without a kept code the Member is asked for one, which is redeemed', async () => {
-    jest.mocked(invite.redeemInvite).mockResolvedValue();
-    jest
-      .mocked(account.fetchAccountStage)
-      .mockResolvedValueOnce('invite')
-      .mockResolvedValue('consent');
-    jest.mocked(consents.fetchConsentDocuments).mockResolvedValue(documents);
-    await renderApp(sessionFor('asha@example.com'));
-    await fireEvent.changeText(
-      await screen.findByLabelText('Invite code'),
-      'PUNE-EVENT',
-    );
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-    expect(
-      await screen.findByRole('header', { name: 'Before we start' }),
-    ).toBeOnTheScreen();
-    expect(invite.redeemInvite).toHaveBeenCalledWith('PUNE-EVENT');
-    expect(invite.checkInvite).not.toHaveBeenCalled();
-  });
-
-  test('a refused code shows why and can be retyped', async () => {
-    jest
-      .mocked(invite.redeemInvite)
-      .mockRejectedValue(new Error(invite.invalidInviteMessage));
-    jest.mocked(account.fetchAccountStage).mockResolvedValue('invite');
-    await renderApp(sessionFor('asha@example.com'));
-    await fireEvent.changeText(
-      await screen.findByLabelText('Invite code'),
-      'OLD',
-    );
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-    expect(
-      await screen.findByText(invite.invalidInviteMessage),
     ).toBeOnTheScreen();
   });
 });
@@ -308,12 +202,10 @@ describe('date of birth and consents', () => {
   });
 });
 
-test('signing out from profile setup forgets everything and returns to welcome', async () => {
+test('signing out from profile setup returns to welcome', async () => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('profile');
   const { setSession } = await renderApp(sessionFor('asha@example.com'));
-  jest
-    .mocked(account.signOutCompletely)
-    .mockImplementation(async () => setSession(null));
+  jest.mocked(auth.signOut).mockImplementation(async () => setSession(null));
   await fireEvent.press(
     await screen.findByRole('button', { name: 'Sign out' }),
   );

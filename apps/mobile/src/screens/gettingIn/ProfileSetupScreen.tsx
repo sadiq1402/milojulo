@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, FlowScreen } from '../../components';
-import { signOutCompletely } from '../../features/account/api';
+import { signOut } from '../../features/auth/api';
 
 // Placeholder until the profile setup screens (#38).
 export function ProfileSetupScreen() {
@@ -12,7 +12,7 @@ export function ProfileSetupScreen() {
         <Button
           label="Sign out"
           variant="secondary"
-          onPress={() => signOutCompletely()}
+          onPress={() => signOut()}
         />
       }
     />

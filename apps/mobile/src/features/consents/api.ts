@@ -26,7 +26,6 @@ const friendly: Record<string, string> = {
   'members must be 18 or older': 'You need to be 18 or older to use MiloJulo.',
   'accept the current terms, guidelines and data notice':
     'Please accept the Terms, Community Guidelines and data notice to continue.',
-  'redeem an invite first': 'Enter your invite code first.',
 };
 
 // birthDate is YYYY-MM-DD; the database judges 18+ by the calendar date in India.
