@@ -436,3 +436,10 @@ user = "resend"
 pass = "env(SMTP_PASS)"
 admin_email = "no-reply@sadiq-ai.dev"
 sender_name = "MiloJulo"
+
+# Local values suit the mail catcher; the cloud needs real limits. 30 s matches the app's resend wait.
+[remotes.cloud.auth.rate_limit]
+email_sent = 30
+
+[remotes.cloud.auth.email]
+max_frequency = "30s"
