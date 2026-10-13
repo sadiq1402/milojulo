@@ -1,3 +1,23 @@
+# Join Requests (#14) ‖ Join screens (#47), in parallel
+
+Contract both sides build against (messages are the database's exact text; the app maps them to copy):
+
+- Table `activity_requests` (`id`, `activity_id`, `requester_id`, `status request_status`, `created_at`, `responded_at`, `withdrawn_at`; unique (activity_id, requester_id)); requester and host select under RLS, no direct writes. `connections.activity_id` (nullable, FK on delete set null). One Join Request per Member per Activity: a cancelled, withdrawn or declined one can't be asked again.
+- `join_activity_request(activity_id uuid) returns uuid` (the request id). Refusals, in this order: `unpause your profile to join activities`, `your profile is not visible`, `no activity to join` (not on the caller's board: unseen, blocked, cancelled, over), `you cannot join your own activity`, `this activity has already started`, `you already asked to join this activity`, `no spots left`, `you have sent 10 join requests in the last 24 hours` (Join Cap, every request created in a rolling 24 h counts, cancelled ones too).
+- `respond_activity_request(request_id uuid, accept boolean) returns uuid`: host only, request `requested`, Activity open and not started, pair not blocked; else `no join request to answer`. Accept refuses `no spots left` when full. Accept returns the Activity Connection id: the pair's accepted Connection (Mode unchanged), or their pending Connection Request accepted as it stands, or a new accepted Connection (`requester_id` joiner, `addressee_id` host, Mode `activities`, `activity_id` set). Decline returns null.
+- `withdraw_activity_request(request_id uuid) returns void`: requester only, before `starts_at`; `requested` → `cancelled`, `accepted` → `withdrawn` (`withdrawn_at`), the Activity Connection stays; else `no join request to withdraw`.
+- `get_activity` gains `my_request_id uuid`, `my_request_status request_status`, `connection_id uuid` (the caller's Connection with the host when their request is accepted; null otherwise). `venue_detail` goes to the host and accepted joiners. An accepted joiner keeps reading the Activity while it's open and not over.
+- `activity_join_requests(activity_id uuid)` (host only, else empty) returns `request_id, requester_id, requester_name, requester_photo_id, requester_area_id, status, created_at, connection_id`: requested and accepted ones, oldest first, without blocked (either way), banned, deleted or Auto-hidden requesters.
+- `my_join_requests()` returns `request_id, activity_id, activity_title, activity_starts_at, other_id, other_name, other_photo_id, direction connection_direction, created_at`: pending requests on open Activities not yet started, `incoming` (to my Activities; other = requester) and `outgoing` (mine; other = host), same exclusions, newest first.
+- `activity_spots_left` = capacity − accepted; `activity_is_locked` = any accepted. `update_activity` on a Locked Activity refuses time, end, Area or venue changes and lower Spots with `this activity is locked: only its description and a higher number of spots can change`.
+- `block_user` also cancels pending and withdraws accepted Join Requests between the pair, either way round.
+- App (#47): data functions in `src/features/activities/api.ts`: `askToJoin(activityId): Promise<string>`, `respondJoinRequest(requestId, accept): Promise<string | null>`, `withdrawJoinRequest(requestId): Promise<void>`, `fetchJoinRequests(activityId): Promise<JoinRequest[]>`, `fetchMyJoinRequests(): Promise<MyJoinRequest[]>`; `Activity` gains `myRequest: { id: string; status: JoinRequestStatus } | null` and `connectionId: string | null`. Until #14 merges the app hand-adds these to `database.types.ts`; regenerate after merging.
+- Shared local Supabase: never `db reset`; run integration tests through `flock /tmp/milojulo-integration.lock`.
+
+- [ ] #14 agent: migration, pgTAP tests (allow and deny per rule), docs/12 and CONTEXT where they change
+- [ ] #47 agent: detail screen (Ask to join, pending with Cancel, accepted with venue, Open chat and Withdraw, declined note; host's requests and joiners with Accept / Decline / Open chat), Inbox Requests tab section for join requests (incoming answerable, outgoing listed), badge counts incoming join requests too
+- [ ] Merge both, regenerate types, integration tests, full suites, review per ticket, one PR each
+
 # Requests (#41) ‖ Discover (#39), in parallel
 
 Contract both sides build against:
