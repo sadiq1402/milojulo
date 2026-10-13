@@ -1,9 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../src/lib/database.types';
 import { supabase as appClient } from '../../src/lib/supabase';
-import { admin, createInvite } from './admin';
+import { admin } from './admin';
 import { latestCodeFor } from './mailpit';
-import { uniqueCode } from './signIn';
 
 export type TestMember = {
   id: string;
@@ -43,9 +42,6 @@ export async function createMember(
   );
   const id = (await client.auth.getUser()).data.user!.id;
 
-  const code = uniqueCode('member');
-  await createInvite(code);
-  await check(client.rpc('redeem_invite', { invite_code: code }));
   const { data: docs } = await client.from('consent_documents').select('id');
   await check(
     client.rpc('accept_consents', {

@@ -7,13 +7,13 @@ const email = `signin-${Date.now()}@test.milojulo`;
 
 afterAll(() => signOut());
 
-test('an emailed code signs a new account in at the invite step', async () => {
+test('an emailed code signs a new account in at the consent step', async () => {
   await sendCode(email);
   await verifyCode(email, await latestCodeFor(email));
 
   const { data } = await supabase.auth.getUser();
   expect(data.user?.email).toBe(email);
-  expect(await fetchAccountStage(data.user!.id)).toBe('invite');
+  expect(await fetchAccountStage(data.user!.id)).toBe('consent');
 });
 
 test('a wrong code is refused', async () => {

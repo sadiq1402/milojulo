@@ -9,18 +9,3 @@ export const admin = createClient<Database>(
     auth: { persistSession: false },
   },
 );
-
-export async function createInvite(
-  code: string,
-  {
-    usesLeft = 5,
-    expiresAt = null,
-  }: { usesLeft?: number; expiresAt?: string | null } = {},
-) {
-  const { error } = await admin
-    .from('invite_codes')
-    .insert({ code, uses_left: usesLeft, expires_at: expiresAt });
-  if (error) {
-    throw error;
-  }
-}

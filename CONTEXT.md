@@ -7,7 +7,7 @@ Intent-first social discovery for Pune: people pick the kinds of connection they
 ### People
 
 **Member**:
-A person with a MiloJulo account who has redeemed an invite code.
+A person with a MiloJulo account who has passed the age gate (18+) and accepted the current consent documents. Sign-up is open; there are no invite codes (decision 27).
 _Avoid_: User, account. Write "Circle member" in full for Circle membership
 
 **Mode**:
@@ -37,7 +37,7 @@ A profile that has met the minimum (a first name, 2 photos, 2 prompts, a Mode, a
 A Member who is Active, has a Submitted Profile, is not Paused, not Auto-hidden and not deleted; the only kind others can discover.
 
 **Reviewer Account**:
-The seeded account store reviewers use to sign in without an invite code; excluded from metrics.
+The seeded account store reviewers use to sign in, already past the age gate and consents; excluded from metrics.
 
 **Industry** and **Career Stage**:
 Fixed lists a Member in Networking may pick from (career stages: student, early, mid, senior, founder); used to rank the Networking feed. Profession stays free text and is display-only.

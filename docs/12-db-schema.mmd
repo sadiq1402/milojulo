@@ -96,18 +96,6 @@ erDiagram
         timestamptz accepted_at
         timestamptz withdrawn_at
     }
-    invite_codes {
-        text code PK
-        uuid issued_by FK
-        text event_tag
-        int uses_left
-        timestamptz expires_at
-    }
-    invite_redemptions {
-        uuid user_id PK, FK
-        text code FK
-        timestamptz redeemed_at
-    }
     device_tokens {
         text token PK
         uuid user_id FK
@@ -258,8 +246,6 @@ erDiagram
     profiles ||--o{ profile_tags : "has"
     profiles ||--o{ photos : "uploads"
     profiles ||--o{ consents : "accepts"
-    profiles ||--o| invite_redemptions : "redeemed"
-    invite_codes ||--o{ invite_redemptions : ""
     profiles ||--o{ device_tokens : ""
 
     profiles ||--o{ connections : "requests"

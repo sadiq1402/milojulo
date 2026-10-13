@@ -19,7 +19,7 @@ type Props = {
   footer: ReactNode;
 };
 
-// The plain onboarding layout (InviteCode, Email, Otp, AgeConsent): tint and butter circles
+// The plain onboarding layout (Email, Otp, AgeConsent): tint and butter circles
 // in the corner, heading, content, and the main action pinned to the bottom.
 export function FlowScreen({ title, intro, onBack, children, footer }: Props) {
   return (

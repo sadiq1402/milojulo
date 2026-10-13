@@ -84,22 +84,17 @@ export function WelcomeScreen({
           </Text>
           <View style={styles.actions}>
             <Button
-              label="I have an invite code"
+              label="Get started"
               variant="inverse"
-              onPress={() => navigation.navigate('InviteCode')}
+              onPress={() => navigation.navigate('Email')}
             />
             <Text
               variant="bodySmall"
               color={colors.white}
               style={styles.centred}
             >
-              Invite-only while we test in Pune.
+              Now open in Pune.
             </Text>
-            <Button
-              label="I already have an account"
-              variant="inverseText"
-              onPress={() => navigation.navigate('Email')}
-            />
           </View>
         </View>
       </SafeAreaView>

@@ -41,15 +41,12 @@ language sql as $$
   values (account_id, account_id || '@test.milojulo', 'authenticated', 'authenticated');
 $$;
 
--- A Member who has redeemed an invite and accepted every current document. Run as postgres.
+-- A Member who has given their date of birth and accepted every current document. Run as postgres.
 create function pg_temp.create_member(member_id uuid) returns void
 language plpgsql as $$
 begin
-  insert into public.invite_codes (code, uses_left) values ('TEST-MEMBERS', 1000)
-  on conflict (code) do nothing;
   perform pg_temp.create_account(member_id);
   perform pg_temp.act_as_member(member_id);
-  perform public.redeem_invite('TEST-MEMBERS');
   perform public.accept_consents('1995-06-15',
     (select array_agg(id) from public.consent_documents where version = 'v1'));
   reset role;

@@ -6,13 +6,22 @@ import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/account/api');
+jest.mock('../src/features/consents/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/activities/api');
 
 test('a signed-out visitor starts at welcome', async () => {
   await renderApp(null);
   expect(
-    await screen.findByRole('button', { name: 'I have an invite code' }),
+    await screen.findByRole('button', { name: 'Get started' }),
+  ).toBeOnTheScreen();
+});
+
+test('a signed-in account without date of birth and consents starts there', async () => {
+  jest.mocked(account.fetchAccountStage).mockResolvedValue('consent');
+  await renderApp(sessionFor('asha@example.com'));
+  expect(
+    await screen.findByRole('header', { name: 'Before we start' }),
   ).toBeOnTheScreen();
 });
 

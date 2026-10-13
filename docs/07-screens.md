@@ -4,8 +4,8 @@ Static HTML mockups: design/reference-html/screens/*.dc.html (390 x 844 each; Ad
 
 | Flow | Screen (file) | Purpose and key elements |
 |---|---|---|
-| Get in | Welcome (Main) | Full-orchid hero, sticker chips for modes, "I have an invite code" |
-| | Invite code (InviteCode) | Enter code; no-code path |
+| Get in | Welcome (Main) | Full-orchid hero, sticker chips for modes, "Get started" (the mockup's "I have an invite code" is gone, decision 27) |
+| | Invite code (InviteCode) | **Dropped** (decision 27: open sign-up). Mockup kept for reference |
 | | Email (Email) | Email entry; note that email verified only confirms an inbox |
 | | Verify code (Otp) | 6 boxes, resend timer |
 | | Age and consent (AgeConsent) | DOB (18+), itemised data notice, consent and terms checkboxes |

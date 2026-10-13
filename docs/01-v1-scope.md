@@ -1,9 +1,9 @@
-# V1 scope: Pune closed beta
+# V1 scope: Pune beta
 
 ## In V1
 | Area | What ships |
 |---|---|
-| Access | Invite-code signup, email OTP, 18+ date-of-birth gate, acceptance of terms and community guidelines, consent notice |
+| Access | Open sign-up (no invite codes), email OTP, 18+ date-of-birth gate, acceptance of terms and community guidelines, consent notice |
 | Profile | Name, 2 to 4 photos, two short prompts, area (five Pune neighbourhoods), Modes (Friends, Activities, Dating, Serious, Casual, Networking), own gender plus age-range, gender and distance preferences for the dating modes, optional profession, industry and career stage, about 40 curated interest and activity tags, availability |
 | Discovery | A "Same Vibe" feed ranked by SQL rules, with a templated "Why you match" line |
 | Activity board | Post an activity with type, area, time window and spots. Tonight and This weekend posts expire automatically. Others request to join (cap of 10 per 24 h); accepting a joiner opens a 1:1 chat with the host |
@@ -25,14 +25,14 @@ The learning loop gives the North Star metric directly and is cheap (one table, 
 | Ticketed events | Run offline events by hand; the app is the invite channel |
 | Payments and premium | Prove retention before paywalls |
 | LLM features and embeddings | Matching is rule-based SQL; AI becomes one more signal later |
-| Selfie or phone verification | Email OTP plus invite codes and fast report handling cover the first few hundred users; phone at public launch (see open questions for Dating and Casual) |
+| Selfie or phone verification | Email OTP plus Turnstile, a disposable-email blocklist and fast report handling cover the first few hundred users; phone at public launch (see open questions for Dating and Casual) |
 | Group chat | Extra moderation and realtime complexity |
 | Map view | Coarse area is enough; avoids location risk |
 | Incognito and hide-from-coworkers | Needs company data and premium logic |
 | Religion and community fields | Privacy and discrimination risk, no help proving connection |
-| Referral program | Invite codes cover growth for now |
+| Referral program | Offline events and word of mouth cover growth for now |
 | Web app | Mobile-first; only the admin screen is web |
 | Progressive reveal / Blind Match | Blueprint signature features, not in V1 as scoped; decision open |
 
-## Invite codes
-Every user arrives with an invite code tied to an offline event or a person. This is the beta's trust layer, keeps users concentrated in two clusters, and supplies the first testers for Google Play's closed-test rule. Reviewers get a demo account that bypasses the invite code.
+## Sign-up
+Sign-up is open (decision 27): anyone with an email who passes the 18+ gate and accepts the terms, guidelines and data notice becomes a Member. Invite codes were dropped to lower friction for the beta, so nothing in the app keeps users to two clusters; offline events and outreach do that. Bot protection rests on Cloudflare Turnstile and a disposable-email blocklist (#70, #71). Reviewers get a seeded demo account (the Reviewer Account).
