@@ -279,46 +279,6 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"invite_codes": {
-                  Row: {
-                    "code": string,"created_at": string,"event_tag": string | null,"expires_at": string | null,"uses_left": number
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "code": string,"created_at"?: string,"event_tag"?: string | null,"expires_at"?: string | null,"uses_left": number
-                  }
-                  Update: {
-                    "code"?: string,"created_at"?: string,"event_tag"?: string | null,"expires_at"?: string | null,"uses_left"?: number
-                  }
-                  Relationships: [
-                    
-                  ]
-                },"invite_redemptions": {
-                  Row: {
-                    "code": string,"redeemed_at": string,"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "code": string,"redeemed_at"?: string,"user_id": string
-                  }
-                  Update: {
-                    "code"?: string,"redeemed_at"?: string,"user_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "invite_redemptions_code_fkey"
-      columns: ["code"]
-isOneToOne: false
-      referencedRelation: "invite_codes"
-      referencedColumns: ["code"]
-    },{
-      foreignKeyName: "invite_redemptions_user_id_fkey"
-      columns: ["user_id"]
-isOneToOne: true
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"messages": {
                   Row: {
                     "activity_id": string | null,"body": string | null,"connection_id": string,"created_at": string,"id": string,"media_deleted_at": string | null,"media_duration_ms": number | null,"media_height": number | null,"media_key": string | null,"media_mime": string | null,"media_width": number | null,"removed_at": string | null,"sender_id": string,"type": Database["public"]['Enums']["message_type"]
@@ -532,9 +492,6 @@ isOneToOne: false
 "check_activity":
 { Args: { "capacity": number,"ends_at": string,"start_changed": boolean,"starts_at": string,"title": string }; Returns: undefined
                            },
-"check_invite":
-{ Args: { "invite_code": string }; Returns: boolean
-                           },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined
                            },
@@ -615,9 +572,6 @@ isOneToOne: false
                            },
 "propose_mode_change":
 { Args: { "connection_id": string,"to_mode": Database["public"]['Enums']["mode"] }; Returns: string
-                           },
-"redeem_invite":
-{ Args: { "invite_code": string }; Returns: undefined
                            },
 "respond_activity_request":
 { Args: { "accept": boolean,"request_id": string }; Returns: string

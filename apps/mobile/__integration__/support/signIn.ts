@@ -13,7 +13,3 @@ export async function signInNewAccount(): Promise<string> {
   const { data } = await supabase.auth.getUser();
   return data.user!.id;
 }
-
-// A code nobody else uses in this run.
-export const uniqueCode = (label: string) =>
-  `${label}-${Date.now()}-${counter++}`.toUpperCase();

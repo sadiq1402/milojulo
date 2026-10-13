@@ -4,10 +4,6 @@ import { useAccountStage } from '../features/account/useAccountStage';
 import { useSession } from '../features/auth/SessionProvider';
 import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
 import { EmailScreen } from '../screens/gettingIn/EmailScreen';
-import {
-  CheckInviteScreen,
-  RedeemInviteScreen,
-} from '../screens/gettingIn/InviteCodeScreen';
 import { OtpScreen } from '../screens/gettingIn/OtpScreen';
 import { ProfileSetupScreen } from '../screens/gettingIn/ProfileSetupScreen';
 import { WelcomeScreen } from '../screens/gettingIn/WelcomeScreen';
@@ -30,7 +26,6 @@ export function RootNavigator() {
     return (
       <SignedOut.Navigator screenOptions={{ headerShown: false }}>
         <SignedOut.Screen name="Welcome" component={WelcomeScreen} />
-        <SignedOut.Screen name="InviteCode" component={CheckInviteScreen} />
         <SignedOut.Screen name="Email" component={EmailScreen} />
         <SignedOut.Screen name="Otp" component={OtpScreen} />
       </SignedOut.Navigator>
@@ -44,9 +39,7 @@ export function RootNavigator() {
   }
   return (
     <Onboarding.Navigator screenOptions={{ headerShown: false }}>
-      {stage.data === 'invite' ? (
-        <Onboarding.Screen name="RedeemInvite" component={RedeemInviteScreen} />
-      ) : stage.data === 'consent' ? (
+      {stage.data === 'consent' ? (
         <Onboarding.Screen name="AgeConsent" component={AgeConsentScreen} />
       ) : (
         <Onboarding.Screen name="ProfileSetup" component={ProfileSetupScreen} />
