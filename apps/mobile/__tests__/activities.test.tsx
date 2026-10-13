@@ -5,6 +5,7 @@ import {
   ActivityError,
   type Activity,
   type BoardActivity,
+  type JoinRequest,
 } from '../src/features/activities/model';
 import {
   addDays,
@@ -77,6 +78,8 @@ const detail = (overrides: Partial<Activity> = {}): Activity => ({
   status: 'open',
   venueDetail: null,
   isLocked: false,
+  myRequest: null,
+  connectionId: null,
   ...overrides,
 });
 
@@ -111,6 +114,8 @@ beforeEach(() => {
   jest.mocked(activities.postActivity).mockResolvedValue('new-activity');
   jest.mocked(activities.updateActivity).mockResolvedValue();
   jest.mocked(activities.cancelActivity).mockResolvedValue();
+  jest.mocked(activities.fetchJoinRequests).mockResolvedValue([]);
+  jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
 });
 
 const cardFor = (title: string) =>
@@ -446,6 +451,328 @@ describe('Activity detail', () => {
     expect(
       await screen.findByText("This Activity isn't available any more."),
     ).toBeOnTheScreen();
+  });
+});
+
+// The chat screen over the mocked chat module, with one accepted Connection in the list.
+function chatWith(name: string, connectionId: string) {
+  jest.mocked(chat.fetchConversations).mockResolvedValue([
+    {
+      connectionId,
+      otherId: name.toLowerCase(),
+      otherName: name,
+      otherPhotoId: null,
+      otherAreaId: 'baner',
+      mode: 'activities',
+      status: 'accepted',
+      direction: 'outgoing',
+      note: null,
+      lastMessage: null,
+      unreadCount: 0,
+    },
+  ]);
+  jest.mocked(chat.fetchMessages).mockResolvedValue([]);
+  jest
+    .mocked(chat.fetchChatState)
+    .mockResolvedValue({ otherLastReadAt: null, muted: false });
+  jest.mocked(chat.subscribeToChat).mockReturnValue(() => {});
+  jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
+  jest.mocked(chat.markRead).mockResolvedValue();
+}
+
+describe('joining an Activity', () => {
+  const requested = detail({ myRequest: { id: 'req-1', status: 'requested' } });
+  const accepted = detail({
+    myRequest: { id: 'req-1', status: 'accepted' },
+    connectionId: 'conn-isha',
+    venueDetail: 'Baner Sports Complex, court 2',
+  });
+
+  test('Ask to join sends a Join Request, then shows it waiting with Cancel request', async () => {
+    jest.mocked(activities.askToJoin).mockImplementation(async () => {
+      jest.mocked(activities.fetchActivity).mockResolvedValue(requested);
+      return 'req-1';
+    });
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Ask to join' }));
+    expect(activities.askToJoin).toHaveBeenCalledWith('badminton');
+    expect(await screen.findByText('Requested')).toBeOnTheScreen();
+    expect(screen.getByText('Waiting for Isha to answer.')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Cancel request' }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Ask to join' })).toBeNull();
+  });
+
+  test('a refusal is shown in friendly words and the button stays', async () => {
+    jest
+      .mocked(activities.askToJoin)
+      .mockRejectedValue(
+        new Error(
+          "You've sent 10 join requests in the last 24 hours, the most allowed. Try again later.",
+        ),
+      );
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Ask to join' }));
+    expect(
+      await screen.findByText(/You've sent 10 join requests/),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Ask to join' })).toBeEnabled();
+  });
+
+  test('a full Activity says no spots are left instead of offering to ask', async () => {
+    jest
+      .mocked(activities.fetchActivity)
+      .mockResolvedValue(detail({ spotsLeft: 0 }));
+    await openDetail('Badminton doubles');
+    expect(
+      screen.getByText('No spots left. This Activity is full.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Ask to join' })).toBeNull();
+  });
+
+  test('cancelling a pending request asks first, and it cannot be asked again', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue(requested);
+    jest.mocked(activities.withdrawJoinRequest).mockImplementation(async () => {
+      jest
+        .mocked(activities.fetchActivity)
+        .mockResolvedValue(
+          detail({ myRequest: { id: 'req-1', status: 'cancelled' } }),
+        );
+    });
+    await openDetail('Badminton doubles');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Cancel request' }),
+    );
+    const sheet = within(await screen.findByTestId('confirm-withdraw'));
+    expect(sheet.getByText('Cancel your request?')).toBeOnTheScreen();
+    expect(activities.withdrawJoinRequest).not.toHaveBeenCalled();
+    await fireEvent.press(
+      sheet.getByRole('button', { name: 'Yes, cancel my request' }),
+    );
+    expect(activities.withdrawJoinRequest).toHaveBeenCalledWith('req-1');
+    expect(
+      await screen.findByText('You cancelled your request to join.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Ask to join' })).toBeNull();
+  });
+
+  test('an accepted joiner sees the venue and can open the chat with the host', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue(accepted);
+    await openDetail('Badminton doubles');
+    expect(screen.getByText('Baner Sports Complex, court 2')).toBeOnTheScreen();
+    expect(screen.getByText('Isha accepted you.')).toBeOnTheScreen();
+    chatWith('Isha', 'conn-isha');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Open chat with Isha' }),
+    );
+    expect(await screen.findByLabelText('Chat menu')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Isha' })).toBeOnTheScreen();
+  });
+
+  test('an accepted joiner can withdraw before the start, after confirming', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue(accepted);
+    jest.mocked(activities.withdrawJoinRequest).mockImplementation(async () => {
+      jest
+        .mocked(activities.fetchActivity)
+        .mockResolvedValue(
+          detail({ myRequest: { id: 'req-1', status: 'withdrawn' } }),
+        );
+    });
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Withdraw' }));
+    const sheet = within(await screen.findByTestId('confirm-withdraw'));
+    expect(sheet.getByText('Withdraw from this Activity?')).toBeOnTheScreen();
+    expect(sheet.getByText(/Your chat with Isha stays/)).toBeOnTheScreen();
+    await fireEvent.press(sheet.getByRole('button', { name: 'Yes, withdraw' }));
+    expect(activities.withdrawJoinRequest).toHaveBeenCalledWith('req-1');
+    expect(
+      await screen.findByText('You withdrew from this Activity.'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText('The exact spot is shared once the host accepts you.'),
+    ).toBeOnTheScreen();
+  });
+
+  test('a failed withdraw says why and keeps the sheet open', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue(accepted);
+    jest
+      .mocked(activities.withdrawJoinRequest)
+      .mockRejectedValue(
+        new Error(
+          "This join request can't be cancelled or withdrawn any more.",
+        ),
+      );
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Withdraw' }));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Yes, withdraw' }),
+    );
+    expect(
+      await screen.findByText(
+        "This join request can't be cancelled or withdrawn any more.",
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByTestId('confirm-withdraw')).toBeOnTheScreen();
+  });
+
+  test('once the Activity has started, an accepted joiner can still chat but not withdraw', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue({
+      ...accepted,
+      startsAt: new Date(Date.now() - 30 * 60_000).toISOString(),
+    });
+    await openDetail('Badminton doubles');
+    expect(
+      screen.getByRole('button', { name: 'Open chat with Isha' }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Withdraw' })).toBeNull();
+  });
+
+  test.each([
+    ['declined', "Your request to join wasn't accepted this time."],
+    ['cancelled', 'You cancelled your request to join.'],
+    ['withdrawn', 'You withdrew from this Activity.'],
+  ] as const)(
+    'a %s request leaves a short note and no way to ask again',
+    async (status, note) => {
+      jest
+        .mocked(activities.fetchActivity)
+        .mockResolvedValue(detail({ myRequest: { id: 'req-1', status } }));
+      await openDetail('Badminton doubles');
+      expect(screen.getByText(note)).toBeOnTheScreen();
+      expect(screen.queryByRole('button', { name: 'Ask to join' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Open chat/ })).toBeNull();
+    },
+  );
+});
+
+describe("the host's join requests", () => {
+  const joinRequest = (overrides: Partial<JoinRequest>): JoinRequest => ({
+    id: 'req-kabir',
+    requesterId: 'kabir',
+    requesterName: 'Kabir',
+    requesterPhotoId: null,
+    requesterAreaId: 'wakad',
+    status: 'requested',
+    createdAt: '2026-10-12T10:00:00Z',
+    connectionId: null,
+    ...overrides,
+  });
+  const kabir = joinRequest({});
+  const neha = joinRequest({
+    id: 'req-neha',
+    requesterId: 'neha',
+    requesterName: 'Neha',
+    requesterAreaId: 'baner',
+    status: 'accepted',
+    connectionId: 'conn-neha',
+  });
+
+  beforeEach(() => {
+    jest.mocked(activities.fetchJoinRequests).mockResolvedValue([kabir, neha]);
+  });
+
+  test('lists who is waiting and who is going', async () => {
+    await openDetail('Sinhagad trek');
+    expect(activities.fetchJoinRequests).toHaveBeenCalledWith('trek');
+    const waiting = within(await screen.findByTestId('join-requests'));
+    expect(waiting.getByText('Kabir')).toBeOnTheScreen();
+    expect(await waiting.findByText('Wakad')).toBeOnTheScreen();
+    expect(
+      waiting.getByRole('button', { name: "Accept Kabir's join request" }),
+    ).toBeOnTheScreen();
+    const going = within(screen.getByTestId('going'));
+    expect(going.getByText('Neha')).toBeOnTheScreen();
+    expect(
+      going.getByRole('button', { name: 'Open chat with Neha' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('someone else never asks for the requests', async () => {
+    await openDetail('Badminton doubles');
+    expect(activities.fetchJoinRequests).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('join-requests')).toBeNull();
+  });
+
+  test('accepting keeps the host on the Activity and moves the joiner to Going', async () => {
+    jest.mocked(activities.respondJoinRequest).mockImplementation(async () => {
+      jest
+        .mocked(activities.fetchJoinRequests)
+        .mockResolvedValue([
+          { ...kabir, status: 'accepted', connectionId: 'conn-kabir' },
+          neha,
+        ]);
+      return 'conn-kabir';
+    });
+    await openDetail('Sinhagad trek');
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: "Accept Kabir's join request",
+      }),
+    );
+    expect(activities.respondJoinRequest).toHaveBeenCalledWith(
+      'req-kabir',
+      true,
+    );
+    const going = within(screen.getByTestId('going'));
+    expect(
+      await going.findByRole('button', { name: 'Open chat with Kabir' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'Sinhagad trek' }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Chat menu')).toBeNull();
+    expect(
+      within(screen.getByTestId('join-requests')).getByText(
+        /No one is waiting/,
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test('declining takes the request away', async () => {
+    jest.mocked(activities.respondJoinRequest).mockImplementation(async () => {
+      jest.mocked(activities.fetchJoinRequests).mockResolvedValue([neha]);
+      return null;
+    });
+    await openDetail('Sinhagad trek');
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: "Decline Kabir's join request",
+      }),
+    );
+    expect(activities.respondJoinRequest).toHaveBeenCalledWith(
+      'req-kabir',
+      false,
+    );
+    expect(await screen.findByText(/No one is waiting/)).toBeOnTheScreen();
+    expect(screen.queryByText('Kabir')).toBeNull();
+  });
+
+  test('a refused accept says why on the card', async () => {
+    jest
+      .mocked(activities.respondJoinRequest)
+      .mockRejectedValue(
+        new Error('There are no spots left on this Activity.'),
+      );
+    await openDetail('Sinhagad trek');
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: "Accept Kabir's join request",
+      }),
+    );
+    expect(
+      await screen.findByText('There are no spots left on this Activity.'),
+    ).toBeOnTheScreen();
+  });
+
+  test('Open chat takes the host to the chat with that joiner', async () => {
+    await openDetail('Sinhagad trek');
+    chatWith('Neha', 'conn-neha');
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Open chat with Neha' }),
+    );
+    expect(await screen.findByLabelText('Chat menu')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Neha' })).toBeOnTheScreen();
   });
 });
 

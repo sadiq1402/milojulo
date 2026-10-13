@@ -9,6 +9,8 @@ import {
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as account from '../src/features/account/api';
+import * as activities from '../src/features/activities/api';
+import type { MyJoinRequest } from '../src/features/activities/model';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
@@ -19,6 +21,7 @@ import { SendRequestSheet } from '../src/screens/requests/SendRequestSheet';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
+jest.mock('../src/features/activities/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
@@ -58,6 +61,30 @@ const meera = conversation({
   otherName: 'Meera',
   direction: 'outgoing',
 });
+// Far enough ahead that the label doesn't depend on today's date.
+const nextYear = new Date().getUTCFullYear() + 1;
+const joinRequest = (overrides: Partial<MyJoinRequest>): MyJoinRequest => ({
+  id: 'join-kabir',
+  activityId: 'badminton',
+  activityTitle: 'Badminton doubles',
+  activityStartsAt: `${nextYear}-01-15T13:30:00Z`,
+  otherId: 'kabir',
+  otherName: 'Kabir',
+  otherPhotoId: null,
+  direction: 'incoming',
+  createdAt: '2026-10-12T10:00:00Z',
+  ...overrides,
+});
+const kabirJoins = joinRequest({});
+const askedTrek = joinRequest({
+  id: 'join-trek',
+  activityId: 'trek',
+  activityTitle: 'Sinhagad trek',
+  otherId: 'neha',
+  otherName: 'Neha',
+  direction: 'outgoing',
+});
+
 const isha = conversation({
   connectionId: 'conn-isha',
   otherId: 'isha',
@@ -79,6 +106,7 @@ beforeEach(() => {
   jest.mocked(chat.subscribeToChat).mockReturnValue(() => {});
   jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
   jest.mocked(requests.respondRequest).mockResolvedValue();
+  jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
 });
 
 async function openInbox() {
@@ -170,6 +198,137 @@ describe('Inbox requests', () => {
       await screen.findByText(/No requests waiting for you/),
     ).toBeOnTheScreen();
     expect(screen.getByText(/You haven't sent any/)).toBeOnTheScreen();
+  });
+});
+
+describe('Inbox join requests', () => {
+  beforeEach(() => {
+    jest
+      .mocked(activities.fetchMyJoinRequests)
+      .mockResolvedValue([kabirJoins, askedTrek]);
+  });
+
+  test('a request to join my Activity waits for an answer; my own sits under Sent', async () => {
+    await openInbox();
+    expect(
+      screen.getByText(/^Asks to join Badminton doubles, \w+ 15 Jan, 7:00 pm$/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: "Accept Kabir's join request" }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: "Decline Kabir's join request" }),
+    ).toBeOnTheScreen();
+    const sent = within(screen.getByTestId('sent-requests'));
+    expect(sent.getByText('Sinhagad trek')).toBeOnTheScreen();
+    expect(sent.getByText('Join request, hosted by Neha')).toBeOnTheScreen();
+  });
+
+  test('the Inbox tab counts join requests waiting for me too', async () => {
+    await renderApp(me);
+    expect(
+      await screen.findByRole('tab', { name: 'Inbox, 3 waiting' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('accepting a join request opens the chat with the joiner', async () => {
+    const kabir = conversation({
+      connectionId: 'conn-kabir',
+      otherId: 'kabir',
+      otherName: 'Kabir',
+      status: 'accepted',
+      mode: 'activities',
+      note: null,
+    });
+    jest.mocked(activities.respondJoinRequest).mockImplementation(async () => {
+      jest
+        .mocked(chat.fetchConversations)
+        .mockResolvedValue([rohan, anaya, meera, kabir]);
+      jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
+      return 'conn-kabir';
+    });
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', { name: "Accept Kabir's join request" }),
+    );
+    expect(activities.respondJoinRequest).toHaveBeenCalledWith(
+      'join-kabir',
+      true,
+    );
+    expect(await screen.findByLabelText('Chat menu')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Kabir' })).toBeOnTheScreen();
+  });
+
+  test('declining a join request removes it and opens nothing', async () => {
+    jest.mocked(activities.respondJoinRequest).mockImplementation(async () => {
+      jest
+        .mocked(activities.fetchMyJoinRequests)
+        .mockResolvedValue([askedTrek]);
+      return null;
+    });
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', { name: "Decline Kabir's join request" }),
+    );
+    expect(activities.respondJoinRequest).toHaveBeenCalledWith(
+      'join-kabir',
+      false,
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/^Asks to join Badminton doubles/),
+      ).not.toBeOnTheScreen(),
+    );
+    expect(screen.queryByLabelText('Chat menu')).not.toBeOnTheScreen();
+  });
+
+  test('a refused answer says why on the card', async () => {
+    jest
+      .mocked(activities.respondJoinRequest)
+      .mockRejectedValue(
+        new Error('There are no spots left on this Activity.'),
+      );
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', { name: "Accept Kabir's join request" }),
+    );
+    expect(
+      await screen.findByText('There are no spots left on this Activity.'),
+    ).toBeOnTheScreen();
+  });
+
+  test('tapping a join request opens its Activity', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue({
+      id: 'badminton',
+      hostId: me.user.id,
+      hostName: 'Asha',
+      title: 'Badminton doubles',
+      type: 'sports',
+      areaId: 'wakad',
+      startsAt: kabirJoins.activityStartsAt,
+      endsAt: null,
+      capacity: 4,
+      spotsLeft: 4,
+      description: null,
+      startsWhen: 'later',
+      isMine: true,
+      status: 'open',
+      venueDetail: null,
+      isLocked: false,
+      myRequest: null,
+      connectionId: null,
+    });
+    jest.mocked(activities.fetchJoinRequests).mockResolvedValue([]);
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', {
+        name: 'Kabir asks to join Badminton doubles. Open the Activity',
+      }),
+    );
+    expect(
+      await screen.findByRole('header', { name: 'Badminton doubles' }),
+    ).toBeOnTheScreen();
+    expect(activities.fetchActivity).toHaveBeenCalledWith('badminton');
   });
 });
 

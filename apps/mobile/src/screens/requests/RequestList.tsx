@@ -12,6 +12,7 @@ import {
   Tag,
   Text,
 } from '../../components';
+import { formatWhen } from '../../features/activities/time';
 import type { Conversation } from '../../features/chat/api';
 import { useAreaNames } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
@@ -20,15 +21,21 @@ import { respondRequest } from '../../features/requests/api';
 import { useRequests } from '../../features/requests/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, fontFamily, fonts, layout, spacing } from '../../theme';
+import { JoinRequestCard } from '../activities/JoinRequestCard';
 
-// The Inbox's Requests tab: incoming ones to answer, then the caller's own still pending.
+// The Inbox's Requests tab: incoming ones to answer (Connection Requests, then Join Requests to
+// my Activities), then the caller's own still pending.
 export function RequestList() {
-  const { conversations, waiting, sent } = useRequests();
+  const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
+  const { conversations, joinRequests, waiting, sent, joinWaiting, joinSent } =
+    useRequests();
   const areas = useAreaNames();
   const areaOf = (c: Conversation) =>
     (c.otherAreaId && areas.data?.[c.otherAreaId]) || undefined;
+  const openActivity = (activityId: string) =>
+    navigation.navigate('ActivityDetail', { activityId });
 
-  if (conversations.isError) {
+  if (conversations.isError || joinRequests.isError) {
     return (
       <View style={styles.section}>
         <Text color={colors.danger}>We couldn't load your requests.</Text>
@@ -36,12 +43,15 @@ export function RequestList() {
           label="Try again"
           variant="text"
           compact
-          onPress={() => conversations.refetch()}
+          onPress={() => {
+            conversations.refetch();
+            joinRequests.refetch();
+          }}
         />
       </View>
     );
   }
-  if (!conversations.isSuccess) {
+  if (!conversations.isSuccess || !joinRequests.isSuccess) {
     return null;
   }
   return (
@@ -50,10 +60,10 @@ export function RequestList() {
         <Text variant="bodySmall" style={styles.heading}>
           Waiting for you
         </Text>
-        {waiting.length === 0 ? (
+        {waiting.length === 0 && joinWaiting.length === 0 ? (
           <Text color={colors.secondary}>
             No requests waiting for you. When someone sends you a Connection
-            Request, it shows here.
+            Request or asks to join your Activity, it shows here.
           </Text>
         ) : (
           <View style={styles.cards}>
@@ -65,6 +75,24 @@ export function RequestList() {
                 tone={i}
               />
             ))}
+            {joinWaiting.map((request, i) => (
+              <JoinRequestCard
+                key={request.id}
+                requestId={request.id}
+                name={request.otherName}
+                detail={`Asks to join ${request.activityTitle}, ${formatWhen(
+                  request.activityStartsAt,
+                  null,
+                )}`}
+                tone={waiting.length + i}
+                onOpen={() => openActivity(request.activityId)}
+                openLabel={`${request.otherName} asks to join ${request.activityTitle}. Open the Activity`}
+                // Like a Connection Request, accepting here opens the chat.
+                onAccepted={connectionId =>
+                  navigation.navigate('Chat', { connectionId })
+                }
+              />
+            ))}
           </View>
         )}
       </View>
@@ -72,7 +100,7 @@ export function RequestList() {
         <Text variant="bodySmall" style={styles.heading}>
           Sent
         </Text>
-        {sent.length === 0 ? (
+        {sent.length === 0 && joinSent.length === 0 ? (
           <Text color={colors.secondary}>
             You haven't sent any requests that are still waiting.
           </Text>
@@ -85,6 +113,19 @@ export function RequestList() {
                 subtitle={areaOf(request)}
                 left={<Avatar name={request.otherName} tone={i + 2} />}
                 right={<Tag label="Pending" />}
+              />
+            ))}
+            {joinSent.map((request, i) => (
+              <ListRow
+                key={request.id}
+                title={request.activityTitle}
+                subtitle={`Join request, hosted by ${request.otherName}`}
+                left={
+                  <Avatar name={request.otherName} tone={sent.length + i + 2} />
+                }
+                right={<Tag label="Pending" />}
+                onPress={() => openActivity(request.activityId)}
+                accessibilityLabel={`${request.activityTitle}, join request to ${request.otherName}, pending`}
               />
             ))}
           </List>

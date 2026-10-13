@@ -51,12 +51,43 @@ export type BoardActivity = {
   isMine: boolean;
 };
 
+export type JoinRequestStatus = Database['public']['Enums']['request_status'];
+
 export type Activity = BoardActivity & {
   status: ActivityStatus;
-  // Only the host (and, with #14, accepted joiners) get it.
+  // Only the host and accepted joiners get it.
   venueDetail: string | null;
   // Someone has joined: only the description and a higher number of Spots can change.
   isLocked: boolean;
+  // My one Join Request for it, whatever became of it; null when I never asked.
+  myRequest: { id: string; status: JoinRequestStatus } | null;
+  // The Activity Connection with the host, while my request stands accepted.
+  connectionId: string | null;
+};
+
+// A request to the host's own Activity: waiting ones and accepted joiners, oldest first.
+export type JoinRequest = {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterPhotoId: string | null;
+  requesterAreaId: string | null;
+  status: JoinRequestStatus;
+  createdAt: string;
+  connectionId: string | null;
+};
+
+// A pending Join Request, to one of my Activities (incoming) or from me (outgoing).
+export type MyJoinRequest = {
+  id: string;
+  activityId: string;
+  activityTitle: string;
+  activityStartsAt: string;
+  otherId: string;
+  otherName: string;
+  otherPhotoId: string | null;
+  direction: Database['public']['Enums']['connection_direction'];
+  createdAt: string;
 };
 
 export type ActivityFields = {

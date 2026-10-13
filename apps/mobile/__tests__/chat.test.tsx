@@ -6,6 +6,7 @@ import {
   within,
 } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
+import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation, Message } from '../src/features/chat/api';
@@ -15,6 +16,7 @@ jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
+jest.mock('../src/features/activities/api');
 
 const me = sessionFor('asha@example.com');
 const myId = me.user.id;
@@ -71,6 +73,7 @@ let live: Parameters<typeof chat.subscribeToChat>[1] | undefined;
 beforeEach(() => {
   live = undefined;
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
+  jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   jest.mocked(catalog.fetchAreaNames).mockResolvedValue({ baner: 'Baner' });
   jest.mocked(chat.fetchConversations).mockResolvedValue([isha, kabir, rohan]);
   jest
