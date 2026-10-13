@@ -142,7 +142,7 @@ Shared helpers (security definer, fixed `search_path`, few and tested):
 Business functions:
 | Function | Notes |
 |---|---|
-| `accept_consents(dob, document_ids[])` | rejects under 18 or a missing current document; creates the caller's profile row if there is none, stores DOB and consents (a refusal leaves no profile) |
+| `accept_consents(dob, document_ids[])` | rejects under 18 or no date of birth, and a missing current document (a null list or null entry counts as missing); creates the caller's profile row if there is none, stores DOB and consents (a refusal leaves no profile) |
 | `submit_profile()` | requires the age gate and consents to be passed; checks the profile minimum; sets submitted_at; the Member is visible at once |
 | `confirm_photo_upload(photo_id)` | service role only: the upload Edge Function calls it after checking the object exists in R2 |
 | `set_paused(paused)` | |

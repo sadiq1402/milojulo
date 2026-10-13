@@ -1,23 +1,34 @@
 -- Open sign-up (decision 27): the age gate and consents are the way in.
+
+-- The latest effective version of each consent kind; internal, so no client role can run it.
+create function public.current_consent_documents() returns setof uuid
+language sql stable
+set search_path = ''
+as $$
+  select distinct on (kind) id from public.consent_documents
+  where effective_at <= now()
+  order by kind, effective_at desc;
+$$;
+
+revoke execute on function public.current_consent_documents() from public, anon, authenticated, service_role;
+
 create or replace function public.accept_consents(birth_date date, document_ids uuid[]) returns void
 language plpgsql security definer
 set search_path = ''
 as $$
 begin
   -- Age is judged on the calendar date in India.
-  if birth_date > ((now() at time zone 'Asia/Kolkata')::date - interval '18 years')::date then
+  if birth_date is null
+     or birth_date > ((now() at time zone 'Asia/Kolkata')::date - interval '18 years')::date then
     raise exception 'members must be 18 or older';
   end if;
 
-  -- Every kind must be accepted at its current version.
-  if exists (
-    select 1 from (
-      select distinct on (kind) id from public.consent_documents
-      where effective_at <= now()
-      order by kind, effective_at desc
-    ) current_docs
-    where current_docs.id <> all (document_ids)
-  ) then
+  -- Every kind must be accepted at its current version; a null list or entry never counts.
+  if array_position(document_ids, null) is not null
+     or exists (
+       select 1 from public.current_consent_documents() as d (id)
+       where not (d.id = any (coalesce(document_ids, '{}')))
+     ) then
     raise exception 'accept the current terms, guidelines and data notice';
   end if;
 
@@ -39,12 +50,7 @@ as $$
   on conflict (id) do nothing;
 
   insert into public.consents (user_id, document_id)
-  select reviewer_id, d.id
-  from (
-    select distinct on (kind) id from public.consent_documents
-    where effective_at <= now()
-    order by kind, effective_at desc
-  ) d
+  select reviewer_id, d.id from public.current_consent_documents() as d (id)
   on conflict (user_id, document_id) do nothing;
 $$;
 

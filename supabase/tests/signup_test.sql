@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(9);
+select plan(10);
 
 select pg_temp.create_account('00000000-0000-0000-0000-0000000000f1');
 
@@ -30,6 +30,9 @@ select results_eq(
   'select id, date_of_birth from public.profiles',
   $$ values ('00000000-0000-0000-0000-0000000000f1'::uuid, '1996-07-20'::date) $$,
   'giving consents again keeps the one profile and updates the date of birth');
+
+select throws_ok($$ select public.current_consent_documents() $$, '42501', null,
+  'a Member cannot call the internal current-documents helper');
 
 -- Invite codes are gone (decision 27).
 select throws_ok($$ select public.check_invite('REVIEWER') $$, '42883', null, 'there is no invite check');

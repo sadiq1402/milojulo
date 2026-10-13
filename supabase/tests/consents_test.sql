@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(9);
+select plan(15);
 
 select pg_temp.create_account('00000000-0000-0000-0000-0000000000c1');
 select pg_temp.create_account('00000000-0000-0000-0000-0000000000c2');
@@ -28,6 +28,21 @@ select throws_ok(
   'P0001', 'accept the current terms, guidelines and data notice',
   'consent is refused unless every current document is accepted');
 select is_empty('select 1 from public.profiles', 'a missing-document refusal leaves no profile behind');
+
+select throws_ok(
+  $$ select public.accept_consents((select just_18 from ages), null) $$,
+  'P0001', 'accept the current terms, guidelines and data notice', 'consent is refused with no document list');
+select is_empty('select 1 from public.profiles', 'a refusal for no document list leaves no profile behind');
+
+select throws_ok(
+  $$ select public.accept_consents((select just_18 from ages), (select ids || null::uuid from current_docs)) $$,
+  'P0001', 'accept the current terms, guidelines and data notice', 'consent is refused when the list holds an empty entry');
+select is_empty('select 1 from public.profiles', 'a refusal for an empty entry leaves no profile behind');
+
+select throws_ok(
+  $$ select public.accept_consents(null, (select ids from current_docs)) $$,
+  'P0001', 'members must be 18 or older', 'consent is refused without a date of birth');
+select is_empty('select 1 from public.profiles', 'a refusal for no date of birth leaves no profile behind');
 
 select lives_ok(
   $$ select public.accept_consents((select just_18 from ages), (select ids from current_docs)) $$,
