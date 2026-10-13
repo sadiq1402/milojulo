@@ -214,12 +214,14 @@ function ActivityBody({
           <Text variant="bodySmall" color={colors.orchidDark}>
             Meet in a public place and tell a friend where you'll be.
           </Text>
-          <Button
-            label="Read safety tips"
-            variant="text"
-            compact
-            onPress={onSafetyTips}
-          />
+          <View style={styles.start}>
+            <Button
+              label="Read safety tips"
+              variant="text"
+              compact
+              onPress={onSafetyTips}
+            />
+          </View>
         </View>
       </Card>
     </ScrollView>
@@ -582,6 +584,7 @@ const styles = StyleSheet.create({
   facts: { gap: spacing.sm },
   fact: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   grow: { flex: 1 },
+  start: { alignSelf: 'flex-start' },
   host: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   section: { gap: spacing.sm },
   heading: { fontFamily: fontFamily(fonts.text, '600') },
