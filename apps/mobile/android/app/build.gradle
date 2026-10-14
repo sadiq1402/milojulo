@@ -79,7 +79,7 @@ android {
 
     namespace "com.milojulo"
     defaultConfig {
-        applicationId "com.milojulo"
+        applicationId "co.in.milojulo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

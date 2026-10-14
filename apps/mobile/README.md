@@ -50,3 +50,14 @@ Static Bricolage Grotesque (Bold) and Figtree (Regular, Medium, SemiBold, Bold) 
 - Ask before adding any dependency; a native module must autolink with the CLI.
 - Function errors arrive as plain messages (for example `you have sent 10 requests in the last 24 hours`). The feature's data module maps each to friendly copy (exported when a screen needs to recognise it, like `cannotSendMessage`), so screens just show `error.message`.
 - Media is never shown by public URL; photos come from signed URLs issued by the media Edge Function.
+
+## Distributing dev builds (Firebase App Distribution)
+
+`.github/workflows/android-distribute.yml` builds a release APK and sends it to Firebase App Distribution on every push to `main` that touches `apps/mobile/**`. Testers get a notification and install with one tap — no Play Store. The APK targets the hosted Supabase project and is signed with the shared debug keystore, so each build updates the app in place.
+
+App package id: `co.in.milojulo`. Requires two GitHub Actions secrets:
+
+- `FIREBASE_APP_ID` — the Android app id from Firebase (e.g. `1:…:android:…`).
+- `FIREBASE_SERVICE_ACCOUNT` — the full JSON of a Firebase service account (Project settings → Service accounts → Generate new private key).
+
+In Firebase App Distribution, create a tester group named `devs` and add the tester emails. A real upload key replaces the debug keystore when the app goes to the Play Store.
