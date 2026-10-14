@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { postActivity } from '../../features/activities/api';
 import { activityKeys } from '../../features/activities/queries';
+import { circleKeys } from '../../features/circles/queries';
 import { defaultStart } from '../../features/activities/time';
 import type { MemberParams } from '../../navigation/types';
 import {
@@ -15,8 +16,10 @@ import {
 
 type Props = NativeStackScreenProps<MemberParams, 'CreateActivity'>;
 
-export function CreateActivityScreen({ navigation }: Props) {
+export function CreateActivityScreen({ navigation, route }: Props) {
   const client = useQueryClient();
+  // Posting from a Circle pre-selects it; the Activity still shows on the main board.
+  const circle = route.params ?? null;
   const [initial] = useState<FormValues>(() => {
     const start = defaultStart();
     return {
@@ -42,8 +45,15 @@ export function CreateActivityScreen({ navigation }: Props) {
       capacity: values.capacity,
       description: values.description,
       venueDetail: values.venueDetail,
+      circleId: circle?.circleId ?? null,
     });
-    client.invalidateQueries({ queryKey: activityKeys.board });
+    client.invalidateQueries({ queryKey: activityKeys.all });
+    // Posting to a Circle also changes its "Coming up" list.
+    if (circle) {
+      client.invalidateQueries({
+        queryKey: circleKeys.activities(circle.circleId),
+      });
+    }
     navigation.replace('ActivityDetail', { activityId });
   };
 
@@ -52,6 +62,7 @@ export function CreateActivityScreen({ navigation }: Props) {
       heading="Post an Activity"
       submitLabel="Post Activity"
       initial={initial}
+      circleName={circle?.circleName}
       onBack={navigation.goBack}
       onSubmit={post}
     />

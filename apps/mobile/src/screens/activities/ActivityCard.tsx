@@ -28,7 +28,9 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
         activity.title
       }, ${type}, ${areaName}, ${when}, ${hostLine(
         activity,
-      ).toLowerCase()}, ${spots}`}
+      ).toLowerCase()}, ${spots}${
+        activity.circleName ? `, in ${activity.circleName}` : ''
+      }`}
       accessibilityHint="Opens the Activity"
     >
       <Card
@@ -43,6 +45,9 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
         <View style={styles.facts}>
           <Fact icon="pin" text={areaName} />
           <Fact icon="clock" text={when} />
+          {activity.circleName ? (
+            <Fact icon="circles" text={activity.circleName} />
+          ) : null}
         </View>
         <View style={styles.bottom}>
           <View style={styles.host}>
@@ -60,7 +65,13 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
   );
 }
 
-function Fact({ icon, text }: { icon: 'pin' | 'clock'; text: string }) {
+function Fact({
+  icon,
+  text,
+}: {
+  icon: 'pin' | 'clock' | 'circles';
+  text: string;
+}) {
   return (
     <View style={styles.fact}>
       <Icon name={icon} size={sizes.icon.tiny} />

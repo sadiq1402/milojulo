@@ -10,6 +10,8 @@ export type MemberParams = {
   Profile: { memberId: string };
   SafetyCentre: undefined;
   ActivityDetail: { activityId: string };
-  CreateActivity: undefined;
+  // Posting from a Circle pre-selects it and shows its name.
+  CreateActivity: { circleId: string; circleName: string } | undefined;
   EditActivity: { activityId: string };
+  CircleDetail: { circleId: string };
 };

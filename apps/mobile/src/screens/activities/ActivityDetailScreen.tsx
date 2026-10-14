@@ -193,6 +193,9 @@ function ActivityBody({
           icon="circles"
           title={`${taken} of ${activity.capacity} spots taken`}
         />
+        {activity.circleName ? (
+          <Fact icon="circles" title="Circle" note={activity.circleName} />
+        ) : null}
       </View>
       <Card style={styles.host}>
         <Avatar name={activity.hostName} />

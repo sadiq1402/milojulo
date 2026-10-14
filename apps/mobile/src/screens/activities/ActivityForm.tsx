@@ -103,6 +103,8 @@ type Props = {
   editing?: boolean;
   // A Locked Activity: only the description and more Spots.
   locked?: boolean;
+  // Posting from a Circle: its name, shown so the Member knows where it goes.
+  circleName?: string;
 };
 
 type Errors = Partial<Record<ActivityField, string>>;
@@ -127,6 +129,7 @@ export function ActivityForm({
   onSubmit,
   editing = false,
   locked = false,
+  circleName,
 }: Props) {
   const areas = useAreaNames();
   const [values, setValues] = useState(initial);
@@ -221,6 +224,13 @@ export function ActivityForm({
         </>
       }
     >
+      {circleName ? (
+        <Card style={styles.notice}>
+          <Text variant="bodySmall" color={colors.orchidDark}>
+            Posting to {circleName}. It shows on the main board too.
+          </Text>
+        </Card>
+      ) : null}
       {locked ? (
         <Card style={styles.locked}>
           <Text variant="bodySmall" color={colors.orchidDark}>
@@ -396,4 +406,5 @@ const styles = StyleSheet.create({
   label: { ...textStyles.bodySmall, fontFamily: fontFamily(fonts.text, '600') },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: sizes.chip.gap },
   locked: { backgroundColor: colors.selected },
+  notice: { backgroundColor: colors.selected },
 });
