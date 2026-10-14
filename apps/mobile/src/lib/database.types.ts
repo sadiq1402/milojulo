@@ -311,6 +311,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"photo_uploads": {
+                  Row: {
+                    "created_at": string,"id": string,"object_key": string,"position": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"object_key": string,"position": number,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"object_key"?: string,"position"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "photo_uploads_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"photos": {
                   Row: {
                     "created_at": string,"height": number | null,"hidden_at": string | null,"id": string,"object_key": string,"position": number,"provider": string,"removed_at": string | null,"removed_by": string | null,"uploaded_at": string | null,"user_id": string,"width": number | null
@@ -492,17 +512,23 @@ isOneToOne: false
 "check_activity":
 { Args: { "capacity": number,"ends_at": string,"start_changed": boolean,"starts_at": string,"title": string }; Returns: undefined
                            },
+"check_photo_uploader":
+{ Args: { "member_id": string }; Returns: undefined
+                           },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined
                            },
 "confirm_photo_upload":
-{ Args: { "photo_id": string }; Returns: undefined
+{ Args: { "member_id": string,"upload_id": string }; Returns: string
                            },
 "cover_photo_id":
 { Args: { "member_id": string }; Returns: string
                            },
 "current_consent_documents":
 { Args: Record<PropertyKey, never>; Returns: string[]
+                           },
+"delete_photo":
+{ Args: { "member_id": string,"photo_id": string }; Returns: string
                            },
 "discover_feed":
 { Args: { "after"?: string,"mode_filter"?: Database["public"]['Enums']["mode"],"page_size"?: number }; Returns: {
@@ -552,6 +578,9 @@ isOneToOne: false
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
                            },
+"move_photo":
+{ Args: { "new_position": number,"photo_id": string }; Returns: undefined
+                           },
 "my_blocks":
 { Args: Record<PropertyKey, never>; Returns: {
               "blocked_at": string,"display_name": string,"member_id": string
@@ -565,6 +594,16 @@ isOneToOne: false
 "my_join_requests":
 { Args: Record<PropertyKey, never>; Returns: {
               "activity_id": string,"activity_starts_at": string,"activity_title": string,"created_at": string,"direction": Database["public"]['Enums']["connection_direction"],"other_id": string,"other_name": string,"other_photo_id": string,"request_id": string
+            }[]
+                           },
+"pending_photo_upload":
+{ Args: { "member_id": string,"upload_id": string }; Returns: {
+              "object_key": string,"upload_key": string
+            }[]
+                           },
+"photo_links":
+{ Args: { "photo_ids": (string)[],"viewer": string }; Returns: {
+              "object_key": string,"photo_id": string
             }[]
                            },
 "post_activity":
@@ -610,6 +649,14 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"shares_photos_with":
+{ Args: { "member_id": string,"viewer": string }; Returns: boolean
+                           },
+"start_photo_upload":
+{ Args: { "member_id": string,"photo_position": number }; Returns: {
+              "discarded_keys": (string)[],"object_key": string,"photo_id": string,"upload_key": string
+            }[]
+                           },
 "submit_profile":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },

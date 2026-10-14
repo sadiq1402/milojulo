@@ -24,18 +24,17 @@ select lives_ok(
 select lives_ok($$ update public.profiles set modes = '{activities}' $$,
   'a submitted Member can swap one Mode for another');
 
--- Replacing a photo: upload the new one, then delete the old.
+-- Adding a photo, then deleting an old one.
 reset role;
 select pg_temp.act_as_service();
-insert into public.photos (id, user_id, object_key, position) values
-  ('00000000-0000-0000-0000-00000000c103', '00000000-0000-0000-0000-0000000000c1', 'c1/new.jpg', 3);
+select photo_id as c1_new from public.start_photo_upload('00000000-0000-0000-0000-0000000000c1', 3::smallint) \gset
 reset role;
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select throws_ok($$ delete from public.photos where position = 1 $$, 'P0001', 'add at least 2 photos',
   'an unconfirmed upload cannot stand in for a live photo');
 reset role;
 select pg_temp.act_as_service();
-select public.confirm_photo_upload('00000000-0000-0000-0000-00000000c103');
+select public.confirm_photo_upload('00000000-0000-0000-0000-0000000000c1', :'c1_new');
 reset role;
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select lives_ok($$ delete from public.photos where position = 1 $$,
