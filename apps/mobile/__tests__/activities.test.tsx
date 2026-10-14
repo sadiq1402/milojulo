@@ -69,6 +69,8 @@ const boardActivity = (overrides: Partial<BoardActivity>): BoardActivity => ({
   description: 'Casual doubles, all levels welcome.',
   startsWhen: 'tonight',
   isMine: false,
+  circleId: null,
+  circleName: null,
   ...overrides,
 });
 
@@ -287,6 +289,7 @@ describe('posting an Activity', () => {
       capacity: 5,
       description: 'Bring lights.',
       venueDetail: 'Wakad bridge',
+      circleId: null,
     });
     expect(activities.fetchActivity).toHaveBeenCalledWith('new-activity');
   });

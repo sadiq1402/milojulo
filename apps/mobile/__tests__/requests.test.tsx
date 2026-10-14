@@ -346,6 +346,8 @@ describe('Inbox Join Requests', () => {
       description: null,
       startsWhen: 'later',
       isMine: true,
+      circleId: null,
+      circleName: null,
       status: 'open',
       venueDetail: null,
       isLocked: false,

@@ -49,6 +49,7 @@ const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   capacity: 4,
   description: 'All levels welcome.',
   venueDetail: 'Baner Sports Complex, court 2',
+  circleId: null,
   ...overrides,
 });
 
