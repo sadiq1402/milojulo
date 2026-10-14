@@ -56,6 +56,7 @@ Static Bricolage Grotesque (Bold) and Figtree (Regular, Medium, SemiBold, Bold) 
 `.github/workflows/android-distribute.yml` builds a release APK and sends it to Firebase App Distribution on every push to `main` that touches `apps/mobile/**`. Testers get a notification and install with one tap — no Play Store. The APK targets the hosted Supabase project and is signed with the shared debug keystore, so each build updates the app in place.
 
 App package id: `co.in.milojulo`. Requires two GitHub Actions secrets:
+
 - `FIREBASE_APP_ID` — the Android app id from Firebase (e.g. `1:…:android:…`).
 - `FIREBASE_SERVICE_ACCOUNT` — the full JSON of a Firebase service account (Project settings → Service accounts → Generate new private key).
 
