@@ -18,9 +18,11 @@ type Props = {
   mine: boolean;
   seen: boolean;
   onRetry: () => void;
+  // Only the other Member's sent messages can be reported.
+  onReport?: () => void;
 };
 
-export function MessageBubble({ item, mine, seen, onRetry }: Props) {
+export function MessageBubble({ item, mine, seen, onRetry, onReport }: Props) {
   if (item.type === 'activity_card') {
     // Opens the Activity once Activities exist (#46).
     return (
@@ -37,7 +39,10 @@ export function MessageBubble({ item, mine, seen, onRetry }: Props) {
   }
   return (
     <View style={[styles.row, mine ? styles.mineRow : styles.theirRow]}>
-      <View
+      <Pressable
+        onLongPress={onReport}
+        disabled={!onReport}
+        accessibilityHint={onReport ? 'Long-press to report' : undefined}
         style={[
           styles.bubble,
           mine ? styles.mine : styles.theirs,
@@ -47,7 +52,7 @@ export function MessageBubble({ item, mine, seen, onRetry }: Props) {
         <Text style={styles.body} color={mine ? colors.white : colors.ink}>
           {item.body}
         </Text>
-      </View>
+      </Pressable>
       {item.delivery === 'sending' ? (
         <Text variant="caption" color={colors.secondary}>
           Sending…

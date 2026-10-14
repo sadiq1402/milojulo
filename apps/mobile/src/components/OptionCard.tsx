@@ -11,26 +11,35 @@ type Props = {
   onChange: (checked: boolean) => void;
   // Shown beside the title, such as an adult-intent tag.
   badge?: ReactNode;
+  // A radio card is one of a set; pressing it again keeps it chosen.
+  role?: 'checkbox' | 'radio';
 };
 
-// A checkbox option card: 64 min, radius 20, orchid border and tint when chosen.
+// An option card: 64 min, radius 20, orchid border and tint when chosen.
 export function OptionCard({
   title,
   description,
   checked,
   onChange,
   badge,
+  role = 'checkbox',
 }: Props) {
   return (
     <Pressable
-      onPress={() => onChange(!checked)}
-      accessibilityRole="checkbox"
+      onPress={() => onChange(role === 'radio' || !checked)}
+      accessibilityRole={role}
       accessibilityState={{ checked }}
       accessibilityLabel={title}
       accessibilityHint={description}
       style={[styles.card, checked && styles.checked]}
     >
-      <View style={[styles.box, checked && styles.boxChecked]}>
+      <View
+        style={[
+          styles.box,
+          role === 'radio' && styles.radio,
+          checked && styles.boxChecked,
+        ]}
+      >
         {checked ? (
           <Icon name="check" size={sizes.icon.tiny} color={colors.white} />
         ) : null}
@@ -80,6 +89,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  radio: { borderRadius: radius.full },
   boxChecked: { backgroundColor: colors.orchid, borderColor: colors.orchid },
   text: { flex: 1 },
   titleRow: {

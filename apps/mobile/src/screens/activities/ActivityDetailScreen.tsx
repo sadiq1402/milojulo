@@ -10,6 +10,7 @@ import {
   Card,
   ErrorText,
   Icon,
+  IconButton,
   type IconName,
   List,
   ListRow,
@@ -72,6 +73,7 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
   const activity = useActivity(activityId);
   const client = useQueryClient();
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const data = activity.data;
   const hostCanAct = data?.isMine && data.status === 'open';
   // The chat reads its Connection from the chat list, so refresh that first.
@@ -82,7 +84,35 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
-      <TopBar onBack={navigation.goBack} />
+      <TopBar
+        onBack={navigation.goBack}
+        right={
+          data && !data.isMine ? (
+            <IconButton
+              icon="more"
+              accessibilityLabel="Activity menu"
+              onPress={() => setMenuOpen(true)}
+            />
+          ) : null
+        }
+      />
+      {data && !data.isMine ? (
+        <BottomSheet visible={menuOpen} onClose={() => setMenuOpen(false)}>
+          <Button
+            label="Report this Activity"
+            variant="secondary"
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Report', {
+                targetType: 'activity',
+                targetId: data.id,
+                memberId: data.hostId,
+                memberName: data.hostName,
+              });
+            }}
+          />
+        </BottomSheet>
+      ) : null}
       {activity.isError ? (
         <View style={styles.message}>
           <Text color={colors.danger}>{activity.error.message}</Text>

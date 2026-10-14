@@ -17,6 +17,7 @@ import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
 import { PlaceholderScreen } from '../screens/PlaceholderScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { ReportScreen } from '../screens/reports/ReportScreen';
 import type { MemberParams } from './types';
 
 const Stack = createNativeStackNavigator<MemberParams>();
@@ -81,6 +82,7 @@ export function MemberNavigator() {
       <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
       <Stack.Screen name="EditActivity" component={EditActivityScreen} />
       <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
+      <Stack.Screen name="Report" component={ReportScreen} />
     </Stack.Navigator>
   );
 }

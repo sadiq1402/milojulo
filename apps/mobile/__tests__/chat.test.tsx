@@ -10,6 +10,7 @@ import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation, Message } from '../src/features/chat/api';
+import * as reports from '../src/features/reports/api';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -18,6 +19,11 @@ jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/activities/api');
+// Keep the real reason list; only the call to the database is stood in.
+jest.mock('../src/features/reports/api', () => ({
+  ...jest.requireActual('../src/features/reports/api'),
+  reportContent: jest.fn(),
+}));
 
 const me = sessionFor('asha@example.com');
 const myId = me.user.id;
@@ -516,5 +522,37 @@ describe('Mode Change', () => {
     expect(
       screen.queryByRole('button', { name: 'Change Mode' }),
     ).not.toBeOnTheScreen();
+  });
+});
+
+describe('reporting a message', () => {
+  test("a long-press on the other Member's message reports that message", async () => {
+    jest.mocked(reports.reportContent).mockResolvedValue();
+    await openChatWith('Isha');
+    await fireEvent(
+      await screen.findByText('Hey! Saw you play badminton at Baner too?'),
+      'longPress',
+    );
+    await screen.findByRole('header', { name: 'Report this message' });
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Harassment or unwanted contact' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(reports.reportContent).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: 'message', targetId: 'm1' }),
+    );
+  });
+
+  test('my own messages have nothing to report', async () => {
+    jest
+      .mocked(chat.fetchMessages)
+      .mockResolvedValue([message({ id: 'm2', senderId: myId, body: 'Mine' })]);
+    await openChatWith('Isha');
+    await fireEvent(await screen.findByText('Mine'), 'longPress');
+    expect(
+      screen.queryByRole('header', { name: 'Report this message' }),
+    ).toBeNull();
   });
 });
