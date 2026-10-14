@@ -2,7 +2,7 @@
 
 Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-map.md, revised after the 2026-10-07 design session (glossary in CONTEXT.md, decisions 15 to 17, docs/adr/). V1 only: no columns for deferred features. Where this differs from docs/03 or docs/11, this file wins.
 
-27 tables in `public`, plus a policy on `realtime.messages`. Every table has RLS enabled, default deny.
+28 tables in `public`, plus a policy on `realtime.messages`. Every table has RLS enabled, default deny.
 
 ## Conventions
 - Primary keys: `uuid default gen_random_uuid()`, except user-keyed tables (`profiles.id = auth.users.id`) and messages (client-generated id).
@@ -79,7 +79,8 @@ Owner can select own row and update: display_name, area_id, modes, availability,
 |---|---|---|
 | `profile_prompts` | pk (user_id, position 1..2), `question_id`, `answer varchar(140)` | owner CRUD (within the minimum); others via `get_profile()` |
 | `profile_tags` | pk (user_id, tag_id) | owner CRUD; others via functions |
-| `photos` | `id`, `user_id`, `provider text default 'r2'`, `object_key`, `position 1..4` (1 = cover; lists use the first live photo, so a hidden or removed cover gives way to the next), `width`, `height`, `uploaded_at`, `hidden_at`, `removed_at`, `removed_by`; unique (user_id, position) | Row inserted by the upload Edge Function with `uploaded_at` null; `confirm_photo_upload()` sets it after checking the object exists. Live = uploaded, not hidden, not removed. Owner selects, reorders, deletes. Others never read the table; they get signed URLs from functions |
+| `photos` | `id`, `user_id`, `provider text default 'r2'`, `object_key` (`<member id>/<photo id>.jpg`), `position 1..4` (1 = cover; lists use the first live photo, so a hidden or removed cover gives way to the next), `width`, `height`, `uploaded_at`, `hidden_at`, `removed_at`, `removed_by`; unique (user_id, position), deferrable | Only confirmed uploads: `confirm_photo_upload()` inserts the row with `uploaded_at` set, after the media Edge Function has checked the file is in R2. Live = uploaded, not hidden, not removed. Owner selects, reorders, deletes. Others never read the table; they get signed URLs from the media function (`photo_links()`) |
+| `photo_uploads` | `id` (becomes the photo id), `user_id`, `position 1..4`, `object_key`, `created_at`; unique (user_id, position) | Upload slots waiting for their file (#35), kept apart from `photos` so a replacement uploads while the old photo stays live. No client access; only the media function, through `start_photo_upload()`, `pending_photo_upload()` and `confirm_photo_upload()`. A new slot for a position replaces the earlier one there; slots older than an hour can't be confirmed and are discarded when the Member's next slot is made |
 | `consents` | pk (user_id, document_id), `accepted_at`, `withdrawn_at` | owner reads; written by `accept_consents()`, withdrawn by `withdraw_consent()` |
 | `device_tokens` | `token text pk`, `user_id`, `platform` (android, ios), `last_seen_at` | owner CRUD; read by the push Edge Function (service role) |
 
@@ -144,7 +145,10 @@ Business functions:
 |---|---|
 | `accept_consents(dob, document_ids[])` | rejects under 18 or no date of birth, and a missing current document (a null list or null entry counts as missing); creates the caller's profile row if there is none, stores DOB and consents (a refusal leaves no profile) |
 | `submit_profile()` | requires the age gate and consents to be passed; checks the profile minimum; sets submitted_at; the Member is visible at once |
-| `confirm_photo_upload(photo_id)` | service role only: the upload Edge Function calls it after checking the object exists in R2 |
+| `start_photo_upload(member_id, photo_position)` | service role only (media function): makes an upload slot and returns its photo id and object key, plus the keys of slots it discarded (same position, or older than an hour) so their files can be deleted. Refuses `accept the terms first` (no profile), `your account cannot add photos` (banned or deleted), `choose a photo position from 1 to 4` |
+| `pending_photo_upload(member_id, upload_id)` | service role only: the object key of the Member's own slot younger than an hour, else null |
+| `confirm_photo_upload(member_id, upload_id)` | service role only: the slot becomes the live photo at its position under the same id; a photo already there is deleted after the new one is in, so a Submitted Profile never drops below the minimum. Returns the replaced photo's object key (or null) so its file can be deleted. Refuses `no photo upload to confirm`, `your account cannot add photos` |
+| `photo_links(viewer, photo_ids)` | service role only: of the asked-for photos, those the viewer may see, with object keys to sign. Owner: every confirmed photo not taken down. Anyone else: live photos of a Member not banned, deleted or Auto-hidden, with no Block either way (`is_blocked`), whom the viewer may see in Discover/profile view, or who shares with them a Connection (any status but declined), a waiting or accepted Join Request (host and requester), or a place among an Activity's accepted joiners (`shares_photos_with`); a banned or deleted viewer gets only their own |
 | `set_paused(paused)` | |
 | `discover_feed(mode, limit, cursor)` | visible candidates with an Eligible Mode (all Eligible Modes when mode is null), score, safe columns only, age not DOB, why-you-match text from Eligible Modes, shared tags. the Networking feed ranks by how many of Industry and Career Stage are shared (equal weight), then the usual score |
 | `get_profile(user_id)` | full profile view under the same visibility rules |

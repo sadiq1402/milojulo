@@ -1,6 +1,6 @@
 # Data model and access rules
 
-**Superseded for schema detail by docs/12-db-schema.md** (27 tables, no pre-approval, no invite codes, Connections carry a Mode). The screens need more than the tables below: see docs/11-screen-data-map.md for the per-screen data map and the additions (about 26 tables in total) that supersede this first list.
+**Superseded for schema detail by docs/12-db-schema.md** (28 tables, no pre-approval, no invite codes, Connections carry a Mode). The screens need more than the tables below: see docs/11-screen-data-map.md for the per-screen data map and the additions (about 26 tables in total) that supersede this first list.
 
 Sixteen tables in Supabase Postgres. RLS on every table, default deny.
 
