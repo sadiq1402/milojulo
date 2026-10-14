@@ -42,16 +42,16 @@ isOneToOne: false
       referencedRelation: "areas"
       referencedColumns: ["id"]
     },{
-      foreignKeyName: "activities_host_id_fkey"
-      columns: ["host_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },{
       foreignKeyName: "activities_circle_id_fkey"
       columns: ["circle_id"]
 isOneToOne: false
       referencedRelation: "circles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activities_host_id_fkey"
+      columns: ["host_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]
@@ -101,58 +101,6 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
-                },"circles": {
-                  Row: {
-                    "area_id": string,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"tag_id": number
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "area_id": string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"tag_id": number
-                  }
-                  Update: {
-                    "area_id"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"tag_id"?: number
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "circles_area_id_fkey"
-      columns: ["area_id"]
-isOneToOne: false
-      referencedRelation: "areas"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "circles_tag_id_fkey"
-      columns: ["tag_id"]
-isOneToOne: false
-      referencedRelation: "tags"
-      referencedColumns: ["id"]
-    }
-                  ]
-                },"circle_members": {
-                  Row: {
-                    "circle_id": string,"joined_at": string,"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "circle_id": string,"joined_at"?: string,"user_id": string
-                  }
-                  Update: {
-                    "circle_id"?: string,"joined_at"?: string,"user_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "circle_members_circle_id_fkey"
-      columns: ["circle_id"]
-isOneToOne: false
-      referencedRelation: "circles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "circle_members_user_id_fkey"
-      columns: ["user_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"areas": {
                   Row: {
                     "center": unknown,"created_at": string,"id": string,"is_active": boolean,"name": string
@@ -190,6 +138,58 @@ isOneToOne: false
       columns: ["blocker_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"circle_members": {
+                  Row: {
+                    "circle_id": string,"joined_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "circle_id": string,"joined_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "circle_id"?: string,"joined_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "circle_members_circle_id_fkey"
+      columns: ["circle_id"]
+isOneToOne: false
+      referencedRelation: "circles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "circle_members_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"circles": {
+                  Row: {
+                    "area_id": string,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"tag_id": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_id": string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"tag_id": number
+                  }
+                  Update: {
+                    "area_id"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"tag_id"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "circles_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "circles_tag_id_fkey"
+      columns: ["tag_id"]
+isOneToOne: false
+      referencedRelation: "tags"
       referencedColumns: ["id"]
     }
                   ]
@@ -552,6 +552,15 @@ isOneToOne: false
 "activity_starts_when":
 { Args: { "starts_at": string }; Returns: string
                            },
+"admin_archive_circle":
+{ Args: { "circle_id": string }; Returns: undefined
+                           },
+"admin_create_circle":
+{ Args: { "area_id": string,"description": string,"name": string,"tag_id": number }; Returns: string
+                           },
+"admin_edit_circle":
+{ Args: { "area_id": string,"circle_id": string,"description": string,"name": string,"tag_id": number }; Returns: undefined
+                           },
 "age_of":
 { Args: { "birth_date": string }; Returns: number
                            },
@@ -560,32 +569,11 @@ isOneToOne: false
                            },
 "browse_circles":
 { Args: Record<PropertyKey, never>; Returns: {
-              "circle_id": string,"name": string,"area_id": string,"tag_id": number,"description": string,"member_count": number,"i_am_member": boolean
+              "area_id": string,"circle_id": string,"description": string,"i_am_member": boolean,"member_count": number,"name": string,"tag_id": number
             }[]
                            },
 "can_see_activity":
 { Args: { "activity": Omit<Database["public"]['Tables']["activities"]['Row'], Database["public"]['Tables']["activities"]['ComputedFields']>,"viewer": string }; Returns: boolean
-                           },
-"circle_activities":
-{ Args: { "circle_id": string }; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
-            }[]
-                           },
-"circle_members_of":
-{ Args: { "circle_id": string }; Returns: {
-              "member_id": string,"display_name": string,"cover_photo_id": string,"area_id": string
-            }[]
-                           },
-"get_circle":
-{ Args: { "circle_id": string }; Returns: {
-              "circle_id": string,"name": string,"area_id": string,"tag_id": number,"description": string,"member_count": number,"i_am_member": boolean
-            }[]
-                           },
-"join_circle":
-{ Args: { "circle_id": string }; Returns: undefined
-                           },
-"leave_circle":
-{ Args: { "circle_id": string }; Returns: undefined
                            },
 "can_send_in":
 { Args: { "connection_id": string }; Returns: boolean
@@ -598,6 +586,16 @@ isOneToOne: false
                            },
 "check_photo_uploader":
 { Args: { "member_id": string }; Returns: undefined
+                           },
+"circle_activities":
+{ Args: { "circle_id": string }; Returns: {
+              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+            }[]
+                           },
+"circle_members_of":
+{ Args: { "circle_id": string }; Returns: {
+              "area_id": string,"cover_photo_id": string,"display_name": string,"member_id": string
+            }[]
                            },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined
@@ -636,6 +634,11 @@ isOneToOne: false
               "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
             }[]
                            },
+"get_circle":
+{ Args: { "circle_id": string }; Returns: {
+              "area_id": string,"circle_id": string,"description": string,"i_am_member": boolean,"member_count": number,"name": string,"tag_id": number
+            }[]
+                           },
 "get_profile":
 { Args: { "member_id": string }; Returns: {
               "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"tag_ids": (number)[],"user_id": string,"why_you_match": string
@@ -650,6 +653,9 @@ isOneToOne: false
 "is_blocked":
 { Args: { "a": string,"b": string }; Returns: boolean
                            },
+"is_circle_member":
+{ Args: { "circle_id": string,"member_id": string }; Returns: boolean
+                           },
 "is_reachable":
 { Args: { "member_id": string }; Returns: boolean
                            },
@@ -658,6 +664,12 @@ isOneToOne: false
                            },
 "join_activity_request":
 { Args: { "activity_id": string }; Returns: string
+                           },
+"join_circle":
+{ Args: { "circle_id": string }; Returns: undefined
+                           },
+"leave_circle":
+{ Args: { "circle_id": string }; Returns: undefined
                            },
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
