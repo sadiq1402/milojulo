@@ -254,12 +254,13 @@ Deno.test('photo-confirm checks the staged file, copies it to the live key, conf
   });
   assertEquals(await call({ action: 'photo-confirm', photoId: PHOTO }), { status: 200, body: { ok: true } });
   assertEquals(dbCalls, ['pendingPhotoUpload', 'confirmPhotoUpload']);
-  assertEquals(r2Calls.map((c) => `${c.method} ${new URL(c.url).pathname}`), [
-    `HEAD /milojulo-media/${STAGED}`,
-    `PUT /milojulo-media/${KEY}`,
-    `DELETE /milojulo-media/${STAGED}`,
-    `DELETE /milojulo-media/${replaced}`,
-  ]);
+  const calls = r2Calls.map((c) => `${c.method} ${new URL(c.url).pathname}`);
+  assertEquals(calls.slice(0, 2), [`HEAD /milojulo-media/${STAGED}`, `PUT /milojulo-media/${KEY}`]);
+  // The two deletes run concurrently, so they may finish in either order.
+  assertEquals(
+    calls.slice(2).sort(),
+    [`DELETE /milojulo-media/${STAGED}`, `DELETE /milojulo-media/${replaced}`].sort(),
+  );
   assertMatch(
     r2Calls[0].headers.get('authorization')!,
     /^AWS4-HMAC-SHA256 Credential=AKID\/20261014\/auto\/s3\/aws4_request,SignedHeaders=host;x-amz-content-sha256;x-amz-date,Signature=[0-9a-f]{64}$/,
