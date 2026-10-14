@@ -1,0 +1,57 @@
+name: Distribute Android build
+
+# On every merge to main that changes the app, builds a release APK (signed with the
+# shared debug keystore so it updates in place) and sends it to Firebase App Distribution.
+# Testers get a notification and install with one tap — no Play Store.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/android-distribute.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: android-distribute
+  cancel-in-progress: true
+
+jobs:
+  distribute:
+    name: distribute
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      # env.ts is gitignored; CI writes the cloud target so the distributed app talks to the hosted project.
+      # env.ts is gitignored; CI writes the cloud target. These are public client values, not secrets.
+      - name: Write cloud config
+        run: |
+          cat > src/config/env.ts <<'EOF'
+          export const env = {
+            supabaseUrl: 'https://rezavwgigxkkjycpfvkd.supabase.co',
+            supabaseAnonKey: 'sb_publishable_4JWjKB1D-0ZGHWGzLcGZdQ_-uVAsERj',
+          };
+          EOF
+      - name: Build release APK (arm64)
+        run: ./android/gradlew -p android assembleRelease -PreactNativeArchitectures=arm64-v8a
+      - name: Distribute to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: devs
+          file: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          releaseNotes: ${{ github.event.head_commit.message }}
