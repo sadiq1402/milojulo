@@ -119,7 +119,7 @@ Spots left = capacity − accepted Join Requests (the host is not counted). Toni
 | Table | Columns | Access |
 |---|---|---|
 | `blocks` | pk (blocker_id, blocked_id) | blocker selects own list and unblocks (delete); insert via `block_user()` (also closes the Connection) |
-| `reports` | `id`, `reporter_id` (nullable: null for word-filter flags and after the reporter's deletion), `target_type`, `target_id uuid`, `target_user_id`, `reason`, `details varchar(500)`, `evidence jsonb` (snapshot taken by `report()`), `evidence_media_key`, `status`, `handled_by`, `handled_at`, `internal_note` | insert via `report()`; reporter cannot read back; admin all |
+| `reports` | `id`, `reporter_id` (nullable: null for word-filter flags and after the reporter's deletion), `target_type`, `target_id uuid`, `target_user_id`, `reason`, `details varchar(500)`, `evidence jsonb` (snapshot taken by `report()`), `evidence_media_key`, `status`, `handled_by`, `handled_at`, `internal_note` | insert via `report()` only; no Member reads them (reporters can't read back); admins select (admin writes come with the moderation tools) |
 | `admin_actions` | `id`, `admin_id`, `action text`, `target_type`, `target_id`, `note` | admin insert/select only; never updated |
 | `meetup_feedback` | `id`, `user_id`, `other_user_id`, `activity_id` (nullable), `did_meet bool`, `keep bool`; unique nulls not distinct (user_id, other_user_id, activity_id) | owner inserts via `submit_meetup_feedback()` and reads own; admin reads for metrics |
 | `data_requests` | `id`, `user_id`, `kind`, `status` (pending, done), `completed_at` | owner inserts and reads own; admin/service completes |
@@ -162,7 +162,7 @@ Business functions:
 | `join_activity_request(activity)`, `respond_activity_request(id, accept)`, `withdraw_activity_request(id)` | |
 | `browse_circles()`, `get_circle(circle)`, `circle_members_of(circle)`, `circle_activities(circle)`, `join_circle(circle)`, `leave_circle(circle)` | `activity_board()` and `get_activity()` also return `circle_id` and a `circle_name` that is NULL once the Circle is archived |
 | `admin_create_circle(name, area, tag, description)`, `admin_edit_circle(circle, name, area, tag, description)`, `admin_archive_circle(circle)` | is_admin() only; for the seed and the dashboard |
-| `block_user(id)`, `report(target_type, target_id, reason, details)` | `report()` applies Auto-hide |
+| `block_user(id)`, `report(target_type, target_id, reason, details)` | `report()` snapshots the content (profile: name and prompts; photo: owner and object key; message: body, sender, media key and type, sent at; Activity: title, description, type, Area, start, host), applies Auto-hide, and refuses `sign in first`, `choose a reason` (none or `word_filter`), `keep details to 500 characters`, `nothing to report` (unknown or deleted target, own content, a message outside the caller's Connections); a Block either way doesn't stop a report |
 | `submit_meetup_feedback(other_user, activity, did_meet, keep)` | |
 | `admin_takedown(target_type, target_id, note)`, `admin_ban(user_id, reason)`, `admin_restore(target_type, target_id)` | admin only; write admin_actions |
 | `withdraw_consent(document_id)`, `delete_account()` | delete sets deleted_at and queues an erasure data_request; the purge Edge Function removes R2 objects then the auth user (cascade) |
