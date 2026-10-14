@@ -1,6 +1,4 @@
--- Reports and Auto-hide: Members report a profile, photo, message or Activity through report();
--- the content is snapshotted, and 3 distinct reporters within 7 days hide a profile, photo or
--- Activity until an admin looks. Messages are never hidden automatically.
+-- Reports with evidence snapshots, and Auto-hide after 3 distinct reporters in 7 days.
 
 create type public.report_target as enum ('profile', 'message', 'activity', 'photo');
 create type public.report_reason as enum (
@@ -47,7 +45,7 @@ declare
   me uuid := auth.uid();
   owner uuid;
   snapshot jsonb;
-  media text;
+  evidence_media text;
   clean_details text := nullif(trim(report.details), '');
 begin
   if not exists (select 1 from public.profiles where id = me and deleted_at is null) then
@@ -75,8 +73,9 @@ begin
       from public.profiles p
       where p.id = report.target_id and p.deleted_at is null;
     when 'photo' then
-      select ph.user_id, jsonb_build_object('owner_id', ph.user_id, 'object_key', ph.object_key)
-        into owner, snapshot
+      select ph.user_id, jsonb_build_object('owner_id', ph.user_id, 'object_key', ph.object_key),
+             ph.object_key
+        into owner, snapshot, evidence_media
       from public.photos ph
       where ph.id = report.target_id and ph.uploaded_at is not null;
     when 'message' then
@@ -85,7 +84,7 @@ begin
                                 'media_key', m.media_key, 'media_mime', m.media_mime,
                                 'sent_at', m.created_at),
              m.media_key
-        into owner, snapshot, media
+        into owner, snapshot, evidence_media
       from public.messages m
       join public.connections c on c.id = m.connection_id
       where m.id = report.target_id and me in (c.requester_id, c.addressee_id);
@@ -97,7 +96,7 @@ begin
       from public.activities a
       where a.id = report.target_id;
     else
-      null;
+      null;  -- a null target_type falls through to 'nothing to report'
   end case;
 
   if owner is null or owner = me then
@@ -106,7 +105,7 @@ begin
 
   insert into public.reports (reporter_id, target_type, target_id, target_user_id, reason, details,
                               evidence, evidence_media_key)
-  values (me, report.target_type, report.target_id, owner, report.reason, clean_details, snapshot, media);
+  values (me, report.target_type, report.target_id, owner, report.reason, clean_details, snapshot, evidence_media);
 
   if report.target_type = 'message' then
     return;
@@ -125,8 +124,6 @@ begin
         update public.photos set hidden_at = now() where id = report.target_id and hidden_at is null;
       when 'activity' then
         update public.activities set hidden_at = now() where id = report.target_id and hidden_at is null;
-      else
-        null;
     end case;
   end if;
 end;

@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(47);
+select plan(49);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000000' || suffix)::uuid $$;
@@ -169,6 +169,9 @@ select throws_ok(
   format($$ select public.report('message', %L, 'harassment') $$, pg_temp.id('othermsg')),
   'nothing to report', 'a Member cannot report a message in a Connection they are not part of');
 select throws_ok(
+  format($$ select public.report(null, %L, 'harassment') $$, pg_temp.m('c1')),
+  'nothing to report', 'a report needs a target type');
+select throws_ok(
   format($$ select public.report('message', %L, 'harassment') $$, gen_random_uuid()),
   'nothing to report', 'an unknown message cannot be reported');
 reset role;
@@ -179,7 +182,7 @@ select pg_temp.as_member('b1');
 select lives_ok(
   format($$ select public.report('profile', %L, 'fake_or_spam', '   ') $$, pg_temp.m('c1')),
   'a Member reports a profile');
-reset role;
+select pg_temp.act_as_admin(pg_temp.m('ad'));
 select results_eq(
   format($$ select reporter_id, target_user_id, reason, details, status, evidence->>'display_name'
            from public.reports where target_type = 'profile' and target_id = %L $$, pg_temp.m('c1')),
@@ -205,13 +208,16 @@ select lives_ok(
 select lives_ok(
   format($$ select public.report('activity', %L, 'felt_unsafe') $$, pg_temp.id('c5act')),
   'a Member reports an Activity');
-reset role;
+select pg_temp.act_as_admin(pg_temp.m('ad'));
 select results_eq(
   format($$ select target_user_id, evidence->>'object_key', evidence->>'owner_id', details
            from public.reports where target_id = %L $$, pg_temp.id('c4photo')),
   format($$ values (%L::uuid, %L, %L, 'Not ok'::varchar) $$,
          pg_temp.m('c4'), pg_temp.m('c4') || '/3.jpg', pg_temp.m('c4')),
   'the photo evidence holds the owner and object key');
+select is(
+  (select evidence_media_key from public.reports where target_id = pg_temp.id('c4photo')),
+  pg_temp.m('c4') || '/3.jpg', 'a photo report keeps the object key as its evidence media');
 select results_eq(
   format($$ select target_user_id, evidence->>'body', evidence->>'sender_id', evidence->>'type',
                   evidence ? 'media_key', evidence ? 'sent_at'
