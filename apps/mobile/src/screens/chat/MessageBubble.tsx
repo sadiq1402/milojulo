@@ -42,7 +42,14 @@ export function MessageBubble({ item, mine, seen, onRetry, onReport }: Props) {
       <Pressable
         onLongPress={onReport}
         disabled={!onReport}
+        accessibilityLabel={item.body ?? undefined}
         accessibilityHint={onReport ? 'Long-press to report' : undefined}
+        accessibilityActions={
+          onReport ? [{ name: 'report', label: 'Report message' }] : undefined
+        }
+        onAccessibilityAction={e =>
+          e.nativeEvent.actionName === 'report' && onReport?.()
+        }
         style={[
           styles.bubble,
           mine ? styles.mine : styles.theirs,

@@ -121,7 +121,7 @@ export function ReportScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
-      <TopBar onBack={navigation.goBack} />
+      <TopBar title="Report" onBack={navigation.goBack} />
       <ScrollView
         contentContainerStyle={styles.body}
         keyboardShouldPersistTaps="handled"

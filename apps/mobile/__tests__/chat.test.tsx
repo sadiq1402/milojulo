@@ -545,6 +545,24 @@ describe('reporting a message', () => {
     );
   });
 
+  test('a screen reader can report the message through its actions', async () => {
+    jest.mocked(reports.reportContent).mockResolvedValue();
+    await openChatWith('Isha');
+    const bubble = await screen.findByLabelText(
+      'Hey! Saw you play badminton at Baner too?',
+    );
+    expect(bubble.props.accessibilityActions).toEqual([
+      { name: 'report', label: 'Report message' },
+    ]);
+    await fireEvent(bubble, 'accessibilityAction', {
+      nativeEvent: { actionName: 'report' },
+    });
+    expect(
+      await screen.findByRole('header', { name: 'Report this message' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Report')).toBeOnTheScreen();
+  });
+
   test('my own messages have nothing to report', async () => {
     jest
       .mocked(chat.fetchMessages)

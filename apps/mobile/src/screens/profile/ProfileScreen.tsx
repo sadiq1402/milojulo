@@ -42,6 +42,7 @@ export function ProfileScreen({ navigation, route }: Props) {
   const { memberId } = route.params;
   const client = useQueryClient();
   const profile = useProfile(memberId);
+  const member = profile.data;
   const [menuOpen, setMenuOpen] = useState(false);
 
   const block = async () => {
@@ -82,21 +83,21 @@ export function ProfileScreen({ navigation, route }: Props) {
             This profile isn't available any more.
           </Text>
         </View>
-      ) : profile.data ? (
+      ) : member ? (
         <>
-          <ProfileBody profile={profile.data} />
-          <ProfileAction profile={profile.data} />
+          <ProfileBody profile={member} />
+          <ProfileAction profile={member} />
           <ProfileMenu
             visible={menuOpen}
             onClose={() => setMenuOpen(false)}
-            name={profile.data.name}
+            name={member.name}
             onBlock={block}
             onReport={() =>
               navigation.navigate('Report', {
                 targetType: 'profile',
                 targetId: memberId,
                 memberId,
-                memberName: profile.data!.name,
+                memberName: member.name,
               })
             }
           />
@@ -110,8 +111,14 @@ export function ProfileScreen({ navigation, route }: Props) {
 
 function ProfileBody({ profile }: { profile: Profile }) {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
-  // The hero shows the first photo; long-press reports that photo.
   const heroPhotoId = profile.photoIds[0];
+  const reportPhoto = () =>
+    navigation.navigate('Report', {
+      targetType: 'photo',
+      targetId: heroPhotoId,
+      memberId: profile.id,
+      memberName: profile.name,
+    });
   const areas = useAreaNames();
   const tags = useTagNames();
   const questions = usePromptQuestions();
@@ -124,13 +131,12 @@ function ProfileBody({ profile }: { profile: Profile }) {
     <ScrollView contentContainerStyle={styles.body}>
       <Pressable
         disabled={!heroPhotoId}
-        onLongPress={() =>
-          navigation.navigate('Report', {
-            targetType: 'photo',
-            targetId: heroPhotoId,
-            memberId: profile.id,
-            memberName: profile.name,
-          })
+        onLongPress={reportPhoto}
+        accessibilityActions={
+          heroPhotoId ? [{ name: 'report', label: 'Report photo' }] : undefined
+        }
+        onAccessibilityAction={e =>
+          e.nativeEvent.actionName === 'report' && reportPhoto()
         }
         accessibilityLabel={`${profile.name}'s photo`}
         accessibilityHint={heroPhotoId ? 'Long-press to report' : undefined}

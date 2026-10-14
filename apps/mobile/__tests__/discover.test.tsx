@@ -494,6 +494,20 @@ describe('reporting', () => {
     expect(screen.getByText(/Blocking didn't work/)).toBeOnTheScreen();
   });
 
+  test('a screen reader can report the photo through its actions', async () => {
+    await openProfile();
+    await fireEvent(
+      screen.getByLabelText("Isha's photo"),
+      'accessibilityAction',
+      {
+        nativeEvent: { actionName: 'report' },
+      },
+    );
+    expect(
+      await screen.findByRole('header', { name: "Report Isha's photo" }),
+    ).toBeOnTheScreen();
+  });
+
   test('a long-press on the profile photo reports that photo', async () => {
     await openProfile();
     await fireEvent(screen.getByLabelText("Isha's photo"), 'longPress');

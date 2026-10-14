@@ -24,7 +24,6 @@ export const detailsLimit = 500;
 
 const fallback = "That didn't work. Check your connection and try again.";
 
-// Keys are the database's exact messages.
 const refusals: Record<string, string> = {
   'sign in first': 'Sign in again to send a report.',
   'choose a reason': 'Choose a reason for your report.',
