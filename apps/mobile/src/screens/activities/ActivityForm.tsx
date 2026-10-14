@@ -225,7 +225,7 @@ export function ActivityForm({
       }
     >
       {circleName ? (
-        <Card style={styles.locked}>
+        <Card style={styles.notice}>
           <Text variant="bodySmall" color={colors.orchidDark}>
             Posting to {circleName}. It shows on the main board too.
           </Text>
@@ -406,4 +406,5 @@ const styles = StyleSheet.create({
   label: { ...textStyles.bodySmall, fontFamily: fontFamily(fonts.text, '600') },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: sizes.chip.gap },
   locked: { backgroundColor: colors.selected },
+  notice: { backgroundColor: colors.selected },
 });

@@ -1,4 +1,9 @@
-import { fireEvent, screen, within } from '@testing-library/react-native';
+import {
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import type { BoardActivity } from '../src/features/activities/model';
@@ -211,7 +216,7 @@ describe('a Circle I belong to', () => {
     expect(discover.fetchProfile).toHaveBeenCalledWith('kabir');
   });
 
-  test('posting pre-selects the Circle', async () => {
+  test('posting pre-selects the Circle and refreshes its Coming up list', async () => {
     await openDetail('Baner Badminton');
     await fireEvent.press(
       screen.getByRole('button', { name: 'Post an activity to this circle' }),
@@ -226,11 +231,16 @@ describe('a Circle I belong to', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Sports' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Baner' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
+    // The detail stays mounted under the form; its Activities should reload after posting.
+    jest.mocked(circles.fetchCircleActivities).mockClear();
     await fireEvent.press(
       screen.getByRole('button', { name: 'Post Activity' }),
     );
     expect(activities.postActivity).toHaveBeenCalledWith(
       expect.objectContaining({ circleId: 'badminton' }),
+    );
+    await waitFor(() =>
+      expect(circles.fetchCircleActivities).toHaveBeenCalledWith('badminton'),
     );
   });
 

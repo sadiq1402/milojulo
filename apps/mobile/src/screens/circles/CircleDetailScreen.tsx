@@ -178,9 +178,7 @@ function CircleMembers({
           ))}
         </List>
       ) : (
-        <Text color={colors.secondary}>
-          No one else is here yet. You're the first.
-        </Text>
+        <Text color={colors.secondary}>No one else to show here yet.</Text>
       )}
     </View>
   );

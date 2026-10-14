@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { activityKeys } from '../activities/queries';
 import {
   fetchCircle,
   fetchCircleActivities,
@@ -44,14 +43,10 @@ export function useCircleActivities(circleId: string) {
 }
 
 // Joining or leaving changes the list, the Circle and its members (fellow members only
-// show to members); the Activity board is untouched by either.
+// show to members); the Activity board is untouched, so only the Circle queries refresh.
 function useRefreshCircles() {
   const client = useQueryClient();
-  return () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey: circleKeys.all }),
-      client.invalidateQueries({ queryKey: activityKeys.all }),
-    ]);
+  return () => client.invalidateQueries({ queryKey: circleKeys.all });
 }
 
 export function useJoinCircle(circleId: string) {

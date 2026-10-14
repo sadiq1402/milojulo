@@ -58,8 +58,8 @@ export function CirclesScreen() {
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <Text color={colors.secondary}>
-              Small local communities around a place and a shared interest. Our
-              team creates them during the beta.
+              Each Circle gathers people around one Area and one shared
+              interest. Our team creates them during the beta.
             </Text>
           }
           renderItem={({ item }) => (

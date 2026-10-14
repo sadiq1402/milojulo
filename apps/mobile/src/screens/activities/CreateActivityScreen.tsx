@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { postActivity } from '../../features/activities/api';
 import { activityKeys } from '../../features/activities/queries';
+import { circleKeys } from '../../features/circles/queries';
 import { defaultStart } from '../../features/activities/time';
 import type { MemberParams } from '../../navigation/types';
 import {
@@ -47,6 +48,12 @@ export function CreateActivityScreen({ navigation, route }: Props) {
       circleId: circle?.circleId ?? null,
     });
     client.invalidateQueries({ queryKey: activityKeys.all });
+    // Posting to a Circle also changes its "Coming up" list.
+    if (circle) {
+      client.invalidateQueries({
+        queryKey: circleKeys.activities(circle.circleId),
+      });
+    }
     navigation.replace('ActivityDetail', { activityId });
   };
 
