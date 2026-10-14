@@ -6,6 +6,7 @@ const ASHA = '00000000-0000-0000-0000-0000000000a1';
 const PHOTO = '00000000-0000-0000-0000-0000000000f1';
 const OTHER_PHOTO = '00000000-0000-0000-0000-0000000000f2';
 const KEY = `${ASHA}/${PHOTO}.jpg`;
+const STAGED = `uploads/${KEY}`;
 const NOW = new Date('2026-10-14T06:30:00Z');
 const MB = 1024 * 1024;
 
@@ -13,8 +14,11 @@ const MB = 1024 * 1024;
 function setup(opts: {
   objects?: Record<string, StoredObject>;
   refuse?: Partial<Record<keyof Db, string>>;
-  pending?: Record<string, string>;
+  pending?: Record<string, { uploadKey: string; objectKey: string }>;
   replaced?: string | null;
+  deleted?: string | null;
+  failHead?: boolean;
+  failCopy?: boolean;
   discarded?: string[];
   visible?: Record<string, string>;
   failDelete?: boolean;
@@ -23,7 +27,7 @@ function setup(opts: {
   const r2Calls: { method: string; url: string; headers: Headers }[] = [];
   const dbCalls: string[] = [];
   const logs: string[] = [];
-  const pending = { ...(opts.pending ?? { [PHOTO]: KEY }) };
+  const pending = { ...(opts.pending ?? { [PHOTO]: { uploadKey: STAGED, objectKey: KEY } }) };
   const refuse = async (name: keyof Db) => {
     dbCalls.push(name);
     const message = opts.refuse?.[name];
@@ -32,7 +36,7 @@ function setup(opts: {
   const db: Db = {
     async startPhotoUpload(memberId) {
       await refuse('startPhotoUpload');
-      return { photoId: PHOTO, objectKey: `${memberId}/${PHOTO}.jpg`, discardedKeys: opts.discarded ?? [] };
+      return { photoId: PHOTO, uploadKey: `uploads/${memberId}/${PHOTO}.jpg`, discardedKeys: opts.discarded ?? [] };
     },
     async pendingPhotoUpload(memberId, uploadId) {
       await refuse('pendingPhotoUpload');
@@ -41,6 +45,10 @@ function setup(opts: {
     async confirmPhotoUpload() {
       await refuse('confirmPhotoUpload');
       return opts.replaced ?? null;
+    },
+    async deletePhoto() {
+      await refuse('deletePhoto');
+      return opts.deleted === undefined ? KEY : opts.deleted;
     },
     async photoLinks(_viewer, ids) {
       await refuse('photoLinks');
@@ -59,6 +67,15 @@ function setup(opts: {
       const method = init?.method ?? 'GET';
       r2Calls.push({ method, url, headers: new Headers(init?.headers) });
       const key = decodeURIComponent(new URL(url).pathname.replace('/milojulo-media/', ''));
+      const copySource = new Headers(init?.headers).get('x-amz-copy-source');
+      if (method === 'PUT' && copySource) {
+        if (opts.failCopy) return new Response(null, { status: 500 });
+        const from = objects[decodeURIComponent(copySource.replace('/milojulo-media/', ''))];
+        if (!from) return new Response(null, { status: 404 });
+        objects[key] = { ...from };
+        return new Response('<CopyObjectResult/>', { status: 200 });
+      }
+      if (method === 'HEAD' && opts.failHead) return new Response(null, { status: 503 });
       if (method === 'DELETE') {
         if (opts.failDelete) return new Response(null, { status: 500 });
         delete objects[key];
@@ -159,11 +176,11 @@ Deno.test('photo-upload gives the photo id and a PUT link for <member>/<photo>.j
   assertEquals(res.body.expiresIn, 300);
   const url = new URL(res.body.uploadUrl);
   assertEquals(url.origin, 'https://acct.r2.cloudflarestorage.com');
-  assertEquals(url.pathname, `/milojulo-media/${KEY}`);
+  assertEquals(url.pathname, `/milojulo-media/${STAGED}`);
   assertEquals(url.searchParams.get('X-Amz-Expires'), '300');
   assertEquals(url.searchParams.get('X-Amz-Date'), '20261014T063000Z');
   assertEquals(url.searchParams.get('X-Amz-Credential'), 'AKID/20261014/auto/s3/aws4_request');
-  assertEquals(url.searchParams.get('X-Amz-SignedHeaders'), 'content-type;host');
+  assertEquals(url.searchParams.get('X-Amz-SignedHeaders'), 'content-length;content-type;host');
   assertMatch(url.searchParams.get('X-Amz-Signature')!, /^[0-9a-f]{64}$/);
   assertEquals(r2Calls, []);
 });
@@ -208,31 +225,95 @@ Deno.test('photo-upload deletes the files of discarded slots, and a failed delet
   assert(failing.logs.some((l) => l.includes('R2 delete failed')));
 });
 
+Deno.test('upload links never point at a live key, only at uploads/', async () => {
+  for (const position of [1, 2, 3, 4]) {
+    const { call } = setup();
+    const res = await call({ ...upload, position });
+    const path = new URL(res.body.uploadUrl).pathname;
+    assert(path.startsWith('/milojulo-media/uploads/'), path);
+    assert(path !== `/milojulo-media/${KEY}`);
+  }
+});
+
+Deno.test('the declared size is signed, so a different Content-Length breaks the signature', async () => {
+  const a = new URL((await setup().call({ ...upload, size: 1000 })).body.uploadUrl);
+  const b = new URL((await setup().call({ ...upload, size: 1001 })).body.uploadUrl);
+  assert(a.searchParams.get('X-Amz-Signature') !== b.searchParams.get('X-Amz-Signature'));
+});
+
 // photo-confirm
 
-Deno.test('photo-confirm checks the file in R2 with a signed HEAD, confirms, and deletes the photo it replaced', async () => {
+Deno.test('photo-confirm checks the staged file, copies it to the live key, confirms, and cleans up', async () => {
   const replaced = `${ASHA}/replaced.jpg`;
   const { call, r2Calls, dbCalls, objects } = setup({
-    objects: { [KEY]: { size: 2 * MB, contentType: 'image/jpeg' }, [replaced]: { size: 1, contentType: 'image/jpeg' } },
+    objects: {
+      [STAGED]: { size: 2 * MB, contentType: 'image/jpeg' },
+      [replaced]: { size: 1, contentType: 'image/jpeg' },
+    },
     replaced,
   });
   assertEquals(await call({ action: 'photo-confirm', photoId: PHOTO }), { status: 200, body: { ok: true } });
   assertEquals(dbCalls, ['pendingPhotoUpload', 'confirmPhotoUpload']);
   assertEquals(r2Calls.map((c) => `${c.method} ${new URL(c.url).pathname}`), [
-    `HEAD /milojulo-media/${KEY}`,
+    `HEAD /milojulo-media/${STAGED}`,
+    `PUT /milojulo-media/${KEY}`,
+    `DELETE /milojulo-media/${STAGED}`,
     `DELETE /milojulo-media/${replaced}`,
   ]);
   assertMatch(
     r2Calls[0].headers.get('authorization')!,
     /^AWS4-HMAC-SHA256 Credential=AKID\/20261014\/auto\/s3\/aws4_request,SignedHeaders=host;x-amz-content-sha256;x-amz-date,Signature=[0-9a-f]{64}$/,
   );
+  assertEquals(r2Calls[1].headers.get('x-amz-copy-source'), `/milojulo-media/${STAGED}`);
+  assertMatch(
+    r2Calls[1].headers.get('authorization')!,
+    /SignedHeaders=host;x-amz-content-sha256;x-amz-copy-source;x-amz-date,Signature=[0-9a-f]{64}$/,
+  );
   assertEquals(objects[KEY].size, 2 * MB);
+  assertEquals(objects[STAGED], undefined);
+  assertEquals(objects[replaced], undefined);
 });
 
-Deno.test('photo-confirm with nothing to replace deletes nothing', async () => {
-  const { call, r2Calls } = setup({ objects: { [KEY]: { size: 10, contentType: 'image/jpeg' } } });
+Deno.test('photo-confirm with nothing to replace (or a taken-down photo, kept) deletes only the staged file', async () => {
+  const { call, r2Calls } = setup({ objects: { [STAGED]: { size: 10, contentType: 'image/jpeg' } } });
   assertEquals((await call({ action: 'photo-confirm', photoId: PHOTO })).status, 200);
-  assertEquals(r2Calls.map((c) => c.method), ['HEAD']);
+  assertEquals(r2Calls.map((c) => `${c.method} ${new URL(c.url).pathname}`), [
+    `HEAD /milojulo-media/${STAGED}`,
+    `PUT /milojulo-media/${KEY}`,
+    `DELETE /milojulo-media/${STAGED}`,
+  ]);
+});
+
+Deno.test('photo-confirm refused by the database after the copy deletes the live copy', async () => {
+  const { call, objects, r2Calls } = setup({
+    objects: { [STAGED]: { size: 10, contentType: 'image/jpeg' } },
+    refuse: { confirmPhotoUpload: 'your account cannot add photos' },
+  });
+  assertEquals((await call({ action: 'photo-confirm', photoId: PHOTO })).status, 403);
+  assertEquals(objects[KEY], undefined);
+  assertEquals(r2Calls.at(-1)!.method, 'DELETE');
+});
+
+Deno.test('a failed R2 copy is a 500 and confirms nothing', async () => {
+  const { call, dbCalls } = setup({ objects: { [STAGED]: { size: 10, contentType: 'image/jpeg' } }, failCopy: true });
+  assertEquals(await call({ action: 'photo-confirm', photoId: PHOTO }), {
+    status: 500,
+    body: { error: 'something went wrong; try again' },
+  });
+  assertEquals(dbCalls, ['pendingPhotoUpload']);
+});
+
+Deno.test('a non-404 R2 HEAD failure is the generic 500, not "did not arrive"', async () => {
+  const { call, dbCalls, logs } = setup({
+    objects: { [STAGED]: { size: 10, contentType: 'image/jpeg' } },
+    failHead: true,
+  });
+  assertEquals(await call({ action: 'photo-confirm', photoId: PHOTO }), {
+    status: 500,
+    body: { error: 'something went wrong; try again' },
+  });
+  assertEquals(dbCalls, ['pendingPhotoUpload']);
+  assert(logs.some((l) => l.includes('R2 HEAD failed with 503')));
 });
 
 Deno.test('photo-confirm without a pending upload of the caller: 404 no photo upload to confirm', async () => {
@@ -260,7 +341,7 @@ Deno.test('photo-confirm refuses and deletes a file over 5 MB, empty, or not a J
       contentType: 'image/png',
     }, { size: 10, contentType: null }]
   ) {
-    const { call, dbCalls, r2Calls } = setup({ objects: { [KEY]: o } });
+    const { call, dbCalls, r2Calls } = setup({ objects: { [STAGED]: o } });
     assertEquals(await call({ action: 'photo-confirm', photoId: PHOTO }), {
       status: 400,
       body: { error: "the photo didn't arrive; try again" },
@@ -271,7 +352,7 @@ Deno.test('photo-confirm refuses and deletes a file over 5 MB, empty, or not a J
 });
 
 Deno.test('photo-confirm passes on database refusals', async () => {
-  const objects = { [KEY]: { size: 10, contentType: 'image/jpeg' } };
+  const objects = { [STAGED]: { size: 10, contentType: 'image/jpeg' } };
   const banned = setup({ objects, refuse: { confirmPhotoUpload: 'your account cannot add photos' } });
   assertEquals(await banned.call({ action: 'photo-confirm', photoId: PHOTO }), {
     status: 403,
@@ -282,6 +363,41 @@ Deno.test('photo-confirm passes on database refusals', async () => {
     status: 404,
     body: { error: 'no photo upload to confirm' },
   });
+});
+
+// photo-delete
+
+Deno.test('photo-delete deletes the photo through the database, then its file', async () => {
+  const { call, dbCalls, r2Calls, objects } = setup({ objects: { [KEY]: { size: 10, contentType: 'image/jpeg' } } });
+  assertEquals(await call({ action: 'photo-delete', photoId: PHOTO }), { status: 200, body: { ok: true } });
+  assertEquals(dbCalls, ['deletePhoto']);
+  assertEquals(r2Calls.map((c) => `${c.method} ${new URL(c.url).pathname}`), [`DELETE /milojulo-media/${KEY}`]);
+  assertEquals(objects[KEY], undefined);
+});
+
+Deno.test('photo-delete of a taken-down photo keeps its file', async () => {
+  const { call, r2Calls } = setup({ deleted: null });
+  assertEquals(await call({ action: 'photo-delete', photoId: PHOTO }), { status: 200, body: { ok: true } });
+  assertEquals(r2Calls, []);
+});
+
+Deno.test('photo-delete refusals: not mine or unknown, and the profile minimum', async () => {
+  const notMine = setup({ refuse: { deletePhoto: 'no photo to delete' } });
+  const refused = { status: 404, body: { error: 'no photo to delete' } };
+  assertEquals(await notMine.call({ action: 'photo-delete', photoId: OTHER_PHOTO }), refused);
+  assertEquals(await notMine.call({ action: 'photo-delete', photoId: 'nope' }), refused);
+  const minimum = setup({ refuse: { deletePhoto: 'add at least 2 photos' } });
+  assertEquals(await minimum.call({ action: 'photo-delete', photoId: PHOTO }), {
+    status: 400,
+    body: { error: 'add at least 2 photos' },
+  });
+  assertEquals(minimum.r2Calls, []);
+});
+
+Deno.test('a failed R2 DELETE throws in the client; photo-delete logs it and still answers ok', async () => {
+  const { call, logs } = setup({ failDelete: true });
+  assertEquals(await call({ action: 'photo-delete', photoId: PHOTO }), { status: 200, body: { ok: true } });
+  assert(logs.some((l) => l.includes('R2 DELETE failed with 500')));
 });
 
 // photo-urls

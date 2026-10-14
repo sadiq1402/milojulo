@@ -23,16 +23,22 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 
 const db: Db = {
   async startPhotoUpload(memberId, position) {
-    const rows = await rpc<{ photo_id: string; object_key: string; discarded_keys: string[] }[]>(
+    const rows = await rpc<{ photo_id: string; upload_key: string; discarded_keys: string[] }[]>(
       'start_photo_upload',
       { member_id: memberId, photo_position: position },
     );
-    return { photoId: rows[0].photo_id, objectKey: rows[0].object_key, discardedKeys: rows[0].discarded_keys };
+    return { photoId: rows[0].photo_id, uploadKey: rows[0].upload_key, discardedKeys: rows[0].discarded_keys };
   },
-  pendingPhotoUpload: (memberId, uploadId) =>
-    rpc<string | null>('pending_photo_upload', { member_id: memberId, upload_id: uploadId }),
+  async pendingPhotoUpload(memberId, uploadId) {
+    const rows = await rpc<{ upload_key: string; object_key: string }[]>(
+      'pending_photo_upload',
+      { member_id: memberId, upload_id: uploadId },
+    );
+    return rows[0] ? { uploadKey: rows[0].upload_key, objectKey: rows[0].object_key } : null;
+  },
   confirmPhotoUpload: (memberId, uploadId) =>
     rpc<string | null>('confirm_photo_upload', { member_id: memberId, upload_id: uploadId }),
+  deletePhoto: (memberId, photoId) => rpc<string | null>('delete_photo', { member_id: memberId, photo_id: photoId }),
   async photoLinks(viewerId, photoIds) {
     const rows = await rpc<{ photo_id: string; object_key: string }[]>(
       'photo_links',

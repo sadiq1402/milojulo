@@ -4,12 +4,14 @@ import type { Storage } from './r2.ts';
 export class Refusal extends Error {}
 
 export interface Db {
+  // Upload keys are staging keys (uploads/...); object keys are live keys.
   startPhotoUpload(
     memberId: string,
     position: number,
-  ): Promise<{ photoId: string; objectKey: string; discardedKeys: string[] }>;
-  pendingPhotoUpload(memberId: string, uploadId: string): Promise<string | null>;
+  ): Promise<{ photoId: string; uploadKey: string; discardedKeys: string[] }>;
+  pendingPhotoUpload(memberId: string, uploadId: string): Promise<{ uploadKey: string; objectKey: string } | null>;
   confirmPhotoUpload(memberId: string, uploadId: string): Promise<string | null>;
+  deletePhoto(memberId: string, photoId: string): Promise<string | null>;
   photoLinks(viewerId: string, photoIds: string[]): Promise<{ photoId: string; objectKey: string }[]>;
 }
 
@@ -35,6 +37,8 @@ const REFUSAL_STATUS: Record<string, number> = {
   'your account cannot add photos': 403,
   'choose a photo position from 1 to 4': 400,
   'no photo upload to confirm': 404,
+  'no photo to delete': 404,
+  'add at least 2 photos': 400,
 };
 
 class HttpError extends Error {
@@ -76,23 +80,38 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     const slot = await db(deps.db.startPhotoUpload(me, position as number));
     await deleteQuietly(slot.discardedKeys);
-    const uploadUrl = await deps.storage.uploadUrl(slot.objectKey, JPEG, UPLOAD_EXPIRES_IN);
+    const uploadUrl = await deps.storage.uploadUrl(slot.uploadKey, JPEG, size as number, UPLOAD_EXPIRES_IN);
     return { photoId: slot.photoId, uploadUrl, expiresIn: UPLOAD_EXPIRES_IN };
   }
 
   async function photoConfirm(me: string, body: Record<string, unknown>) {
     const { photoId } = body;
     if (typeof photoId !== 'string' || !UUID.test(photoId)) throw new HttpError(404, 'no photo upload to confirm');
-    const key = await db(deps.db.pendingPhotoUpload(me, photoId));
-    if (!key) throw new HttpError(404, 'no photo upload to confirm');
+    const slot = await db(deps.db.pendingPhotoUpload(me, photoId));
+    if (!slot) throw new HttpError(404, 'no photo upload to confirm');
 
-    const object = await deps.storage.head(key);
-    if (!object || object.size < 1 || object.size > MAX_PHOTO_BYTES || object.contentType !== JPEG) {
-      if (object) await deleteQuietly([key]);
+    const staged = await deps.storage.head(slot.uploadKey);
+    if (!staged || staged.size < 1 || staged.size > MAX_PHOTO_BYTES || staged.contentType !== JPEG) {
+      if (staged) await deleteQuietly([slot.uploadKey]);
       throw new HttpError(400, "the photo didn't arrive; try again");
     }
-    const replacedKey = await db(deps.db.confirmPhotoUpload(me, photoId));
-    await deleteQuietly([replacedKey]);
+    // The live file is a server-side copy, out of reach of the upload link.
+    await deps.storage.copy(slot.uploadKey, slot.objectKey);
+    let replacedKey: string | null;
+    try {
+      replacedKey = await db(deps.db.confirmPhotoUpload(me, photoId));
+    } catch (e) {
+      await deleteQuietly([slot.objectKey]);
+      throw e;
+    }
+    await deleteQuietly([slot.uploadKey, replacedKey]);
+    return { ok: true };
+  }
+
+  async function photoDelete(me: string, body: Record<string, unknown>) {
+    const { photoId } = body;
+    if (typeof photoId !== 'string' || !UUID.test(photoId)) throw new HttpError(404, 'no photo to delete');
+    await deleteQuietly([await db(deps.db.deletePhoto(me, photoId))]);
     return { ok: true };
   }
 
@@ -115,6 +134,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     'photo-upload': photoUpload,
     'photo-confirm': photoConfirm,
     'photo-urls': photoUrls,
+    'photo-delete': photoDelete,
   };
 
   return async (req) => {

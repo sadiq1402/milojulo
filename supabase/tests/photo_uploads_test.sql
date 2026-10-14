@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(29);
+select plan(40);
 
 -- 01 Asha has a Submitted Profile with photos at positions 1 and 2; 02 has no profile yet; 03 is banned; 04 is
 -- another Member.
@@ -14,14 +14,18 @@ where user_id = '00000000-0000-0000-0000-000000003501' and position = 1 \gset
 
 -- Upload slots: what the media Edge Function asks for before handing out an upload link.
 select pg_temp.act_as_service();
-select photo_id as slot_3, object_key as slot_3_key, discarded_keys as slot_3_discarded
+select photo_id as slot_3, upload_key as slot_3_upload, object_key as slot_3_key, discarded_keys as slot_3_discarded
 from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 3::smallint) \gset
 select is(:'slot_3_key'::text, '00000000-0000-0000-0000-000000003501/' || :'slot_3' || '.jpg',
   'an upload slot''s object key is <member id>/<photo id>.jpg');
+select is(:'slot_3_upload'::text, 'uploads/' || :'slot_3_key',
+  'the file is uploaded to a staging key, uploads/<member id>/<photo id>.jpg, never the live key');
 select is(:'slot_3_discarded'::text, '{}'::text, 'a first slot discards nothing');
-select is(public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_3'), :'slot_3_key'::text,
-  'the Member''s pending upload gives its object key');
-select is(public.pending_photo_upload('00000000-0000-0000-0000-000000003503', :'slot_3'), null::text,
+select is((select upload_key from public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_3')), :'slot_3_upload'::text,
+  'the Member''s pending upload gives its staging key');
+select is((select object_key from public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_3')),
+  :'slot_3_key'::text, 'and the live key the file is copied to');
+select is((select upload_key from public.pending_photo_upload('00000000-0000-0000-0000-000000003503', :'slot_3')), null::text,
   'another Member''s upload is not theirs to confirm');
 select throws_ok($$ select * from public.start_photo_upload('00000000-0000-0000-0000-000000003502', 1::smallint) $$,
   'P0001', 'accept the terms first', 'someone without a profile cannot upload photos');
@@ -36,21 +40,21 @@ select throws_ok($$ select * from public.start_photo_upload('00000000-0000-0000-
 select photo_id as slot_4 from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 4::smallint) \gset
 select photo_id as slot_3b, discarded_keys as slot_3b_discarded
 from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 3::smallint) \gset
-select is(:'slot_3b_discarded'::text, format('{%s}', :'slot_3_key'),
+select is(:'slot_3b_discarded'::text, format('{%s}', :'slot_3_upload'),
   'a new slot for the same position discards the earlier one and returns its key');
-select is(public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_3'), null::text,
+select is((select upload_key from public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_3')), null::text,
   'the discarded slot can no longer be confirmed');
-select isnt(public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_4'), null::text,
+select isnt((select upload_key from public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_4')), null::text,
   'a slot for another position stays pending');
 
 -- Slots left for more than an hour are discarded when the next one is made.
 reset role;
 update public.photo_uploads set created_at = now() - interval '61 minutes' where id = :'slot_4';
 select pg_temp.act_as_service();
-select is(public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_4'), null::text,
+select is((select upload_key from public.pending_photo_upload('00000000-0000-0000-0000-000000003501', :'slot_4')), null::text,
   'a slot older than an hour can no longer be confirmed');
 select is((select discarded_keys::text from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 1::smallint)),
-  format('{00000000-0000-0000-0000-000000003501/%s.jpg}', :'slot_4'),
+  format('{uploads/00000000-0000-0000-0000-000000003501/%s.jpg}', :'slot_4'),
   'a slot older than an hour is discarded when the next slot is made');
 
 -- A pending upload is upload state only: not a photo, and Members never read the slots.
@@ -107,6 +111,39 @@ select pg_temp.act_as_service();
 select throws_ok(format($$ select public.confirm_photo_upload('00000000-0000-0000-0000-000000003503', %L) $$, :'banned_slot'),
   'P0001', 'your account cannot add photos', 'a banned Member cannot confirm an upload');
 
+-- A photo an admin took down is replaced, but its file is kept as evidence.
+reset role;
+update public.photos set removed_at = now()
+where user_id = '00000000-0000-0000-0000-000000003501' and position = 2;
+select pg_temp.act_as_service();
+select photo_id as over_removed from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 2::smallint) \gset
+select is(public.confirm_photo_upload('00000000-0000-0000-0000-000000003501', :'over_removed'), null::text,
+  'replacing a photo that was taken down does not hand back its key, so its file is kept');
+
+-- Deleting a photo through the media function: 01 now has 2 live photos (1 and 2) on a Submitted Profile.
+select photo_id as third from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 3::smallint) \gset
+select public.confirm_photo_upload('00000000-0000-0000-0000-000000003501', :'third');
+select is(public.delete_photo('00000000-0000-0000-0000-000000003501', :'third'),
+  '00000000-0000-0000-0000-000000003501/' || :'third' || '.jpg',
+  'a Member deletes their own photo and gets its key back, so its file can be deleted');
+select throws_ok(format($$ select public.delete_photo('00000000-0000-0000-0000-000000003501', %L) $$, :'new_cover'),
+  'P0001', 'add at least 2 photos', 'deleting keeps a Submitted Profile''s minimum');
+select throws_ok(format($$ select public.delete_photo('00000000-0000-0000-0000-000000003504', %L) $$, :'new_cover'),
+  'P0001', 'no photo to delete', 'a Member cannot delete another Member''s photo');
+select throws_ok(format($$ select public.delete_photo('00000000-0000-0000-0000-000000003501', %L) $$, :'third'),
+  'P0001', 'no photo to delete', 'a photo already deleted cannot be deleted again');
+select throws_ok(format($$ select public.delete_photo('00000000-0000-0000-0000-000000003501', %L) $$, :'slot_4b'),
+  'P0001', 'no photo to delete', 'a pending upload is not a photo to delete');
+reset role;
+update public.photos set removed_at = now(), position = 4
+where user_id = '00000000-0000-0000-0000-000000003501' and position = 2;
+insert into public.photos (user_id, object_key, position, uploaded_at)
+values ('00000000-0000-0000-0000-000000003501', 'asha/extra.jpg', 2, now());
+select id as taken_down from public.photos where user_id = '00000000-0000-0000-0000-000000003501' and position = 4 \gset
+select pg_temp.act_as_service();
+select is(public.delete_photo('00000000-0000-0000-0000-000000003501', :'taken_down'), null::text,
+  'deleting a photo that was taken down keeps its file as evidence');
+
 -- Only the Edge Function (service role) runs these.
 reset role;
 select pg_temp.act_as_member('00000000-0000-0000-0000-000000003501');
@@ -116,6 +153,8 @@ select throws_ok(format($$ select public.confirm_photo_upload(auth.uid(), %L) $$
   'a Member cannot confirm their own upload');
 select throws_ok(format($$ select public.pending_photo_upload(auth.uid(), %L) $$, :'slot_4'), '42501', null::text,
   'a Member cannot look up upload slots');
+select throws_ok(format($$ select public.delete_photo(auth.uid(), %L) $$, :'new_cover'), '42501', null::text,
+  'a Member cannot call the photo delete function directly');
 reset role;
 select pg_temp.act_as_anon();
 select throws_ok($$ select * from public.start_photo_upload('00000000-0000-0000-0000-000000003501', 3::smallint) $$,
@@ -124,6 +163,8 @@ select throws_ok(format($$ select public.confirm_photo_upload('00000000-0000-000
   '42501', null, 'a signed-out visitor cannot confirm uploads');
 select throws_ok(format($$ select public.pending_photo_upload('00000000-0000-0000-0000-000000003501', %L) $$, :'slot_4'),
   '42501', null, 'a signed-out visitor cannot look up upload slots');
+select throws_ok(format($$ select public.delete_photo('00000000-0000-0000-0000-000000003501', %L) $$, :'new_cover'),
+  '42501', null, 'a signed-out visitor cannot delete photos');
 
 select * from finish();
 rollback;

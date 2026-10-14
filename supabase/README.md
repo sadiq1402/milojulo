@@ -11,6 +11,10 @@ The schema is in docs/12-db-schema.md (rules in docs/03-data-model-rls.md, terms
 
 Signs Cloudflare R2 upload and download URLs; the rules are in the database functions (`start_photo_upload`, `confirm_photo_upload`, `photo_links`, see docs/12) and `functions/media/handler.ts`. `index.ts` only wires in Supabase, R2 and the clock. The HTTP contract is in tasks/todo.md ("Media links (#35)") and docs/02.
 
+Uploads go to a staging key `uploads/<member id>/<photo id>.jpg`; confirming copies the file to the live key `<member id>/<photo id>.jpg` and deletes the staged one.
+
+**R2 lifecycle rule (founder, Cloudflare dashboard):** R2 → the bucket → Settings → Object lifecycle rules → Add rule: name `expire-staged-uploads`, prefix `uploads/`, action "Delete objects" after **1 day**. It removes staged uploads that were never confirmed (the app quit between the PUT and the confirm). Don't widen it beyond `uploads/`: live photos sit at the bucket root.
+
 Secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (template: `functions/.env.example`). `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` come from Supabase.
 
 Tests (no network or database needed; CI runs them in `.github/workflows/functions.yml`):

@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(28);
+select plan(32);
 
 -- How many of the owner's photos the media Edge Function may sign for the viewer.
 create function pg_temp.seen(viewer uuid, owner uuid) returns integer
@@ -69,6 +69,13 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-00
   'and so does Asha theirs');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003605', '00000000-0000-0000-0000-000000003601'), 0,
   'a declined Connection Request does not count');
+select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003618', '{networking}');
+insert into public.connections (requester_id, addressee_id, mode, status) values
+  ('00000000-0000-0000-0000-000000003618', '00000000-0000-0000-0000-000000003601', 'friends', 'requested');
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-000000003618'), 2,
+  'a waiting Connection Request lets the recipient see the sender''s photos');
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003618', '00000000-0000-0000-0000-000000003601'), 2,
+  'and the sender the recipient''s');
 
 -- A Paused Member leaves Discover but stays in their Connections' lists.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003606');
@@ -120,6 +127,14 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003612', '00000000-0000-00
   'a Member only waiting to join is not a fellow joiner');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003610', '00000000-0000-0000-0000-000000003612'), 0,
   'nor does a Member waiting to join see those going');
+-- Join Requests stay as history once the Activity is cancelled or over.
+update public.activities set status = 'cancelled' where id = '00000000-0000-0000-0000-0000000036a1';
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003610', '00000000-0000-0000-0000-000000003601'), 2,
+  'a Join Request still counts after the Activity is cancelled');
+update public.activities set status = 'expired', starts_at = now() - interval '2 days'
+where id = '00000000-0000-0000-0000-0000000036a1';
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003612', '00000000-0000-0000-0000-000000003613'), 2,
+  'fellow joiners still count once the Activity is over');
 
 -- Banned, Auto-hidden and deleted Members keep their Connections' history but lose their photos.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003614', '{networking}');

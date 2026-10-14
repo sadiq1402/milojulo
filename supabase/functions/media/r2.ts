@@ -6,10 +6,11 @@ export interface StoredObject {
 }
 
 export interface Storage {
-  uploadUrl(key: string, contentType: string, expiresIn: number): Promise<string>;
+  uploadUrl(key: string, contentType: string, size: number, expiresIn: number): Promise<string>;
   downloadUrl(key: string, expiresIn: number): Promise<string>;
   head(key: string): Promise<StoredObject | null>;
   delete(key: string): Promise<void>;
+  copy(sourceKey: string, destinationKey: string): Promise<void>;
 }
 
 export interface R2Config {
@@ -33,20 +34,20 @@ export function createR2(config: R2Config): Storage {
   const doFetch = config.fetch ?? fetch;
   const pathOf = (objectKey: string) => encodePath([config.bucket, ...objectKey.split('/')]);
 
-  async function send(method: 'HEAD' | 'DELETE', objectKey: string): Promise<Response> {
+  async function send(method: 'HEAD' | 'DELETE' | 'PUT', objectKey: string, extra: Record<string, string> = {}) {
     const path = pathOf(objectKey);
-    const headers = await signHeaders(key, { method, host, path, now: config.now() });
+    const headers = await signHeaders(key, { method, host, path, headers: extra, now: config.now() });
     return doFetch(`https://${host}${path}`, { method, headers });
   }
 
   return {
-    // The uploader must send exactly this Content-Type, since it is signed.
-    uploadUrl: (objectKey, contentType, expiresIn) =>
+    // Content-Type and Content-Length are signed, so the uploader must send exactly these.
+    uploadUrl: (objectKey, contentType, size, expiresIn) =>
       presignUrl(key, {
         method: 'PUT',
         host,
         path: pathOf(objectKey),
-        headers: { 'content-type': contentType },
+        headers: { 'content-length': String(size), 'content-type': contentType },
         expiresIn,
         now: config.now(),
       }),
@@ -66,6 +67,12 @@ export function createR2(config: R2Config): Storage {
       const res = await send('DELETE', objectKey);
       await res.body?.cancel();
       if (!res.ok && res.status !== 404) throw new Error(`R2 DELETE failed with ${res.status}`);
+    },
+    // S3 CopyObject: R2 copies the object server side.
+    async copy(sourceKey, destinationKey) {
+      const res = await send('PUT', destinationKey, { 'x-amz-copy-source': pathOf(sourceKey) });
+      await res.body?.cancel();
+      if (!res.ok) throw new Error(`R2 copy failed with ${res.status}`);
     },
   };
 }

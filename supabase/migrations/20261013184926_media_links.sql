@@ -1,6 +1,7 @@
 -- Profile photo links (#35). The media Edge Function is the only caller of everything here: it
--- makes an upload slot, hands the app a short-lived upload link, checks the file arrived in R2,
--- confirms it, and signs download links only for the photos the caller may see.
+-- makes an upload slot, hands the app a short-lived upload link to a staging key, checks the file
+-- arrived, copies it to the live key, confirms it, and signs download links only for the photos the
+-- caller may see. Upload links never point at a live key, so a live photo can't be overwritten.
 
 -- An upload waiting for its file. Kept apart from photos so a replacement can be uploaded while the
 -- photo it replaces stays live, and so an unconfirmed upload is never anyone's photo.
@@ -8,7 +9,7 @@ create table public.photo_uploads (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles (id) on delete cascade,
   position smallint not null check (position between 1 and 4),
-  object_key text not null,
+  object_key text not null, -- the live key; the file is staged at 'uploads/' || object_key
   created_at timestamptz not null default now(),
   constraint photo_uploads_one_per_position unique (user_id, position)
 );
@@ -36,9 +37,9 @@ $$;
 revoke execute on function public.check_photo_uploader(uuid) from public, anon, authenticated;
 
 -- A new slot for a position replaces any earlier one there, and slots older than an hour go too;
--- their object keys come back so the function can delete any file that did arrive.
+-- their staging keys come back so the function can delete any file that did arrive.
 create function public.start_photo_upload(member_id uuid, photo_position smallint)
-returns table (photo_id uuid, object_key text, discarded_keys text[])
+returns table (photo_id uuid, upload_key text, object_key text, discarded_keys text[])
 language plpgsql security definer
 set search_path = ''
 as $$
@@ -57,29 +58,32 @@ begin
     delete from public.photo_uploads u
     where u.user_id = member_id
       and (u.position = photo_position or u.created_at <= now() - interval '1 hour')
-    returning u.object_key
+    returning 'uploads/' || u.object_key as upload_key
   )
-  select coalesce(array_agg(gone.object_key order by gone.object_key), '{}') into discarded from gone;
+  select coalesce(array_agg(gone.upload_key order by gone.upload_key), '{}') into discarded from gone;
 
   insert into public.photo_uploads (id, user_id, position, object_key)
   values (new_id, member_id, photo_position, member_id || '/' || new_id || '.jpg');
 
-  return query select new_id, member_id || '/' || new_id || '.jpg', discarded;
+  return query select new_id, 'uploads/' || member_id || '/' || new_id || '.jpg', member_id || '/' || new_id || '.jpg',
+    discarded;
 end;
 $$;
 
--- The object key of the Member's own upload slot, or null when there is none to confirm.
-create function public.pending_photo_upload(member_id uuid, upload_id uuid) returns text
+-- The staging and live keys of the Member's own upload slot; no row when there is none to confirm.
+create function public.pending_photo_upload(member_id uuid, upload_id uuid)
+returns table (upload_key text, object_key text)
 language sql stable security definer
 set search_path = ''
 as $$
-  select u.object_key from public.photo_uploads u
+  select 'uploads/' || u.object_key, u.object_key from public.photo_uploads u
   where u.id = upload_id and u.user_id = member_id and u.created_at > now() - interval '1 hour';
 $$;
 
--- Once the file is in R2, the slot becomes the live photo at its position (same id). A photo
--- already there is replaced in the same statement set, so a Submitted Profile never drops below
--- the minimum; its object key comes back so the function can delete the file.
+-- Once the file is at its live key, the slot becomes the live photo at its position (same id). A
+-- photo already there is replaced in the same statement set, so a Submitted Profile never drops
+-- below the minimum; its object key comes back so the function can delete the file, except for a
+-- photo an admin took down, whose file is kept as evidence.
 drop function public.confirm_photo_upload(uuid);
 create function public.confirm_photo_upload(member_id uuid, upload_id uuid) returns text
 language plpgsql security definer
@@ -109,16 +113,35 @@ begin
   set constraints public.photos_user_id_position_key immediate;
 
   delete from public.photo_uploads where id = slot.id;
-  return old.object_key;
+  return case when old.removed_at is null then old.object_key end;
+end;
+$$;
+
+-- The Member deletes one of their photos; the profile minimum still applies (its trigger). Returns
+-- the object key for the function to delete the file, or null for a photo an admin took down.
+create function public.delete_photo(member_id uuid, photo_id uuid) returns text
+language plpgsql security definer
+set search_path = ''
+as $$
+declare
+  gone public.photos;
+begin
+  delete from public.photos p where p.id = photo_id and p.user_id = member_id
+  returning * into gone;
+  if not found then
+    raise exception 'no photo to delete';
+  end if;
+  return case when gone.removed_at is null then gone.object_key end;
 end;
 $$;
 
 revoke execute on function public.start_photo_upload(uuid, smallint), public.pending_photo_upload(uuid, uuid),
-  public.confirm_photo_upload(uuid, uuid) from public, anon, authenticated;
+  public.confirm_photo_upload(uuid, uuid), public.delete_photo(uuid, uuid) from public, anon, authenticated;
 
 -- Whether the viewer may see another Member's photos: they could open each other in Discover or the
 -- profile view, or they share a Connection (any but declined, so history keeps its faces), a
--- waiting or accepted Join Request, or a place among an Activity's accepted joiners.
+-- waiting or accepted Join Request, or a place among an Activity's accepted joiners. Join Requests
+-- count whatever became of the Activity since (cancelled or over), as history.
 create function public.shares_photos_with(viewer uuid, member_id uuid) returns boolean
 language sql stable
 set search_path = ''

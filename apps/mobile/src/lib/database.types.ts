@@ -527,6 +527,9 @@ isOneToOne: false
 "current_consent_documents":
 { Args: Record<PropertyKey, never>; Returns: string[]
                            },
+"delete_photo":
+{ Args: { "member_id": string,"photo_id": string }; Returns: string
+                           },
 "discover_feed":
 { Args: { "after"?: string,"mode_filter"?: Database["public"]['Enums']["mode"],"page_size"?: number }; Returns: {
               "age": number,"area_id": string,"cover_photo_id": string,"cursor": string,"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"shared_tag_ids": (number)[],"user_id": string,"why_you_match": string
@@ -591,7 +594,9 @@ isOneToOne: false
             }[]
                            },
 "pending_photo_upload":
-{ Args: { "member_id": string,"upload_id": string }; Returns: string
+{ Args: { "member_id": string,"upload_id": string }; Returns: {
+              "object_key": string,"upload_key": string
+            }[]
                            },
 "photo_links":
 { Args: { "photo_ids": (string)[],"viewer": string }; Returns: {
@@ -646,7 +651,7 @@ isOneToOne: false
                            },
 "start_photo_upload":
 { Args: { "member_id": string,"photo_position": number }; Returns: {
-              "discarded_keys": (string)[],"object_key": string,"photo_id": string
+              "discarded_keys": (string)[],"object_key": string,"photo_id": string,"upload_key": string
             }[]
                            },
 "submit_profile":
