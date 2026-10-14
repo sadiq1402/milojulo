@@ -439,7 +439,7 @@ host = "smtp.resend.com"
 port = 465
 user = "resend"
 pass = "env(SMTP_PASS)"
-admin_email = "no-reply@sadiq-ai.dev"
+admin_email = "no-reply@milojulo.co.in"
 sender_name = "MiloJulo"
 
 # Local values suit the mail catcher; the cloud needs real limits. 30 s matches the app's resend wait.
