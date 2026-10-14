@@ -578,6 +578,9 @@ isOneToOne: false
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
                            },
+"move_photo":
+{ Args: { "new_position": number,"photo_id": string }; Returns: undefined
+                           },
 "my_blocks":
 { Args: Record<PropertyKey, never>; Returns: {
               "blocked_at": string,"display_name": string,"member_id": string
