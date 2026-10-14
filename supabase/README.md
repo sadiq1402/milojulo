@@ -41,3 +41,14 @@ npx supabase functions deploy media --project-ref <ref>
 ```
 
 `config.toml` sets `verify_jwt = false` for `media`: the function verifies the caller itself (Auth `getUser`), so a signed-out request gets its own `{ "error": "sign in first" }`.
+
+## Continuous deployment
+
+`.github/workflows/deploy.yml` deploys to the hosted project automatically on every push to `main` that touches `supabase/migrations/**` or `supabase/functions/**`: it links the project, runs `supabase db push` (applies only new migrations), and redeploys the `media` function when a function file changed. PRs are gated by `db-tests` / `function-tests` before merge, so only tested changes reach it.
+
+Requires three GitHub Actions secrets (Settings → Secrets and variables → Actions):
+- `SUPABASE_ACCESS_TOKEN` — a personal access token from the Supabase dashboard (Account → Access Tokens).
+- `SUPABASE_DB_PASSWORD` — the project's database password.
+- `SUPABASE_PROJECT_REF` — the project ref.
+
+Not auto-deployed: auth/SMTP settings in `config.toml` (`supabase config push`) and R2/function secrets (`supabase secrets set`) — applied by hand, since they change rarely and the free tier limits email-template pushes.
