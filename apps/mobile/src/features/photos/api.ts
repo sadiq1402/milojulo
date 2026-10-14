@@ -1,0 +1,163 @@
+import { supabase } from '../../lib/supabase';
+
+// One of my own confirmed photos; position 1 is the cover.
+export type MyPhoto = { id: string; position: number };
+
+export const maxPhotos = 4;
+// The media function signs at most this many links per call.
+const urlBatchSize = 60;
+
+const fallback = "That didn't work. Check your connection and try again.";
+
+// Keys are the media function's and the database's exact messages.
+const refusals: Record<string, string> = {
+  'sign in first': "You've been signed out. Sign in again to add photos.",
+  'photo must be a JPEG of at most 5 MB':
+    'That photo is too large to upload. Try another one.',
+  'no photo upload to confirm': 'That upload took too long. Try again.',
+  "the photo didn't arrive; try again":
+    "The photo didn't finish uploading. Try again.",
+  'no photo to delete': 'That photo is already gone.',
+  'add at least 2 photos':
+    'Your profile needs at least 2 photos. Add another before removing this one.',
+};
+
+const refusal = (message?: string) =>
+  new Error((message && refusals[message]) || fallback);
+
+// The function answers refusals as { error: '<message>' }; supabase-js hands back the Response.
+async function refusalMessage(error: unknown): Promise<string | undefined> {
+  const context = (error as { context?: { json?: () => Promise<unknown> } })
+    .context;
+  if (typeof context?.json !== 'function') {
+    return undefined;
+  }
+  try {
+    const body = (await context.json()) as { error?: unknown };
+    return typeof body?.error === 'string' ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function invokeMedia<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('media', { body });
+  if (error) {
+    throw refusal(await refusalMessage(error));
+  }
+  return data as T;
+}
+
+// Upload link, PUT to R2, then confirm; the photo takes `position`, replacing any photo there.
+export async function uploadPhoto(
+  position: number,
+  localUri: string,
+): Promise<string> {
+  let file: Blob;
+  try {
+    file = await (await fetch(localUri)).blob();
+  } catch {
+    throw new Error("We couldn't read that photo. Try another one.");
+  }
+  const { photoId, uploadUrl } = await invokeMedia<{
+    photoId: string;
+    uploadUrl: string;
+    expiresIn: number;
+  }>({
+    action: 'photo-upload',
+    position,
+    contentType: 'image/jpeg',
+    size: file.size,
+  });
+  let put: Response;
+  try {
+    put = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: file,
+    });
+  } catch {
+    throw refusal("the photo didn't arrive; try again");
+  }
+  if (!put.ok) {
+    throw refusal("the photo didn't arrive; try again");
+  }
+  await invokeMedia({ action: 'photo-confirm', photoId });
+  return photoId;
+}
+
+// In order; the table holds only confirmed photos (pending uploads are kept apart, #35).
+export async function fetchMyPhotos(): Promise<MyPhoto[]> {
+  const { data, error } = await supabase
+    .from('photos')
+    .select('id, position')
+    .order('position');
+  if (error) {
+    throw new Error(fallback);
+  }
+  return data;
+}
+
+async function setPosition(photoId: string, position: number) {
+  const { error } = await supabase
+    .from('photos')
+    .update({ position })
+    .eq('id', photoId);
+  if (error) {
+    throw refusal(error.message);
+  }
+}
+
+// Moves a photo to `position`, swapping with the photo there. A swap goes through a free
+// position, as positions are unique and a client can't set two rows in one statement.
+export async function movePhoto(photoId: string, position: number) {
+  const rows = await fetchMyPhotos();
+  const from = rows.find(row => row.id === photoId)?.position;
+  if (from === undefined || from === position) {
+    return;
+  }
+  const occupant = rows.find(row => row.position === position);
+  if (!occupant) {
+    return setPosition(photoId, position);
+  }
+  const used = new Set(rows.map(row => row.position));
+  const free = [1, 2, 3, 4].find(p => !used.has(p));
+  if (free === undefined) {
+    throw new Error('With 4 photos, remove one first to change the order.');
+  }
+  await setPosition(occupant.id, free);
+  await setPosition(photoId, position);
+  await setPosition(occupant.id, from);
+}
+
+// The media function deletes the row and its R2 file; then the gap closes, so the cover stays
+// the first photo.
+export async function deletePhoto(photoId: string) {
+  await invokeMedia({ action: 'photo-delete', photoId });
+  const rest = await fetchMyPhotos();
+  for (const [index, photo] of rest.entries()) {
+    if (photo.position !== index + 1) {
+      await setPosition(photo.id, index + 1);
+    }
+  }
+}
+
+// Signed links by photo id; ids I may not see are simply missing.
+export async function fetchPhotoUrls(
+  photoIds: string[],
+): Promise<Record<string, string>> {
+  const ids = [...new Set(photoIds)];
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += urlBatchSize) {
+    batches.push(ids.slice(i, i + urlBatchSize));
+  }
+  const results = await Promise.all(
+    batches.map(batch =>
+      invokeMedia<{ urls: Record<string, string> }>({
+        action: 'photo-urls',
+        photoIds: batch,
+      }),
+    ),
+  );
+  return Object.assign({}, ...results.map(result => result.urls));
+}
