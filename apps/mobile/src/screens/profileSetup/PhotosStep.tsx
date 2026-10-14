@@ -1,20 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BottomSheet, Button, Card, Icon, Text } from '../../components';
+import { deletePhoto, movePhoto, uploadPhoto } from '../../features/photos/api';
 import {
-  deletePhoto,
   maxPhotos,
-  movePhoto,
-  uploadPhoto,
+  photoPositions,
   type MyPhoto,
-} from '../../features/photos/api';
+} from '../../features/photos/model';
 import { pickPhoto, type PhotoSource } from '../../features/photos/picker';
 import { photoKeys, useMyPhotos } from '../../features/photos/queries';
 import { minPhotos } from '../../features/profileSetup/model';
 import { colors, layout, sizes, spacing } from '../../theme';
 import { PhotoSlot, type UploadState } from './PhotoSlot';
-import { SetupStepScreen, type StepProps } from './SetupStepScreen';
+import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
 type Sheet =
   | { kind: 'add'; position: number }
@@ -26,7 +25,11 @@ type Slot =
   | { kind: 'upload'; position: number; upload: UploadState }
   | { kind: 'empty' };
 
-export function PhotosStep({ onDone, onBack, notice }: StepProps) {
+type Upload = { position: number; localUri: string };
+
+export const waitForUpload = 'Wait for the photo to finish uploading.';
+
+export function PhotosStep({ onDone, onBack, notice, beforeLeave }: StepProps) {
   const client = useQueryClient();
   const photos = useMyPhotos();
   const list = photos.data ?? [];
@@ -35,55 +38,90 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
   // Photo id → the local file it was uploaded from, shown instead of fetching a link.
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [sheet, setSheet] = useState<Sheet | null>(null);
-  const [error, setError] = useState<string>();
+  const shownNotice = useNotice(notice, {
+    photos: list,
+    uploads: Object.keys(uploads),
+  });
 
+  const uploading = Object.values(uploads).some(state => !state.failed);
   const refresh = () => client.invalidateQueries({ queryKey: photoKeys.mine });
   const dropUpload = (position: number) =>
     setUploads(({ [position]: _, ...rest }) => rest);
 
-  async function upload(position: number, localUri: string) {
-    setUploads(current => ({ ...current, [position]: { localUri } }));
-    try {
-      const photoId = await uploadPhoto(position, localUri);
+  // Leaving waits for uploads, so none lands after the step is gone.
+  useEffect(() => {
+    beforeLeave.current = async () => {
+      if (uploading) {
+        throw new Error(waitForUpload);
+      }
+    };
+  });
+
+  // One mutation runs per upload; its callbacks get that upload's variables.
+  const upload = useMutation({
+    mutationFn: ({ position, localUri }: Upload) =>
+      uploadPhoto(position, localUri),
+    onMutate: ({ position, localUri }) =>
+      setUploads(current => ({ ...current, [position]: { localUri } })),
+    onSuccess: async (photoId, { position, localUri }) => {
       setPreviews(current => ({ ...current, [photoId]: localUri }));
       await refresh();
       dropUpload(position);
-    } catch (e) {
+    },
+    onError: (error, { position, localUri }) =>
       setUploads(current => ({
         ...current,
-        [position]: { localUri, failed: (e as Error).message },
-      }));
-    }
-  }
-
-  async function choose(source: PhotoSource, position: number) {
-    setSheet(null);
-    setError(undefined);
-    try {
-      const localUri = await pickPhoto(source);
-      if (localUri) {
-        await upload(position, localUri);
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-
-  const change = useMutation({
-    mutationFn: (action: () => Promise<void>) => action(),
-    onMutate: () => {
-      setSheet(null);
-      setError(undefined);
-    },
-    onSettled: () => refresh(),
-    onError: e => setError(e.message),
+        [position]: { localUri, failed: error.message },
+      })),
   });
 
+  const choose = useMutation({
+    mutationFn: ({ source }: { source: PhotoSource; position: number }) =>
+      pickPhoto(source),
+    onMutate: () => {
+      setSheet(null);
+      move.reset();
+      remove.reset();
+    },
+    onSuccess: (localUri, { position }) => {
+      if (localUri) {
+        upload.mutate({ position, localUri });
+      }
+    },
+  });
+
+  const move = useMutation({
+    mutationFn: ({
+      photoId,
+      position,
+    }: {
+      photoId: string;
+      position: number;
+    }) => movePhoto(photoId, position),
+    onMutate: () => {
+      setSheet(null);
+      choose.reset();
+      remove.reset();
+    },
+    onSettled: () => refresh(),
+  });
+
+  const remove = useMutation({
+    mutationFn: (photoId: string) => deletePhoto(photoId),
+    onMutate: () => {
+      setSheet(null);
+      choose.reset();
+      move.reset();
+    },
+    onSettled: () => refresh(),
+  });
+
+  const changing = move.isPending || remove.isPending;
   const taken = new Set([
     ...list.map(photo => photo.position),
     ...Object.keys(uploads).map(Number),
   ]);
-  const nextFree = [1, 2, 3, 4].find(p => !taken.has(p));
+  const nextFree = photoPositions.find(p => !taken.has(p));
   const slots: Slot[] = [
     ...list.map(photo => ({
       kind: 'photo' as const,
@@ -103,7 +141,6 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
   while (slots.length < maxPhotos) {
     slots.push({ kind: 'empty' });
   }
-  const uploading = Object.values(uploads).some(state => !state.failed);
 
   const renderSlot = (slot: Slot, index: number) => {
     switch (slot.kind) {
@@ -115,8 +152,14 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
             photoId={slot.photo.id}
             localUri={previews[slot.photo.id]}
             upload={slot.upload}
+            disabled={uploading || changing}
             onPress={() => setSheet({ kind: 'photo', index })}
-            onRetry={() => upload(slot.photo.position, slot.upload!.localUri)}
+            onRetry={() =>
+              upload.mutate({
+                position: slot.photo.position,
+                localUri: slot.upload!.localUri,
+              })
+            }
             onDiscard={() => dropUpload(slot.photo.position)}
           />
         );
@@ -127,7 +170,12 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
             index={index}
             upload={slot.upload}
             onPress={() => {}}
-            onRetry={() => upload(slot.position, slot.upload.localUri)}
+            onRetry={() =>
+              upload.mutate({
+                position: slot.position,
+                localUri: slot.upload.localUri,
+              })
+            }
             onDiscard={() => dropUpload(slot.position)}
           />
         );
@@ -136,6 +184,7 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
           <PhotoSlot
             key={`empty-${index}`}
             index={index}
+            disabled={changing}
             onPress={() =>
               nextFree && setSheet({ kind: 'add', position: nextFree })
             }
@@ -146,16 +195,27 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
 
   const selected = sheet?.kind === 'photo' ? list[sheet.index] : undefined;
   const selectedIndex = sheet?.kind === 'photo' ? sheet.index : -1;
+  const moveTo = (position: number) =>
+    selected && move.mutate({ photoId: selected.id, position });
+  // A failed upload's reason shows here; its slot keeps just Retry and Cancel, which fit at 130%.
+  const uploadFailure = Object.values(uploads).find(state => state.failed);
+  const error =
+    uploadFailure?.failed ??
+    choose.error?.message ??
+    move.error?.message ??
+    remove.error?.message ??
+    (photos.isError ? photos.error.message : undefined) ??
+    shownNotice;
 
   return (
     <SetupStepScreen
       step="photos"
       title="Add 2 to 4 photos"
       intro="Clear photos where your face is visible."
-      onBack={onBack}
-      error={error ?? (photos.isError ? photos.error.message : notice)}
+      onBack={uploading ? undefined : onBack}
+      error={error}
       onNext={onDone}
-      nextDisabled={list.length < minPhotos || uploading || change.isPending}
+      nextDisabled={list.length < minPhotos || uploading || changing}
       saving={false}
     >
       <View style={styles.grid}>
@@ -190,14 +250,16 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
           label="Take a photo"
           variant="secondary"
           onPress={() =>
-            sheet?.kind === 'add' && choose('camera', sheet.position)
+            sheet?.kind === 'add' &&
+            choose.mutate({ source: 'camera', position: sheet.position })
           }
         />
         <Button
           label="Choose from your photos"
           variant="secondary"
           onPress={() =>
-            sheet?.kind === 'add' && choose('library', sheet.position)
+            sheet?.kind === 'add' &&
+            choose.mutate({ source: 'library', position: sheet.position })
           }
         />
       </BottomSheet>
@@ -213,31 +275,21 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
           <Button
             label="Make main photo"
             variant="secondary"
-            onPress={() =>
-              change.mutate(() => movePhoto(selected.id, list[0].position))
-            }
+            onPress={() => moveTo(list[0].position)}
           />
         ) : null}
         {selected && selectedIndex > 1 ? (
           <Button
             label="Move earlier"
             variant="secondary"
-            onPress={() =>
-              change.mutate(() =>
-                movePhoto(selected.id, list[selectedIndex - 1].position),
-              )
-            }
+            onPress={() => moveTo(list[selectedIndex - 1].position)}
           />
         ) : null}
         {selected && selectedIndex < list.length - 1 ? (
           <Button
             label="Move later"
             variant="secondary"
-            onPress={() =>
-              change.mutate(() =>
-                movePhoto(selected.id, list[selectedIndex + 1].position),
-              )
-            }
+            onPress={() => moveTo(list[selectedIndex + 1].position)}
           />
         ) : null}
         {selected ? (
@@ -253,7 +305,7 @@ export function PhotosStep({ onDone, onBack, notice }: StepProps) {
           <Button
             label="Remove photo"
             variant="danger"
-            onPress={() => change.mutate(() => deletePhoto(selected.id))}
+            onPress={() => remove.mutate(selected.id)}
           />
         ) : null}
       </BottomSheet>

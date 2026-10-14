@@ -15,6 +15,7 @@ import { InterestsStep } from './InterestsStep';
 import { ModesStep } from './ModesStep';
 import { PhotosStep } from './PhotosStep';
 import { PromptsStep } from './PromptsStep';
+import type { Notice } from './SetupStepScreen';
 
 // Five steps, each saved as it's left; a returning Member resumes at the first one unfinished.
 // Submitting refreshes the account stage, which swaps in the tabs on Discover.
@@ -25,7 +26,10 @@ export function ProfileSetupScreen() {
   const photos = useMyPhotos();
   const refreshStage = useRefreshAccountStage();
   const [chosen, setChosen] = useState<SetupStep>();
-  const [notice, setNotice] = useState<string>();
+  const [notice, setNotice] = useState<Notice>();
+  // The open step's save for leaving it (Back or Android back), set by the step.
+  const beforeLeave = useRef<() => Promise<void>>(undefined);
+  const leaving = useRef(false);
 
   // Fixed at the first load, so finishing a step's minimum doesn't jump ahead by itself.
   const resumeAt = useRef<SetupStep>(undefined);
@@ -36,26 +40,47 @@ export function ProfileSetupScreen() {
   const step = chosen ?? resumeAt.current ?? 'basics';
   const index = setupSteps.indexOf(step);
   const go = (next: SetupStep, message?: string) => {
-    setNotice(message);
+    setNotice(message ? { message } : undefined);
     setChosen(next);
   };
-  const back = index > 0 ? () => go(setupSteps[index - 1]) : undefined;
+  // Saves what the step holds, then steps back; a failed save keeps the Member there.
+  const back =
+    index > 0
+      ? async () => {
+          if (leaving.current) {
+            return;
+          }
+          leaving.current = true;
+          try {
+            await beforeLeave.current?.();
+            beforeLeave.current = undefined;
+            go(setupSteps[index - 1]);
+          } catch (error) {
+            setNotice({ message: (error as Error).message });
+          } finally {
+            leaving.current = false;
+          }
+        }
+      : undefined;
 
-  // Android's back button steps back through setup before leaving the app.
+  // Android's back button takes the same way back before it would leave the app.
+  const backRef = useRef(back);
+  useEffect(() => {
+    backRef.current = back;
+  });
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
-        if (index <= 0) {
+        if (!backRef.current) {
           return false;
         }
-        setNotice(undefined);
-        setChosen(setupSteps[index - 1]);
+        backRef.current();
         return true;
       },
     );
     return () => subscription.remove();
-  }, [index]);
+  }, []);
 
   if (draft.isError || photos.isError) {
     return (
@@ -76,7 +101,11 @@ export function ProfileSetupScreen() {
     draft: draft.data!,
     onBack: back,
     notice,
-    onDone: () => go(setupSteps[index + 1]),
+    beforeLeave,
+    onDone: () => {
+      beforeLeave.current = undefined;
+      go(setupSteps[index + 1]);
+    },
   };
   switch (step) {
     case 'basics':

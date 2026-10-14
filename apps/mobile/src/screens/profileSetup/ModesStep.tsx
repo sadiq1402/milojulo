@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Input, OptionCard, Stepper, Tag, Text } from '../../components';
 import { useIndustryList } from '../../features/catalog/queries';
@@ -23,7 +23,7 @@ import {
 import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { layout, spacing } from '../../theme';
 import { ChoiceChips, Field, toggle } from './parts';
-import { SetupStepScreen, type StepProps } from './SetupStepScreen';
+import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
 const genders = Object.keys(genderLabels) as Gender[];
 const careerStages = Object.keys(careerStageLabels) as CareerStage[];
@@ -34,6 +34,7 @@ export function ModesStep({
   onDone,
   onBack,
   notice,
+  beforeLeave,
 }: StepProps) {
   const industries = useIndustryList();
   const updateDraft = useUpdateDraft(userId);
@@ -68,16 +69,15 @@ export function ModesStep({
         prefAgeMax: draft.prefAgeMax,
         prefMaxKm: draft.prefMaxKm,
       };
-  const save = useMutation({
-    mutationFn: () => saveModes(userId, toSave),
-    onSuccess: () => {
-      updateDraft({
-        ...toSave,
-        profession: toSave.profession?.trim() || null,
-      });
-      onDone();
-    },
+  async function persist() {
+    await saveModes(userId, toSave);
+    updateDraft({ ...toSave, profession: toSave.profession?.trim() || null });
+  }
+  useEffect(() => {
+    beforeLeave.current = persist;
   });
+  const save = useMutation({ mutationFn: persist, onSuccess: onDone });
+  const shownNotice = useNotice(notice, fields);
 
   return (
     <SetupStepScreen
@@ -85,7 +85,7 @@ export function ModesStep({
       title="What are you open to?"
       intro="Pick one or more. You only see people whose choices overlap with yours."
       onBack={onBack}
-      error={save.error?.message ?? notice}
+      error={save.error?.message ?? shownNotice}
       onNext={() => save.mutate()}
       nextDisabled={!modesDone(fields)}
       saving={save.isPending}
@@ -100,7 +100,7 @@ export function ModesStep({
             onChange={() => set({ modes: toggle(fields.modes, mode) })}
             badge={
               mode === 'casual' ? (
-                <Tag label="18+ adult intent" tone="warn" />
+                <Tag label="18+ · adults only" tone="warn" />
               ) : undefined
             }
           />

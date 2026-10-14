@@ -7,13 +7,14 @@ import { saveBasics } from '../../features/profileSetup/api';
 import { basicsDone, nameMaxLength } from '../../features/profileSetup/model';
 import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { ChoiceChips, Field } from './parts';
-import { SetupStepScreen, type StepProps } from './SetupStepScreen';
+import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
 export function BasicsStep({ userId, draft, onDone, notice }: StepProps) {
   const areas = useAreaList();
   const updateDraft = useUpdateDraft(userId);
   const [displayName, setDisplayName] = useState(draft.displayName ?? '');
   const [areaId, setAreaId] = useState(draft.areaId);
+  const shownNotice = useNotice(notice, { displayName, areaId });
   const save = useMutation({
     mutationFn: () => saveBasics(userId, { displayName, areaId: areaId! }),
     onSuccess: () => {
@@ -26,7 +27,7 @@ export function BasicsStep({ userId, draft, onDone, notice }: StepProps) {
     <SetupStepScreen
       step="basics"
       title="What should we call you?"
-      error={save.error?.message ?? notice}
+      error={save.error?.message ?? shownNotice}
       onNext={() => save.mutate()}
       nextDisabled={!basicsDone({ displayName, areaId })}
       saving={save.isPending}
@@ -44,10 +45,7 @@ export function BasicsStep({ userId, draft, onDone, notice }: StepProps) {
         autoComplete="name-given"
         textContentType="givenName"
       />
-      <Field
-        label="Which area are you in?"
-        note="We only store your area, never your exact location."
-      >
+      <Field label="Which area are you in?" note="We only store your Area.">
         <ChoiceChips
           options={(areas.data ?? []).map(area => ({
             value: area.id,

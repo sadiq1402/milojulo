@@ -10,6 +10,7 @@ import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation, Message } from '../src/features/chat/api';
+import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -74,7 +75,7 @@ beforeEach(() => {
   live = undefined;
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
-  jest.mocked(catalog.fetchAreaNames).mockResolvedValue({ baner: 'Baner' });
+  jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ baner: 'Baner' }));
   jest.mocked(chat.fetchConversations).mockResolvedValue([isha, kabir, rohan]);
   jest
     .mocked(chat.fetchMessages)

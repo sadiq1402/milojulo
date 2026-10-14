@@ -1,83 +1,48 @@
 import { supabase } from '../../lib/supabase';
 
-// Area id → display name ("baner" → "Baner").
-export async function fetchAreaNames(): Promise<Record<string, string>> {
-  const { data, error } = await supabase.from('areas').select('id, name');
+// One catalog entry in display order. Retired entries stay so other Members' old choices keep
+// their names; pickers offer only the active ones.
+export type CatalogItem<Id> = { id: Id; label: string; active: boolean };
+
+type Row<Id> = { id: Id; label: string; is_active: boolean };
+
+async function list<Id>(
+  request: PromiseLike<{ data: Row<Id>[] | null; error: unknown }>,
+): Promise<CatalogItem<Id>[]> {
+  const { data, error } = await request;
   if (error) {
     throw error;
   }
-  return Object.fromEntries(data.map(area => [area.id, area.name]));
+  return data!.map(row => ({
+    id: row.id,
+    label: row.label,
+    active: row.is_active,
+  }));
 }
 
-// Tag id → label (3 → "Trekking").
-export async function fetchTagNames(): Promise<Record<number, string>> {
-  const { data, error } = await supabase.from('tags').select('id, label');
-  if (error) {
-    throw error;
-  }
-  return Object.fromEntries(data.map(tag => [tag.id, tag.label]));
-}
+// Areas have no sort order; alphabetical.
+export const fetchAreas = () =>
+  list<string>(
+    supabase.from('areas').select('id, label:name, is_active').order('name'),
+  );
 
-// Prompt question id → its text ("A perfect Sunday in Pune is…").
-export async function fetchPromptQuestions(): Promise<Record<number, string>> {
-  const { data, error } = await supabase
-    .from('prompt_questions')
-    .select('id, text');
-  if (error) {
-    throw error;
-  }
-  return Object.fromEntries(data.map(question => [question.id, question.text]));
-}
+export const fetchTags = () =>
+  list<number>(
+    supabase.from('tags').select('id, label, is_active').order('sort_order'),
+  );
 
-export type CatalogItem<Id> = { id: Id; label: string };
+export const fetchPromptQuestions = () =>
+  list<number>(
+    supabase
+      .from('prompt_questions')
+      .select('id, label:text, is_active')
+      .order('sort_order'),
+  );
 
-// The lists profile setup offers, in display order; retired entries are left out.
-export async function fetchAreaList(): Promise<CatalogItem<string>[]> {
-  const { data, error } = await supabase
-    .from('areas')
-    .select('id, name')
-    .eq('is_active', true)
-    .order('name');
-  if (error) {
-    throw error;
-  }
-  return data.map(area => ({ id: area.id, label: area.name }));
-}
-
-export async function fetchTagList(): Promise<CatalogItem<number>[]> {
-  const { data, error } = await supabase
-    .from('tags')
-    .select('id, label')
-    .eq('is_active', true)
-    .order('sort_order');
-  if (error) {
-    throw error;
-  }
-  return data;
-}
-
-export async function fetchPromptQuestionList(): Promise<
-  CatalogItem<number>[]
-> {
-  const { data, error } = await supabase
-    .from('prompt_questions')
-    .select('id, text')
-    .eq('is_active', true)
-    .order('sort_order');
-  if (error) {
-    throw error;
-  }
-  return data.map(question => ({ id: question.id, label: question.text }));
-}
-
-export async function fetchIndustryList(): Promise<CatalogItem<number>[]> {
-  const { data, error } = await supabase
-    .from('industries')
-    .select('id, label')
-    .eq('is_active', true)
-    .order('sort_order');
-  if (error) {
-    throw error;
-  }
-  return data;
-}
+export const fetchIndustries = () =>
+  list<number>(
+    supabase
+      .from('industries')
+      .select('id, label, is_active')
+      .order('sort_order'),
+  );

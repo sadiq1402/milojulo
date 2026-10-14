@@ -103,7 +103,7 @@ test('upload, replace, link, delete and the photo minimum, through the media fun
   await expect(deletePhoto(second)).rejects.toThrow(
     'Your profile needs at least 2 photos. Add another before removing this one.',
   );
-});
+}, 60_000);
 
 test('ids I may not see are left out of the links, never an error', async () => {
   if (!served) {

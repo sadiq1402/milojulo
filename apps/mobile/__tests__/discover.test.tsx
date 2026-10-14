@@ -12,6 +12,7 @@ import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
 import type { FeedCard, Profile } from '../src/features/discover/api';
+import { areas, numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -95,15 +96,17 @@ beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   jest
-    .mocked(catalog.fetchAreaNames)
-    .mockResolvedValue({ baner: 'Baner', wakad: 'Wakad' });
+    .mocked(catalog.fetchAreas)
+    .mockResolvedValue(areas({ baner: 'Baner', wakad: 'Wakad' }));
   jest
-    .mocked(catalog.fetchTagNames)
-    .mockResolvedValue({ 1: 'Badminton', 2: 'Cafes', 3: 'Trekking' });
-  jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue({
-    10: 'A perfect Sunday in Pune is…',
-    20: "I'm looking for people to…",
-  });
+    .mocked(catalog.fetchTags)
+    .mockResolvedValue(numbered({ 1: 'Badminton', 2: 'Cafes', 3: 'Trekking' }));
+  jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(
+    numbered({
+      10: 'A perfect Sunday in Pune is…',
+      20: "I'm looking for people to…",
+    }),
+  );
   jest
     .mocked(discover.fetchMyDiscoverState)
     .mockResolvedValue({ modes: ['friends', 'activities'], paused: false });

@@ -1,5 +1,7 @@
 import { notifyManager } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act } from '@testing-library/react-native';
+import { BackHandler } from 'react-native';
 import ImagePicker from 'react-native-image-crop-picker';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
@@ -8,6 +10,8 @@ import * as discover from '../src/features/discover/api';
 import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import { SetupError } from '../src/features/profileSetup/model';
+import * as catalog from '../src/features/catalog/api';
+import { numbered } from '../test/catalog';
 import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -58,9 +62,7 @@ describe('basics', () => {
     await open();
     expect(await header('What should we call you?')).toBeOnTheScreen();
     expect(screen.getByLabelText('Step 1 of 5')).toBeOnTheScreen();
-    expect(
-      screen.getByText('We only store your area, never your exact location.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText('We only store your Area.')).toBeOnTheScreen();
     expect(button('Next')).toBeDisabled();
 
     await fireEvent.changeText(screen.getByLabelText('First name'), ' Asha ');
@@ -279,9 +281,7 @@ describe('photos', () => {
     mockProfileSetup(basics, twoPhotos);
     jest
       .mocked(photos.movePhoto)
-      .mockRejectedValue(
-        new Error('With 4 photos, remove one first to change the order.'),
-      );
+      .mockRejectedValue(new Error('That photo is already gone.'));
     await open();
     await header('Two lines that start a conversation');
     await fireEvent.press(button('Back'));
@@ -292,9 +292,7 @@ describe('photos', () => {
       await screen.findByRole('button', { name: 'Make main photo' }),
     );
     expect(
-      await screen.findByText(
-        'With 4 photos, remove one first to change the order.',
-      ),
+      await screen.findByText('That photo is already gone.'),
     ).toBeOnTheScreen();
   });
 });
@@ -345,7 +343,7 @@ describe('Modes', () => {
 
   test('Casual is labelled for adults', async () => {
     await openModes();
-    expect(screen.getByText('18+ adult intent')).toBeOnTheScreen();
+    expect(screen.getByText('18+ · adults only')).toBeOnTheScreen();
   });
 
   test('a Dating Mode asks for gender and Dating Preferences', async () => {
@@ -464,5 +462,147 @@ describe('interests and submit', () => {
     expect(
       screen.getByRole('header', { name: 'What do you enjoy?' }),
     ).toBeOnTheScreen();
+  });
+});
+
+// Android's hardware back button, as the setup screen subscribed to it.
+let backSpy: jest.SpyInstance | undefined;
+afterEach(() => backSpy?.mockRestore());
+
+function captureHardwareBack() {
+  let handler: () => boolean | null | undefined = () => false;
+  backSpy = jest.spyOn(BackHandler, 'addEventListener');
+  backSpy.mockImplementation((_, h) => {
+    handler = h as typeof handler;
+    return { remove: () => {} };
+  });
+  return () => act(async () => void handler());
+}
+
+describe('leaving a step', () => {
+  test('Back saves what was typed, so coming back shows it', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    await open();
+    await header('Two lines that start a conversation');
+    await fireEvent.changeText(
+      await screen.findByLabelText('A perfect Sunday in Pune is…'),
+      'Chai and a trek',
+    );
+    await fireEvent.press(button('Back'));
+    expect(await header('Add 2 to 4 photos')).toBeOnTheScreen();
+    // Blank answers aren't saved: an empty prompt would count toward the minimum.
+    expect(profileSetup.savePrompts).toHaveBeenCalledWith(userId, [prompts[0]]);
+    await fireEvent.press(button('Next'));
+    expect(
+      await screen.findByLabelText('A perfect Sunday in Pune is…'),
+    ).toHaveDisplayValue('Chai and a trek');
+  });
+
+  test("Android's back button saves the same way, even when the step isn't finished", async () => {
+    const pressBack = captureHardwareBack();
+    mockProfileSetup({ ...basics, prompts }, twoPhotos);
+    await open();
+    await header('What are you open to?');
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Serious' }));
+    await pressBack();
+    expect(
+      await header('Two lines that start a conversation'),
+    ).toBeOnTheScreen();
+    expect(profileSetup.saveModes).toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({ modes: ['serious'], gender: null }),
+    );
+  });
+
+  test('a save that fails on the way back stays on the step with the reason', async () => {
+    mockProfileSetup({ ...basics, prompts, modes: ['friends'] }, twoPhotos);
+    jest
+      .mocked(profileSetup.saveInterests)
+      .mockRejectedValue(new SetupError("That didn't save."));
+    await open();
+    await header('What do you enjoy?');
+    await fireEvent.press(button('Back'));
+    expect(await screen.findByText("That didn't save.")).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'What do you enjoy?' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('while a photo uploads, leaving and changing photos wait', async () => {
+    const pressBack = captureHardwareBack();
+    mockProfileSetup(basics, twoPhotos);
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue({ path: 'file:///tmp/c.jpg' } as never);
+    let finish: (id: string) => void = () => {};
+    jest.mocked(photos.uploadPhoto).mockImplementation(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        }),
+    );
+    await open();
+    await header('Two lines that start a conversation');
+    await fireEvent.press(button('Back'));
+    await header('Add 2 to 4 photos');
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Choose from your photos' }),
+    );
+    expect(await screen.findByText('Uploading…')).toBeOnTheScreen();
+
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+    expect(button('Next')).toBeDisabled();
+    expect(button('Photo 2')).toBeDisabled();
+    await pressBack();
+    expect(
+      screen.getByText('Wait for the photo to finish uploading.'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'Add 2 to 4 photos' }),
+    ).toBeOnTheScreen();
+
+    jest
+      .mocked(photos.fetchMyPhotos)
+      .mockResolvedValue([...twoPhotos, { id: 'p3', position: 3 }]);
+    await act(async () => finish('p3'));
+    await waitFor(() => expect(button('Next')).toBeEnabled());
+    expect(button('Photo 2')).toBeEnabled();
+  });
+});
+
+describe('edge cases', () => {
+  test('prompts wait when the catalog has fewer than two questions', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    jest
+      .mocked(catalog.fetchPromptQuestions)
+      .mockResolvedValue(numbered({ 1: 'A perfect Sunday in Pune is…' }));
+    await open();
+    await header('Two lines that start a conversation');
+    expect(
+      await screen.findByText(
+        "Prompts aren't available right now. Try again later.",
+      ),
+    ).toBeOnTheScreen();
+    expect(button('Next')).toBeDisabled();
+  });
+
+  test('a submit refusal shown on a step clears once the Member changes something there', async () => {
+    mockProfileSetup({ ...basics, prompts, modes: ['friends'] }, twoPhotos);
+    jest
+      .mocked(profileSetup.submitProfile)
+      .mockRejectedValue(new SetupError('Answer both prompts.', 'prompts'));
+    await open();
+    await header('What do you enjoy?');
+    await fireEvent.press(button('Finish and submit'));
+    await header('Two lines that start a conversation');
+    expect(screen.getByText('Answer both prompts.')).toBeOnTheScreen();
+    await fireEvent.changeText(
+      screen.getByLabelText("I'm looking for people to…"),
+      'Play cricket',
+    );
+    expect(screen.queryByText('Answer both prompts.')).toBeNull();
   });
 });

@@ -110,14 +110,18 @@ export function firstIncompleteStep(
 
 export const ageLimits = { min: 18, max: 99 };
 export const distanceLimits = { min: 5, max: 50, step: 5, default: 15 };
+// The starting age range: this many years either side of the Member's own age, or 18 to the
+// fallback oldest age when the date of birth isn't known.
+export const defaultAgeSpread = 5;
+const fallbackOldestAge = 35;
 
-// A starting age range of five years either side of the Member's own age.
+// A starting age range around the Member's own age.
 export function defaultAgeRange(
   birthDate: string | null,
   today = new Date(),
 ): { min: number; max: number } {
   if (!birthDate) {
-    return { min: ageLimits.min, max: 35 };
+    return { min: ageLimits.min, max: fallbackOldestAge };
   }
   const [year, month, day] = birthDate.split('-').map(Number);
   let age = today.getFullYear() - year;
@@ -128,8 +132,8 @@ export function defaultAgeRange(
     age -= 1;
   }
   return {
-    min: Math.max(ageLimits.min, age - 5),
-    max: Math.min(ageLimits.max, age + 5),
+    min: Math.max(ageLimits.min, age - defaultAgeSpread),
+    max: Math.min(ageLimits.max, age + defaultAgeSpread),
   };
 }
 

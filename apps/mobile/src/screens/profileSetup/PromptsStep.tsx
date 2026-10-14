@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text, TextArea } from '../../components';
 import { usePromptQuestionList } from '../../features/catalog/queries';
@@ -11,7 +11,7 @@ import {
 } from '../../features/profileSetup/model';
 import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { colors, fontFamily, fonts } from '../../theme';
-import { SetupStepScreen, type StepProps } from './SetupStepScreen';
+import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
 const positions = [1, 2] as const;
 
@@ -21,6 +21,7 @@ export function PromptsStep({
   onDone,
   onBack,
   notice,
+  beforeLeave,
 }: StepProps) {
   const questions = usePromptQuestionList();
   const updateDraft = useUpdateDraft(userId);
@@ -30,27 +31,54 @@ export function PromptsStep({
     1: saved(1)?.answer ?? '',
     2: saved(2)?.answer ?? '',
   });
+  const shownNotice = useNotice(notice, answers);
 
   // The question already answered at a position stays; otherwise the catalog's next one.
-  const prompts: PromptAnswer[] | undefined = questions.data
-    ? positions.map(position => ({
-        position,
-        questionId:
-          saved(position)?.questionId ?? questions.data[position - 1]?.id,
-        answer: answers[position],
-      }))
-    : undefined;
+  const questionAt = (position: 1 | 2) =>
+    saved(position)?.questionId ?? questions.data?.[position - 1]?.id;
+  const missingQuestions =
+    questions.isSuccess && positions.some(p => questionAt(p) === undefined);
+  const prompts: PromptAnswer[] | undefined =
+    questions.isSuccess && !missingQuestions
+      ? positions.map(position => ({
+          position,
+          questionId: questionAt(position)!,
+          answer: answers[position],
+        }))
+      : undefined;
   const questionText = (id: number) =>
     questions.data?.find(question => question.id === id)?.label ?? '';
 
+  // Blank answers are left out: an empty prompt would still count toward the minimum.
+  async function persist(list: PromptAnswer[]) {
+    const answered = list
+      .map(p => ({ ...p, answer: p.answer.trim() }))
+      .filter(p => p.answer);
+    if (answered.length === 0) {
+      return;
+    }
+    await savePrompts(userId, answered);
+    updateDraft({
+      prompts: [
+        ...draft.prompts.filter(
+          p => !answered.some(a => a.position === p.position),
+        ),
+        ...answered,
+      ].sort((a, b) => a.position - b.position),
+    });
+  }
+
+  useEffect(() => {
+    beforeLeave.current = async () => {
+      if (prompts) {
+        await persist(prompts);
+      }
+    };
+  });
+
   const save = useMutation({
-    mutationFn: () => savePrompts(userId, prompts!),
-    onSuccess: () => {
-      updateDraft({
-        prompts: prompts!.map(p => ({ ...p, answer: p.answer.trim() })),
-      });
-      onDone();
-    },
+    mutationFn: () => persist(prompts!),
+    onSuccess: onDone,
   });
 
   return (
@@ -58,7 +86,13 @@ export function PromptsStep({
       step="prompts"
       title="Two lines that start a conversation"
       onBack={onBack}
-      error={save.error?.message ?? notice}
+      error={
+        save.error?.message ??
+        shownNotice ??
+        (missingQuestions
+          ? "Prompts aren't available right now. Try again later."
+          : undefined)
+      }
       onNext={() => save.mutate()}
       nextDisabled={!prompts || !promptsDone(prompts)}
       saving={save.isPending}

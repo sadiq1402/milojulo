@@ -1,6 +1,8 @@
 import {
   deletePhoto,
+  fetchMyPhotos,
   fetchPhotoUrls,
+  movePhoto,
   uploadPhoto,
 } from '../src/features/photos/api';
 import { pickPhoto } from '../src/features/photos/picker';
@@ -82,6 +84,14 @@ describe('uploadPhoto', () => {
       'That photo is too large to upload. Try another one.',
     ],
     [
+      'accept the terms first',
+      'Accept the terms and give your date of birth first.',
+    ],
+    [
+      'your account cannot add photos',
+      "Your account can't add photos right now.",
+    ],
+    [
       'something else',
       "That didn't work. Check your connection and try again.",
     ],
@@ -114,22 +124,56 @@ describe('uploadPhoto', () => {
   });
 });
 
-describe('deletePhoto', () => {
-  // The rest of my photos, as the table returns them after the delete.
+describe('my photos under RLS', () => {
+  const rpc = jest.fn();
+  // The visible photos as the table returns them; records the filters asked for.
   function photosTable(rows: { id: string; position: number }[]) {
-    const update = jest.fn(() => ({
-      eq: jest.fn(async () => ({ error: null })),
-    }));
-    stub.from = jest.fn(() => ({
-      select: () => ({ order: async () => ({ data: rows, error: null }) }),
-      update,
-    }));
-    return update;
+    const filters: string[] = [];
+    const query = {
+      is: (column: string, value: null) => {
+        filters.push(`${column} is ${value}`);
+        return query;
+      },
+      order: async () => ({ data: rows, error: null }),
+    };
+    stub.from = jest.fn(() => ({ select: () => query }));
+    stub.rpc = rpc;
+    return filters;
   }
 
-  test('goes through the media function, then closes the gap', async () => {
+  test('only photos neither hidden nor taken down count, as in the profile minimum', async () => {
+    const filters = photosTable([{ id: 'a', position: 1 }]);
+    await expect(fetchMyPhotos()).resolves.toEqual([{ id: 'a', position: 1 }]);
+    expect(filters.sort()).toEqual(['hidden_at is null', 'removed_at is null']);
+  });
+
+  test('moving is one move_photo call, which swaps with any photo there', async () => {
+    photosTable([]);
+    rpc.mockResolvedValue({ data: null, error: null });
+    await movePhoto('a', 3);
+    expect(rpc).toHaveBeenCalledWith('move_photo', {
+      photo_id: 'a',
+      new_position: 3,
+    });
+  });
+
+  test.each([
+    ['no photo to move', 'That photo is already gone.'],
+    ['choose a photo position from 1 to 4', 'Photos go in places 1 to 4.'],
+    [
+      'something else',
+      "That didn't work. Check your connection and try again.",
+    ],
+  ])('a move refused with "%s" reads "%s"', async (message, copy) => {
+    photosTable([]);
+    rpc.mockResolvedValue({ data: null, error: { message } });
+    await expect(movePhoto('a', 1)).rejects.toThrow(copy);
+  });
+
+  test('deleting goes through the media function, then closes the gap', async () => {
     invoke.mockResolvedValueOnce({ data: { ok: true }, error: null });
-    const update = photosTable([
+    rpc.mockResolvedValue({ data: null, error: null });
+    photosTable([
       { id: 'b', position: 2 },
       { id: 'c', position: 3 },
     ]);
@@ -137,8 +181,10 @@ describe('deletePhoto', () => {
     expect(invoke).toHaveBeenCalledWith('media', {
       body: { action: 'photo-delete', photoId: 'a' },
     });
-    expect(update).toHaveBeenNthCalledWith(1, { position: 1 });
-    expect(update).toHaveBeenNthCalledWith(2, { position: 2 });
+    expect(rpc.mock.calls).toEqual([
+      ['move_photo', { photo_id: 'b', new_position: 1 }],
+      ['move_photo', { photo_id: 'c', new_position: 2 }],
+    ]);
   });
 
   test.each([
@@ -147,7 +193,7 @@ describe('deletePhoto', () => {
       'add at least 2 photos',
       'Your profile needs at least 2 photos. Add another before removing this one.',
     ],
-  ])('refused with "%s" reads "%s"', async (message, copy) => {
+  ])('a delete refused with "%s" reads "%s"', async (message, copy) => {
     invoke.mockResolvedValueOnce(refused(message));
     await expect(deletePhoto('a')).rejects.toThrow(copy);
   });

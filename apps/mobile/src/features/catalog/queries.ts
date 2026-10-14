@@ -1,30 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  fetchAreaList,
-  fetchAreaNames,
-  fetchIndustryList,
-  fetchPromptQuestionList,
+  fetchAreas,
+  fetchIndustries,
   fetchPromptQuestions,
-  fetchTagList,
-  fetchTagNames,
+  fetchTags,
+  type CatalogItem,
 } from './api';
 
-// Catalogs change only with a migration, so they're loaded once per session.
+// Catalogs change only with a migration, so they're loaded once per session. Each is cached
+// once and read either as an id → label lookup or as the active entries in order.
 export const catalogKeys = {
   areas: ['areas'],
   tags: ['tags'],
   promptQuestions: ['prompt-questions'],
-  areaList: ['area-list'],
-  tagList: ['tag-list'],
-  promptQuestionList: ['prompt-question-list'],
-  industryList: ['industry-list'],
+  industries: ['industries'],
 };
+
+const toNames = <Id extends string | number>(items: CatalogItem<Id>[]) =>
+  Object.fromEntries(items.map(item => [item.id, item.label])) as Record<
+    Id,
+    string
+  >;
+const activeOnly = <Id>(items: CatalogItem<Id>[]) =>
+  items.filter(item => item.active);
 
 export function useAreaNames() {
   return useQuery({
     queryKey: catalogKeys.areas,
-    queryFn: fetchAreaNames,
+    queryFn: fetchAreas,
     staleTime: Infinity,
+    select: toNames,
   });
 }
 
@@ -38,8 +43,9 @@ export function useAreaName() {
 export function useTagNames() {
   return useQuery({
     queryKey: catalogKeys.tags,
-    queryFn: fetchTagNames,
+    queryFn: fetchTags,
     staleTime: Infinity,
+    select: toNames,
   });
 }
 
@@ -48,37 +54,42 @@ export function usePromptQuestions() {
     queryKey: catalogKeys.promptQuestions,
     queryFn: fetchPromptQuestions,
     staleTime: Infinity,
+    select: toNames,
   });
 }
 
 export function useAreaList() {
   return useQuery({
-    queryKey: catalogKeys.areaList,
-    queryFn: fetchAreaList,
+    queryKey: catalogKeys.areas,
+    queryFn: fetchAreas,
     staleTime: Infinity,
+    select: activeOnly,
   });
 }
 
 export function useTagList() {
   return useQuery({
-    queryKey: catalogKeys.tagList,
-    queryFn: fetchTagList,
+    queryKey: catalogKeys.tags,
+    queryFn: fetchTags,
     staleTime: Infinity,
+    select: activeOnly,
   });
 }
 
 export function usePromptQuestionList() {
   return useQuery({
-    queryKey: catalogKeys.promptQuestionList,
-    queryFn: fetchPromptQuestionList,
+    queryKey: catalogKeys.promptQuestions,
+    queryFn: fetchPromptQuestions,
     staleTime: Infinity,
+    select: activeOnly,
   });
 }
 
 export function useIndustryList() {
   return useQuery({
-    queryKey: catalogKeys.industryList,
-    queryFn: fetchIndustryList,
+    queryKey: catalogKeys.industries,
+    queryFn: fetchIndustries,
     staleTime: Infinity,
+    select: activeOnly,
   });
 }

@@ -2,6 +2,7 @@ import * as catalog from '../src/features/catalog/api';
 import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import type { ProfileDraft } from '../src/features/profileSetup/model';
+import { areas, numbered } from './catalog';
 
 // A profile row right after the age gate and consents.
 export const emptyDraft: ProfileDraft = {
@@ -32,19 +33,19 @@ export function mockProfileSetup(
     .mockResolvedValue({ ...emptyDraft, ...draft });
   jest.mocked(photos.fetchMyPhotos).mockResolvedValue(myPhotos);
   jest.mocked(photos.fetchPhotoUrls).mockResolvedValue({});
-  jest.mocked(catalog.fetchAreaList).mockResolvedValue([
-    { id: 'baner', label: 'Baner' },
-    { id: 'wakad', label: 'Wakad' },
-  ]);
-  jest.mocked(catalog.fetchPromptQuestionList).mockResolvedValue([
-    { id: 1, label: 'A perfect Sunday in Pune is…' },
-    { id: 2, label: "I'm looking for people to…" },
-  ]);
-  jest.mocked(catalog.fetchTagList).mockResolvedValue([
-    { id: 1, label: 'Badminton' },
-    { id: 2, label: 'Cafes' },
-  ]);
   jest
-    .mocked(catalog.fetchIndustryList)
-    .mockResolvedValue([{ id: 1, label: 'Software and IT' }]);
+    .mocked(catalog.fetchAreas)
+    .mockResolvedValue(areas({ baner: 'Baner', wakad: 'Wakad' }));
+  jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(
+    numbered({
+      1: 'A perfect Sunday in Pune is…',
+      2: "I'm looking for people to…",
+    }),
+  );
+  jest
+    .mocked(catalog.fetchTags)
+    .mockResolvedValue(numbered({ 1: 'Badminton', 2: 'Cafes' }));
+  jest
+    .mocked(catalog.fetchIndustries)
+    .mockResolvedValue(numbered({ 1: 'Software and IT' }));
 }

@@ -19,6 +19,7 @@ import { chatKeys } from '../src/features/chat/queries';
 import type { Mode } from '../src/features/modes';
 import * as requests from '../src/features/requests/api';
 import { SendRequestSheet } from '../src/screens/requests/SendRequestSheet';
+import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -96,7 +97,7 @@ const isha = conversation({
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
-  jest.mocked(catalog.fetchAreaNames).mockResolvedValue({ wakad: 'Wakad' });
+  jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ wakad: 'Wakad' }));
   jest
     .mocked(chat.fetchConversations)
     .mockResolvedValue([rohan, anaya, meera, isha]);

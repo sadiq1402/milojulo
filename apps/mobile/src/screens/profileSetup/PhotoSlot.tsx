@@ -26,6 +26,8 @@ type Props = {
   // The file just picked or uploaded, shown until (and instead of) the signed link.
   localUri?: string;
   upload?: UploadState;
+  // While another photo uploads or moves.
+  disabled?: boolean;
   onPress: () => void;
   onRetry?: () => void;
   onDiscard?: () => void;
@@ -37,6 +39,7 @@ export function PhotoSlot({
   photoId,
   localUri,
   upload,
+  disabled = false,
   onPress,
   onRetry,
   onDiscard,
@@ -50,8 +53,10 @@ export function PhotoSlot({
       <View style={styles.slotWrap}>
         <Pressable
           onPress={onPress}
+          disabled={disabled}
           accessibilityRole="button"
           accessibilityLabel="Add photo"
+          accessibilityState={{ disabled }}
           style={({ pressed }) => [
             styles.slot,
             styles.empty,
@@ -72,13 +77,13 @@ export function PhotoSlot({
     <View style={styles.slotWrap}>
       <Pressable
         onPress={onPress}
-        disabled={!!upload}
+        disabled={disabled || !!upload}
         accessibilityRole="button"
         accessibilityLabel={
           index === 0 ? `Photo ${index + 1}, main photo` : `Photo ${index + 1}`
         }
         accessibilityHint="Move, replace or remove this photo"
-        accessibilityState={{ busy, disabled: !!upload }}
+        accessibilityState={{ busy, disabled: disabled || !!upload }}
         style={[
           styles.slot,
           { backgroundColor: photoTones[index % photoTones.length] },
@@ -111,14 +116,6 @@ export function PhotoSlot({
       ) : null}
       {upload?.failed ? (
         <View style={styles.overlay}>
-          <Text
-            variant="bodySmall"
-            color={colors.white}
-            style={styles.failed}
-            accessibilityLiveRegion="polite"
-          >
-            {upload.failed}
-          </Text>
           <Button
             label="Retry"
             compact
@@ -170,6 +167,5 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     padding: spacing.sm,
   },
-  failed: { textAlign: 'center' },
   overlayButton: { alignSelf: 'center' },
 });

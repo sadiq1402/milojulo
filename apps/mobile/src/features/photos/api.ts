@@ -1,9 +1,8 @@
 import { supabase } from '../../lib/supabase';
+import type { MyPhoto } from './model';
 
-// One of my own confirmed photos; position 1 is the cover.
-export type MyPhoto = { id: string; position: number };
+export type { MyPhoto } from './model';
 
-export const maxPhotos = 4;
 // The media function signs at most this many links per call.
 const urlBatchSize = 60;
 
@@ -17,7 +16,12 @@ const refusals: Record<string, string> = {
   'no photo upload to confirm': 'That upload took too long. Try again.',
   "the photo didn't arrive; try again":
     "The photo didn't finish uploading. Try again.",
+  'accept the terms first':
+    'Accept the terms and give your date of birth first.',
+  'your account cannot add photos': "Your account can't add photos right now.",
+  'choose a photo position from 1 to 4': 'Photos go in places 1 to 4.',
   'no photo to delete': 'That photo is already gone.',
+  'no photo to move': 'That photo is already gone.',
   'add at least 2 photos':
     'Your profile needs at least 2 photos. Add another before removing this one.',
 };
@@ -86,11 +90,14 @@ export async function uploadPhoto(
   return photoId;
 }
 
-// In order; the table holds only confirmed photos (pending uploads are kept apart, #35).
+// In order. Only photos neither hidden (Auto-hide) nor taken down count, as in the profile
+// minimum; the table holds only confirmed photos (pending uploads are kept apart, #35).
 export async function fetchMyPhotos(): Promise<MyPhoto[]> {
   const { data, error } = await supabase
     .from('photos')
     .select('id, position')
+    .is('hidden_at', null)
+    .is('removed_at', null)
     .order('position');
   if (error) {
     throw new Error(fallback);
@@ -98,36 +105,15 @@ export async function fetchMyPhotos(): Promise<MyPhoto[]> {
   return data;
 }
 
-async function setPosition(photoId: string, position: number) {
-  const { error } = await supabase
-    .from('photos')
-    .update({ position })
-    .eq('id', photoId);
+// Moves a photo to `position`, swapping with any photo there, in one statement.
+export async function movePhoto(photoId: string, position: number) {
+  const { error } = await supabase.rpc('move_photo', {
+    photo_id: photoId,
+    new_position: position,
+  });
   if (error) {
     throw refusal(error.message);
   }
-}
-
-// Moves a photo to `position`, swapping with the photo there. A swap goes through a free
-// position, as positions are unique and a client can't set two rows in one statement.
-export async function movePhoto(photoId: string, position: number) {
-  const rows = await fetchMyPhotos();
-  const from = rows.find(row => row.id === photoId)?.position;
-  if (from === undefined || from === position) {
-    return;
-  }
-  const occupant = rows.find(row => row.position === position);
-  if (!occupant) {
-    return setPosition(photoId, position);
-  }
-  const used = new Set(rows.map(row => row.position));
-  const free = [1, 2, 3, 4].find(p => !used.has(p));
-  if (free === undefined) {
-    throw new Error('With 4 photos, remove one first to change the order.');
-  }
-  await setPosition(occupant.id, free);
-  await setPosition(photoId, position);
-  await setPosition(occupant.id, from);
 }
 
 // The media function deletes the row and its R2 file; then the gap closes, so the cover stays
@@ -137,7 +123,7 @@ export async function deletePhoto(photoId: string) {
   const rest = await fetchMyPhotos();
   for (const [index, photo] of rest.entries()) {
     if (photo.position !== index + 1) {
-      await setPosition(photo.id, index + 1);
+      await movePhoto(photo.id, index + 1);
     }
   }
 }

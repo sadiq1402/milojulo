@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTagList } from '../../features/catalog/queries';
 import { saveInterests, submitProfile } from '../../features/profileSetup/api';
 import {
@@ -11,7 +11,7 @@ import {
 } from '../../features/profileSetup/model';
 import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { ChoiceChips, Field, toggle } from './parts';
-import { SetupStepScreen, type StepProps } from './SetupStepScreen';
+import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
 const slots = Object.keys(availabilityLabels) as AvailabilitySlot[];
 
@@ -27,6 +27,7 @@ export function InterestsStep({
   onBack,
   onRefused,
   notice,
+  beforeLeave,
 }: Props) {
   const tags = useTagList();
   const updateDraft = useUpdateDraft(userId);
@@ -34,10 +35,17 @@ export function InterestsStep({
     tagIds: draft.tagIds,
     availability: draft.availability,
   });
+  async function persist() {
+    await saveInterests(userId, interests);
+    updateDraft(interests);
+  }
+  useEffect(() => {
+    beforeLeave.current = persist;
+  });
+  const shownNotice = useNotice(notice, interests);
   const submit = useMutation({
     mutationFn: async () => {
-      await saveInterests(userId, interests);
-      updateDraft(interests);
+      await persist();
       await submitProfile();
     },
     onSuccess: onDone,
@@ -55,7 +63,7 @@ export function InterestsStep({
       step="interests"
       title="What do you enjoy?"
       onBack={onBack}
-      error={(stayingHere ? submit.error?.message : undefined) ?? notice}
+      error={(stayingHere ? submit.error?.message : undefined) ?? shownNotice}
       nextLabel="Finish and submit"
       onNext={() => submit.mutate()}
       nextDisabled={false}

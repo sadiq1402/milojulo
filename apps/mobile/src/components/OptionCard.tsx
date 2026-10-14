@@ -63,10 +63,11 @@ const styles = StyleSheet.create({
     borderColor: colors.field,
     backgroundColor: colors.card,
   },
-  // Mockup: orchid border doubled by an inset ring.
+  // As in the mockup: the 1 border turns orchid and an inset 1 ring doubles it, so the
+  // content doesn't shift.
   checked: {
     borderColor: colors.orchid,
-    borderWidth: 2,
+    boxShadow: `inset 0 0 0 1px ${colors.orchid}`,
     backgroundColor: colors.selected,
   },
   box: {

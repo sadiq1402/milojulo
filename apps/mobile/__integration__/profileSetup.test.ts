@@ -13,6 +13,7 @@ import {
 } from '../src/features/profileSetup/api';
 import type { ModeFields } from '../src/features/profileSetup/model';
 import { fetchAccountStage } from '../src/features/account/api';
+import { fetchAreas, fetchIndustries } from '../src/features/catalog/api';
 import { admin } from './support/admin';
 import { signInNewAccount } from './support/signIn';
 
@@ -61,6 +62,19 @@ async function promptQuestionIds(): Promise<number[]> {
     .limit(2);
   return data!.map(q => q.id);
 }
+
+test('setup offers the active catalogs in order', async () => {
+  await newAccountPastConsent();
+  const areas = await fetchAreas();
+  expect(areas.map(area => area.label)).toEqual([
+    'Balewadi',
+    'Baner',
+    'Hinjewadi',
+    'Kharadi',
+    'Wakad',
+  ]);
+  expect((await fetchIndustries()).length).toBeGreaterThan(0);
+});
 
 test('a new account starts with an empty draft and its date of birth', async () => {
   const userId = await newAccountPastConsent();
@@ -204,11 +218,42 @@ describe('my photos', () => {
     expect((await fetchMyPhotos()).map(p => p.position)).toEqual([1, 3, 4]);
   });
 
-  test('with 4 photos a swap has no free position, so it asks for one to go first', async () => {
+  test('with all 4 photos two can still swap, in one step', async () => {
     const userId = await newAccountPastConsent();
-    const [a] = await confirmedPhotos(userId, [1, 2, 3, 4]);
-    await expect(movePhoto(a.id, 2)).rejects.toThrow(
-      'With 4 photos, remove one first to change the order.',
+    const [a, b, c, d] = await confirmedPhotos(userId, [1, 2, 3, 4]);
+    await movePhoto(d.id, 1);
+    expect(await fetchMyPhotos()).toEqual([
+      { id: d.id, position: 1 },
+      { id: b.id, position: 2 },
+      { id: c.id, position: 3 },
+      { id: a.id, position: 4 },
+    ]);
+  });
+
+  test('a photo that is hidden or taken down neither counts nor fills a slot', async () => {
+    const userId = await newAccountPastConsent();
+    const [a, b, c] = await confirmedPhotos(userId, [1, 2, 3]);
+    await admin
+      .from('photos')
+      .update({ hidden_at: new Date().toISOString() })
+      .eq('id', a.id);
+    await admin
+      .from('photos')
+      .update({ removed_at: new Date().toISOString() })
+      .eq('id', b.id);
+    expect(await fetchMyPhotos()).toEqual([{ id: c.id, position: 3 }]);
+  });
+
+  test('moving someone else’s photo or outside 1 to 4 is refused', async () => {
+    const other = await newAccountPastConsent();
+    const [theirs] = await confirmedPhotos(other, [1]);
+    const userId = await newAccountPastConsent();
+    const [mine] = await confirmedPhotos(userId, [1]);
+    await expect(movePhoto(theirs.id, 2)).rejects.toThrow(
+      'That photo is already gone.',
+    );
+    await expect(movePhoto(mine.id, 5)).rejects.toThrow(
+      'Photos go in places 1 to 4.',
     );
   });
 });

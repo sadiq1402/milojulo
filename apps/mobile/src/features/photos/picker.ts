@@ -1,17 +1,16 @@
 import ImagePicker from 'react-native-image-crop-picker';
-import { colors, sizes } from '../../theme';
+import { colors } from '../../theme';
 
 export type PhotoSource = 'camera' | 'library';
 
 // Profile photos are stored 4:5 at 1080 x 1350 (docs/05), JPEG, compressed on the phone.
-const [ratioW, ratioH] = sizes.photo.ratio.split(':').map(Number);
-const outputWidth = 1080;
+export const photoOutput = { width: 1080, height: 1350, jpegQuality: 0.8 };
 const options = {
   mediaType: 'photo',
   cropping: true,
-  width: outputWidth,
-  height: (outputWidth * ratioH) / ratioW,
-  compressImageQuality: 0.8,
+  width: photoOutput.width,
+  height: photoOutput.height,
+  compressImageQuality: photoOutput.jpegQuality,
   forceJpg: true,
   cropperToolbarTitle: 'Crop your photo',
   cropperActiveWidgetColor: colors.orchid,

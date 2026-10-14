@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import React, { useState, type MutableRefObject, type ReactNode } from 'react';
 import { Button, ErrorText, FlowScreen } from '../../components';
 import type {
   ProfileDraft,
@@ -12,9 +12,25 @@ export type StepProps = {
   draft: ProfileDraft;
   onDone: () => void;
   onBack?: () => void;
-  // A submit refusal that sent the Member back to this step.
-  notice?: string;
+  // A submit refusal that sent the Member here, or a save that failed on the way back.
+  notice?: Notice;
+  // The step sets what to save when the Member leaves it backwards.
+  beforeLeave: MutableRefObject<(() => Promise<void>) | undefined>;
 };
+
+// A new object each time, so the same message shown twice counts as new.
+export type Notice = { message: string };
+
+// The notice, until the Member changes something on the step (`state` is what they edit).
+export function useNotice(notice: Notice | undefined, state: unknown) {
+  const snapshot = JSON.stringify(state);
+  const [seen, setSeen] = useState({ notice, snapshot });
+  if (seen.notice !== notice) {
+    setSeen({ notice, snapshot });
+    return notice?.message;
+  }
+  return seen.snapshot === snapshot ? notice?.message : undefined;
+}
 
 type Props = {
   step: SetupStep;
