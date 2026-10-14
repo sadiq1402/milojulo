@@ -11,6 +11,8 @@ import { ActivityDetailScreen } from '../screens/activities/ActivityDetailScreen
 import { CreateActivityScreen } from '../screens/activities/CreateActivityScreen';
 import { EditActivityScreen } from '../screens/activities/EditActivityScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
+import { CircleDetailScreen } from '../screens/circles/CircleDetailScreen';
+import { CirclesScreen } from '../screens/circles/CirclesScreen';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
 import { PlaceholderScreen } from '../screens/PlaceholderScreen';
@@ -45,7 +47,6 @@ function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
   );
 }
 
-const CirclesScreen = () => <PlaceholderScreen title="Circles" />;
 const MeScreen = () => <PlaceholderScreen title="Me" canSignOut />;
 // Until the Safety Centre ticket (#43).
 const SafetyCentreScreen = () => <PlaceholderScreen title="Safety Centre" />;
@@ -79,6 +80,7 @@ export function MemberNavigator() {
       <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
       <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
       <Stack.Screen name="EditActivity" component={EditActivityScreen} />
+      <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
     </Stack.Navigator>
   );
 }
