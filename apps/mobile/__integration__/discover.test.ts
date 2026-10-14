@@ -1,8 +1,5 @@
 import { signOut } from '../src/features/auth/api';
-import {
-  fetchPromptQuestions,
-  fetchTagNames,
-} from '../src/features/catalog/api';
+import { fetchPromptQuestions, fetchTags } from '../src/features/catalog/api';
 import { blockMember } from '../src/features/chat/api';
 import {
   fetchFeedPage,
@@ -130,9 +127,13 @@ test('the profile view has the shared Modes, prompts and all their tags', async 
 });
 
 test('tag and prompt names come from the catalog', async () => {
-  const tagNames = await fetchTagNames();
-  expect(tagNames[tags.badminton]).toBe('Badminton');
-  const questions = await fetchPromptQuestions();
+  const tagList = await fetchTags();
+  expect(tagList.find(tag => tag.id === tags.badminton)?.label).toBe(
+    'Badminton',
+  );
+  const questions = Object.fromEntries(
+    (await fetchPromptQuestions()).map(q => [q.id, q.label]),
+  );
   const profile = await fetchProfile(ravi.id);
   // createMember answers the first two questions in whatever order the catalog returns.
   expect(

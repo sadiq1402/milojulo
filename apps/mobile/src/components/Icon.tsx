@@ -16,6 +16,13 @@ const glyphs = {
     </>
   ),
   check: <Path d="M5 12.5l4.5 4.5L19 7.5" />,
+  camera: (
+    <>
+      <Rect x="3.5" y="6.5" width="17" height="13" rx="3" />
+      <Circle cx="12" cy="13" r="3.3" />
+      <Path d="M9 6.5l1-2h4l1 2" />
+    </>
+  ),
   send: <Path d="M21 3L10 14M21 3l-6.5 18-3.5-7-7-3.5z" />,
   shieldCheck: (
     <>

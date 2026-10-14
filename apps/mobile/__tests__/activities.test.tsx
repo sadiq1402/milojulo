@@ -16,6 +16,7 @@ import {
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import { areas, numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -115,12 +116,14 @@ const myActivity = detail({
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
-  jest.mocked(catalog.fetchAreaNames).mockResolvedValue({
-    baner: 'Baner',
-    wakad: 'Wakad',
-  });
-  jest.mocked(catalog.fetchTagNames).mockResolvedValue({});
-  jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue({});
+  jest.mocked(catalog.fetchAreas).mockResolvedValue(
+    areas({
+      baner: 'Baner',
+      wakad: 'Wakad',
+    }),
+  );
+  jest.mocked(catalog.fetchTags).mockResolvedValue(numbered({}));
+  jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(numbered({}));
   jest
     .mocked(discover.fetchMyDiscoverState)
     .mockResolvedValue({ modes: ['friends'], paused: false });

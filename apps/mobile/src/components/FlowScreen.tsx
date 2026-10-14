@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, layout, spacing } from '../theme';
+import { Progress } from './Progress';
 import { Text } from './Text';
 import { TopBar } from './TopBar';
 
@@ -15,18 +16,30 @@ type Props = {
   title: string;
   intro?: string;
   onBack?: () => void;
+  // Profile setup: the top bar's title and the step progress under it.
+  barTitle?: string;
+  progress?: { step: number; of: number };
   children?: ReactNode;
   footer: ReactNode;
 };
 
-// The plain onboarding layout (Email, Otp, AgeConsent): tint and butter circles
-// in the corner, heading, content, and the main action pinned to the bottom.
-export function FlowScreen({ title, intro, onBack, children, footer }: Props) {
+// The plain onboarding layout (Email, Otp, AgeConsent, profile setup): tint and butter
+// circles in the corner, heading, content, and the main action pinned to the bottom.
+export function FlowScreen({
+  title,
+  intro,
+  onBack,
+  barTitle,
+  progress,
+  children,
+  footer,
+}: Props) {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
       <View style={styles.tintCircle} />
       <View style={styles.butterDot} />
-      <TopBar onBack={onBack} />
+      <TopBar onBack={onBack} title={barTitle} />
+      {progress ? <Progress {...progress} /> : null}
       <KeyboardAvoidingView
         style={styles.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

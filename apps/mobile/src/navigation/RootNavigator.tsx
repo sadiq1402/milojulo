@@ -5,7 +5,7 @@ import { useSession } from '../features/auth/SessionProvider';
 import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
 import { EmailScreen } from '../screens/gettingIn/EmailScreen';
 import { OtpScreen } from '../screens/gettingIn/OtpScreen';
-import { ProfileSetupScreen } from '../screens/gettingIn/ProfileSetupScreen';
+import { ProfileSetupScreen } from '../screens/profileSetup/ProfileSetupScreen';
 import { WelcomeScreen } from '../screens/gettingIn/WelcomeScreen';
 import { LoadErrorScreen, LoadingScreen } from '../screens/StatusScreen';
 import { MemberNavigator } from './MemberNavigator';
