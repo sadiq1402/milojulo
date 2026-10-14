@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(57);
+select plan(63);
 
 -- Shared id helpers (as in join_requests_test).
 create function pg_temp.m(suffix text) returns uuid
@@ -38,6 +38,8 @@ select pg_temp.create_complete_member(pg_temp.m('c0'));
 update public.profiles set display_name = 'Asha' where id = pg_temp.m('c1');
 update public.profiles set display_name = 'Bina' where id = pg_temp.m('c2');
 update public.profiles set display_name = 'Chetan' where id = pg_temp.m('c3');
+-- c2's cover photo id (read as postgres), to check circle_members_of carries it.
+select pg_temp.keep('c2cover', (select id from public.photos where user_id = pg_temp.m('c2') and position = 1));
 
 -- ============ Admin create / edit / archive ============
 
@@ -90,6 +92,22 @@ select pg_temp.as_member('c1');
 select throws_ok(
   $$ select public.admin_archive_circle(pg_temp.id('cup')) $$,
   'admins only', 'a member cannot archive a circle');
+reset role;
+
+-- Allow: an admin archives a Circle, which goes inactive.
+select pg_temp.make_circle('arch0', 'Archive Me');
+select pg_temp.act_as_admin(pg_temp.m('ad'));
+select lives_ok($$ select public.admin_archive_circle(pg_temp.id('arch0')) $$, 'an admin archives a circle');
+reset role;
+select is((select is_active from public.circles where id = pg_temp.id('arch0')), false,
+  'an archived circle is inactive');
+
+-- Deny: anon cannot edit or archive a Circle (execute revoked).
+select pg_temp.act_as_anon();
+select throws_ok($$ select public.admin_edit_circle(pg_temp.id('cup'), 'x', 'baner', 1::smallint, 'y') $$,
+  null::text, null::text, 'anon cannot edit a circle');
+select throws_ok($$ select public.admin_archive_circle(pg_temp.id('cup')) $$,
+  null::text, null::text, 'anon cannot archive a circle');
 reset role;
 
 -- ============ browse_circles ============
@@ -252,6 +270,8 @@ select ok(pg_temp.m('c0') not in (select member_id from public.circle_members_of
   'the member list excludes a non-visible member');
 select is((select display_name from public.circle_members_of(pg_temp.id('club')) where member_id = pg_temp.m('c2')),
   'Bina'::varchar, 'the member list carries the display name');
+select is((select cover_photo_id from public.circle_members_of(pg_temp.id('club')) where member_id = pg_temp.m('c2')),
+  pg_temp.id('c2cover'), 'the member list carries the fellow member''s cover photo id');
 reset role;
 
 -- Deny: a non-member gets an empty member list.
@@ -265,6 +285,14 @@ select pg_temp.as_member('c6');
 select ok(pg_temp.m('c1') not in (select member_id from public.circle_members_of(pg_temp.id('club'))),
   'a block hides both ways in the member list');
 reset role;
+
+-- Deny: a paused (non-visible) caller gets an empty member list, like everywhere else.
+update public.profiles set paused_at = now() where id = pg_temp.m('c3');
+select pg_temp.as_member('c3');
+select is((select count(*) from public.circle_members_of(pg_temp.id('club'))), 0::bigint,
+  'a paused member gets an empty member list');
+reset role;
+update public.profiles set paused_at = null where id = pg_temp.m('c3');
 
 -- ============ circle_activities ============
 

@@ -1,4 +1,4 @@
--- Circles: admin-created local communities Members join; Activities posted to a Circle keep their
+-- Circles: admin-created local Circles Members join; Activities posted to a Circle keep their
 -- place on the main board with the Circle's label, which drops once the Circle is archived.
 
 -- Rows reveal other Members, so no direct access: everything goes through the functions below.
@@ -91,7 +91,7 @@ $$;
 
 revoke execute on function public.get_circle(uuid) from public, anon;
 
--- Fellow Circle members, only to a member of that Circle; visible and unblocked ones alone.
+-- Fellow Circle members, only to a visible member of that Circle; visible and unblocked ones alone.
 create function public.circle_members_of(circle_id uuid) returns table (
   member_id uuid,
   display_name varchar,
@@ -105,6 +105,7 @@ as $$
   from public.circle_members cm
   join public.profiles p on p.id = cm.user_id
   where cm.circle_id = circle_members_of.circle_id
+    and public.is_visible(auth.uid())
     and public.is_circle_member(circle_members_of.circle_id, auth.uid())
     and p.id <> auth.uid()
     and public.is_visible(p.id)
