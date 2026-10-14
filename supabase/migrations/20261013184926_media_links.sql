@@ -190,3 +190,30 @@ as $$
 $$;
 
 revoke execute on function public.photo_links(uuid, uuid[]) from public, anon, authenticated;
+
+-- Reordering: runs as the caller under RLS, so only their own photos move. One statement moves the
+-- photo and swaps whichever photo held the position (the unique constraint is checked at its end).
+create function public.move_photo(photo_id uuid, new_position smallint) returns void
+language plpgsql security invoker
+set search_path = ''
+as $$
+declare
+  old_position smallint;
+begin
+  if new_position is null or new_position not between 1 and 4 then
+    raise exception 'choose a photo position from 1 to 4';
+  end if;
+  select p.position into old_position from public.photos p
+  where p.id = move_photo.photo_id and p.user_id = (select auth.uid());
+  if not found then
+    raise exception 'no photo to move';
+  end if;
+  update public.photos p
+  set position = case when p.id = move_photo.photo_id then new_position else old_position end
+  where p.user_id = (select auth.uid())
+    and (p.id = move_photo.photo_id or p.position = new_position);
+end;
+$$;
+
+revoke execute on function public.move_photo(uuid, smallint) from public, anon;
+grant execute on function public.move_photo(uuid, smallint) to authenticated;
