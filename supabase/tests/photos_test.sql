@@ -1,17 +1,15 @@
 begin;
 \ir helpers/act_as.psql
-select plan(12);
+select plan(10);
 
 select pg_temp.create_member('00000000-0000-0000-0000-0000000000b1');
 select pg_temp.create_member('00000000-0000-0000-0000-0000000000b2');
 
--- The upload Edge Function records each upload before the object exists.
+-- Photo rows are written by the media Edge Function (service role); uploads are in photo_uploads_test.
 select pg_temp.act_as_service();
-insert into public.photos (id, user_id, object_key, position) values
-  ('00000000-0000-0000-0000-00000000b101', '00000000-0000-0000-0000-0000000000b1', 'b1/one.jpg', 1),
-  ('00000000-0000-0000-0000-00000000b102', '00000000-0000-0000-0000-0000000000b1', 'b1/two.jpg', 2);
-select lives_ok($$ select public.confirm_photo_upload('00000000-0000-0000-0000-00000000b101') $$,
-  'the upload Edge Function can confirm an upload');
+insert into public.photos (id, user_id, object_key, position, uploaded_at) values
+  ('00000000-0000-0000-0000-00000000b101', '00000000-0000-0000-0000-0000000000b1', 'b1/one.jpg', 1, now()),
+  ('00000000-0000-0000-0000-00000000b102', '00000000-0000-0000-0000-0000000000b1', 'b1/two.jpg', 2, null);
 select throws_ok(
   $$ insert into public.photos (user_id, object_key, position)
      values ('00000000-0000-0000-0000-0000000000b1', 'b1/five.jpg', 5) $$,
@@ -26,9 +24,7 @@ select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000b1');
 select results_eq(
   'select position, uploaded_at is not null from public.photos order by position',
   $$ values (1::smallint, true), (2::smallint, false) $$,
-  'a photo is live only once its upload is confirmed');
-select throws_ok($$ select public.confirm_photo_upload('00000000-0000-0000-0000-00000000b102') $$,
-  '42501', null, 'a Member cannot confirm their own upload');
+  'a Member reads their own photos');
 select throws_ok(
   $$ insert into public.photos (user_id, object_key, position) values (auth.uid(), 'b1/three.jpg', 3) $$,
   '42501', null, 'a Member cannot insert photo rows directly');
