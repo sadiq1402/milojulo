@@ -8,6 +8,12 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+// The native photo picker doesn't exist under Jest; tests say what it returns.
+jest.mock('react-native-image-crop-picker', () => ({
+  __esModule: true,
+  default: { openPicker: jest.fn(), openCamera: jest.fn() },
+}));
+
 // Unit tests never reach Supabase; they mock the feature data modules instead.
 jest.mock('./src/lib/supabase', () => ({ supabase: {} }));
 

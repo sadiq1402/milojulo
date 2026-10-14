@@ -2,11 +2,17 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as auth from '../src/features/auth/api';
 import * as consents from '../src/features/consents/api';
+import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/consents/api');
+jest.mock('../src/features/catalog/api');
+jest.mock('../src/features/photos/api');
+jest.mock('../src/features/profileSetup/api');
+// Profile setup loads the draft, photos and catalogs whenever it opens.
+beforeEach(() => mockProfileSetup());
 
 const documents = {
   terms: { id: 't1', url: null },
@@ -174,7 +180,7 @@ describe('date of birth and consents', () => {
     await fillIn('21', '3', '1998');
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(
-      await screen.findByRole('header', { name: 'Set up your profile' }),
+      await screen.findByRole('header', { name: 'What should we call you?' }),
     ).toBeOnTheScreen();
     expect(consents.acceptConsents).toHaveBeenCalledWith(
       '1998-03-21',

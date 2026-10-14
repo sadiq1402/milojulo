@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import * as chat from '../src/features/chat/api';
+import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/auth/api');
@@ -9,6 +10,11 @@ jest.mock('../src/features/account/api');
 jest.mock('../src/features/consents/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/activities/api');
+jest.mock('../src/features/catalog/api');
+jest.mock('../src/features/photos/api');
+jest.mock('../src/features/profileSetup/api');
+// Profile setup loads the draft, photos and catalogs whenever it opens.
+beforeEach(() => mockProfileSetup());
 
 test('a signed-out visitor starts at welcome', async () => {
   await renderApp(null);
@@ -29,7 +35,7 @@ test('a Member who has given consent but not built a profile resumes at profile 
   jest.mocked(account.fetchAccountStage).mockResolvedValue('profile');
   await renderApp(sessionFor('asha@example.com'));
   expect(
-    await screen.findByRole('header', { name: 'Set up your profile' }),
+    await screen.findByRole('header', { name: 'What should we call you?' }),
   ).toBeOnTheScreen();
 });
 

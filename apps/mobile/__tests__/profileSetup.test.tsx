@@ -1,0 +1,468 @@
+import { notifyManager } from '@tanstack/react-query';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import ImagePicker from 'react-native-image-crop-picker';
+import * as account from '../src/features/account/api';
+import * as activities from '../src/features/activities/api';
+import * as chat from '../src/features/chat/api';
+import * as discover from '../src/features/discover/api';
+import * as photos from '../src/features/photos/api';
+import * as profileSetup from '../src/features/profileSetup/api';
+import { SetupError } from '../src/features/profileSetup/model';
+import { mockProfileSetup } from '../test/profileSetup';
+import { renderApp, sessionFor } from '../test/render';
+
+jest.mock('../src/features/account/api');
+jest.mock('../src/features/activities/api');
+jest.mock('../src/features/auth/api');
+jest.mock('../src/features/catalog/api');
+jest.mock('../src/features/chat/api');
+jest.mock('../src/features/discover/api');
+jest.mock('../src/features/photos/api');
+jest.mock('../src/features/profileSetup/api');
+
+const userId = 'id-asha@example.com';
+const twoPhotos = [
+  { id: 'p1', position: 1 },
+  { id: 'p2', position: 2 },
+];
+const basics = { displayName: 'Asha', areaId: 'baner' };
+const prompts = [
+  { position: 1 as const, questionId: 1, answer: 'Chai and a trek' },
+  { position: 2 as const, questionId: 2, answer: 'Play badminton' },
+];
+
+// TanStack Query notifies on a 0 ms timer, which lands outside the act() of the press that
+// started a save; a microtask settles inside it. Jest gives each test file its own modules.
+beforeAll(() =>
+  notifyManager.setScheduler(callback => Promise.resolve().then(callback)),
+);
+
+beforeEach(() => {
+  jest.mocked(account.fetchAccountStage).mockResolvedValue('profile');
+  jest.mocked(profileSetup.saveBasics).mockResolvedValue();
+  jest.mocked(profileSetup.savePrompts).mockResolvedValue();
+  jest.mocked(profileSetup.saveModes).mockResolvedValue();
+  jest.mocked(profileSetup.saveInterests).mockResolvedValue();
+});
+
+async function open() {
+  await renderApp(sessionFor('asha@example.com'));
+}
+
+const header = (name: string) => screen.findByRole('header', { name });
+const button = (name: string) => screen.getByRole('button', { name });
+
+describe('basics', () => {
+  test('a new Member starts here; Next waits for a first name and an Area, then saves', async () => {
+    mockProfileSetup();
+    await open();
+    expect(await header('What should we call you?')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Step 1 of 5')).toBeOnTheScreen();
+    expect(
+      screen.getByText('We only store your area, never your exact location.'),
+    ).toBeOnTheScreen();
+    expect(button('Next')).toBeDisabled();
+
+    await fireEvent.changeText(screen.getByLabelText('First name'), ' Asha ');
+    expect(button('Next')).toBeDisabled();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Wakad' }));
+    await fireEvent.press(button('Next'));
+
+    expect(await header('Add 2 to 4 photos')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Step 2 of 5')).toBeOnTheScreen();
+    expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
+      displayName: ' Asha ',
+      areaId: 'wakad',
+    });
+  });
+
+  test('a save that fails stays on the step with the reason', async () => {
+    mockProfileSetup(basics);
+    jest
+      .mocked(profileSetup.saveBasics)
+      .mockRejectedValue(new SetupError("That didn't save."));
+    await open();
+    await header('Add 2 to 4 photos');
+    await fireEvent.press(button('Back'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Next' }));
+    expect(await screen.findByText("That didn't save.")).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'What should we call you?' }),
+    ).toBeOnTheScreen();
+  });
+});
+
+describe('resuming', () => {
+  test('a returning Member opens at the first step not yet done', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    await open();
+    expect(
+      await header('Two lines that start a conversation'),
+    ).toBeOnTheScreen();
+  });
+
+  test('going back shows what was saved', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    await open();
+    await header('Two lines that start a conversation');
+    await fireEvent.press(button('Back'));
+    await header('Add 2 to 4 photos');
+    await fireEvent.press(button('Back'));
+    await header('What should we call you?');
+    expect(screen.getByLabelText('First name')).toHaveDisplayValue('Asha');
+    expect(
+      await screen.findByRole('button', { name: 'Baner', selected: true }),
+    ).toBeOnTheScreen();
+  });
+
+  test('a Dating Mode without its preferences reopens the Modes step', async () => {
+    mockProfileSetup({ ...basics, prompts, modes: ['dating'] }, twoPhotos);
+    await open();
+    expect(await header('What are you open to?')).toBeOnTheScreen();
+  });
+});
+
+describe('photos', () => {
+  test('a photo is picked from the gallery, cropped to 4:5 and uploaded to the next slot', async () => {
+    mockProfileSetup(basics, [{ id: 'p1', position: 1 }]);
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue({ path: 'file:///tmp/new.jpg' } as never);
+    jest.mocked(photos.uploadPhoto).mockImplementation(async () => {
+      jest.mocked(photos.fetchMyPhotos).mockResolvedValue(twoPhotos);
+      return 'p2';
+    });
+    await open();
+    await header('Add 2 to 4 photos');
+    expect(screen.getByText('Main photo')).toBeOnTheScreen();
+    expect(screen.queryByText(/reviews every photo/)).toBeNull();
+    expect(button('Next')).toBeDisabled();
+
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Choose from your photos' }),
+    );
+
+    expect(
+      await screen.findByRole('button', { name: 'Photo 2' }),
+    ).toBeOnTheScreen();
+    expect(ImagePicker.openPicker).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaType: 'photo',
+        cropping: true,
+        width: 1080,
+        height: 1350,
+        compressImageQuality: 0.8,
+      }),
+    );
+    expect(photos.uploadPhoto).toHaveBeenCalledWith(2, 'file:///tmp/new.jpg');
+    await waitFor(() => expect(button('Next')).toBeEnabled());
+  });
+
+  test('backing out of the camera uploads nothing', async () => {
+    mockProfileSetup(basics);
+    jest
+      .mocked(ImagePicker.openCamera)
+      .mockRejectedValue(
+        Object.assign(new Error('cancelled'), { code: 'E_PICKER_CANCELLED' }),
+      );
+    await open();
+    await header('Add 2 to 4 photos');
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Take a photo' }),
+    );
+    await waitFor(() => expect(ImagePicker.openCamera).toHaveBeenCalled());
+    expect(photos.uploadPhoto).not.toHaveBeenCalled();
+  });
+
+  test('a camera without permission says how to allow it', async () => {
+    mockProfileSetup(basics);
+    jest
+      .mocked(ImagePicker.openCamera)
+      .mockRejectedValue(
+        Object.assign(new Error('denied'), { code: 'E_NO_CAMERA_PERMISSION' }),
+      );
+    await open();
+    await header('Add 2 to 4 photos');
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Take a photo' }),
+    );
+    expect(
+      await screen.findByText(
+        "Allow camera access for MiloJulo in your phone's settings, then try again.",
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test('a failed upload can be retried', async () => {
+    mockProfileSetup(basics);
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue({ path: 'file:///tmp/a.jpg' } as never);
+    jest
+      .mocked(photos.uploadPhoto)
+      .mockRejectedValueOnce(
+        new Error("The photo didn't finish uploading. Try again."),
+      )
+      .mockImplementation(async () => {
+        jest
+          .mocked(photos.fetchMyPhotos)
+          .mockResolvedValue([{ id: 'p1', position: 1 }]);
+        return 'p1';
+      });
+    await open();
+    await header('Add 2 to 4 photos');
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Choose from your photos' }),
+    );
+    expect(
+      await screen.findByText("The photo didn't finish uploading. Try again."),
+    ).toBeOnTheScreen();
+
+    await fireEvent.press(button('Retry photo 1'));
+    expect(
+      await screen.findByRole('button', { name: 'Photo 1, main photo' }),
+    ).toBeOnTheScreen();
+    expect(photos.uploadPhoto).toHaveBeenLastCalledWith(1, 'file:///tmp/a.jpg');
+  });
+
+  test('a photo can become the main photo, be replaced or be removed', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    jest.mocked(photos.movePhoto).mockResolvedValue();
+    jest.mocked(photos.deletePhoto).mockResolvedValue();
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue({ path: 'file:///tmp/b.jpg' } as never);
+    jest.mocked(photos.uploadPhoto).mockResolvedValue('p3');
+    await open();
+    await header('Two lines that start a conversation');
+    await fireEvent.press(button('Back'));
+
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Photo 2' }),
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Make main photo' }),
+    );
+    expect(photos.movePhoto).toHaveBeenCalledWith('p2', 1);
+
+    await fireEvent.press(button('Photo 2'));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Replace photo' }),
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Choose from your photos' }),
+    );
+    await waitFor(() =>
+      expect(photos.uploadPhoto).toHaveBeenCalledWith(2, 'file:///tmp/b.jpg'),
+    );
+
+    await fireEvent.press(button('Photo 2'));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Remove photo' }),
+    );
+    expect(photos.deletePhoto).toHaveBeenCalledWith('p2');
+  });
+
+  test('a refused change shows why', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    jest
+      .mocked(photos.movePhoto)
+      .mockRejectedValue(
+        new Error('With 4 photos, remove one first to change the order.'),
+      );
+    await open();
+    await header('Two lines that start a conversation');
+    await fireEvent.press(button('Back'));
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Photo 2' }),
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Make main photo' }),
+    );
+    expect(
+      await screen.findByText(
+        'With 4 photos, remove one first to change the order.',
+      ),
+    ).toBeOnTheScreen();
+  });
+});
+
+describe('prompts', () => {
+  test('two answers with a counter, saved with their questions', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    await open();
+    await header('Two lines that start a conversation');
+    expect(screen.getAllByText('0 / 140')).toHaveLength(2);
+    await fireEvent.changeText(
+      await screen.findByLabelText('A perfect Sunday in Pune is…'),
+      'Chai and a trek',
+    );
+    expect(screen.getByText('15 / 140')).toBeOnTheScreen();
+    expect(button('Next')).toBeDisabled();
+    await fireEvent.changeText(
+      screen.getByLabelText("I'm looking for people to…"),
+      'Play badminton',
+    );
+    await fireEvent.press(button('Next'));
+    expect(await header('What are you open to?')).toBeOnTheScreen();
+    expect(profileSetup.savePrompts).toHaveBeenCalledWith(userId, prompts);
+  });
+});
+
+describe('Modes', () => {
+  async function openModes() {
+    mockProfileSetup({ ...basics, prompts }, twoPhotos);
+    await open();
+    await header('What are you open to?');
+  }
+
+  test('Friends alone needs nothing more', async () => {
+    await openModes();
+    expect(button('Next')).toBeDisabled();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Friends' }));
+    expect(
+      screen.queryByRole('header', { name: 'For Dating, Serious and Casual' }),
+    ).toBeNull();
+    await fireEvent.press(button('Next'));
+    expect(await header('What do you enjoy?')).toBeOnTheScreen();
+    expect(profileSetup.saveModes).toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({ modes: ['friends'], gender: null }),
+    );
+  });
+
+  test('Casual is labelled for adults', async () => {
+    await openModes();
+    expect(screen.getByText('18+ adult intent')).toBeOnTheScreen();
+  });
+
+  test('a Dating Mode asks for gender and Dating Preferences', async () => {
+    await openModes();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Serious' }));
+    expect(
+      screen.getByRole('header', { name: 'For Dating, Serious and Casual' }),
+    ).toBeOnTheScreen();
+    // Five years either side of a 1998-03-21 birthday, 15 km.
+    expect(screen.getByLabelText(/^Youngest: \d+$/)).toBeOnTheScreen();
+    expect(screen.getByLabelText('How far away: 15 km')).toBeOnTheScreen();
+    expect(button('Next')).toBeDisabled();
+
+    await fireEvent.press(button('Woman'));
+    expect(button('Next')).toBeDisabled();
+    await fireEvent.press(button('Men'));
+    await fireEvent.press(button('Further'));
+    await fireEvent.press(button('Next'));
+
+    await header('What do you enjoy?');
+    expect(profileSetup.saveModes).toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({
+        modes: ['serious'],
+        gender: 'woman',
+        prefGenders: ['man'],
+        prefMaxKm: 20,
+      }),
+    );
+    const saved = jest.mocked(profileSetup.saveModes).mock.calls[0][1];
+    expect(saved.prefAgeMax! - saved.prefAgeMin!).toBe(10);
+  });
+
+  test('Networking offers optional profession, Industry and Career Stage', async () => {
+    await openModes();
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Networking' }));
+    expect(button('Next')).toBeEnabled();
+    await fireEvent.changeText(
+      screen.getByLabelText('Profession'),
+      'Product designer',
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Software and IT' }),
+    );
+    await fireEvent.press(button('Mid career'));
+    await fireEvent.press(button('Next'));
+    await header('What do you enjoy?');
+    expect(profileSetup.saveModes).toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({
+        modes: ['networking'],
+        profession: 'Product designer',
+        industryId: 1,
+        careerStage: 'mid',
+      }),
+    );
+  });
+});
+
+describe('interests and submit', () => {
+  const complete = { ...basics, prompts, modes: ['friends' as const] };
+
+  test('submitting saves interests and availability, then lands on Discover', async () => {
+    mockProfileSetup(complete, twoPhotos);
+    jest.mocked(chat.fetchConversations).mockResolvedValue([]);
+    jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
+    jest
+      .mocked(discover.fetchMyDiscoverState)
+      .mockResolvedValue({ modes: ['friends'], paused: false });
+    jest
+      .mocked(discover.fetchFeedPage)
+      .mockResolvedValue({ cards: [], nextCursor: null });
+    jest.mocked(profileSetup.submitProfile).mockImplementation(async () => {
+      jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
+    });
+    await open();
+    await header('What do you enjoy?');
+    expect(screen.getByLabelText('Step 5 of 5')).toBeOnTheScreen();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Badminton' }),
+    );
+    await fireEvent.press(button('Weekends'));
+    await fireEvent.press(button('Finish and submit'));
+
+    expect(
+      await screen.findByRole('tab', { name: 'Discover', selected: true }),
+    ).toBeOnTheScreen();
+    expect(profileSetup.saveInterests).toHaveBeenCalledWith(userId, {
+      tagIds: [1],
+      availability: ['weekends'],
+    });
+    expect(profileSetup.submitProfile).toHaveBeenCalled();
+  });
+
+  test('a refusal opens the step that fixes it, with the reason', async () => {
+    mockProfileSetup(complete, twoPhotos);
+    jest
+      .mocked(profileSetup.submitProfile)
+      .mockRejectedValue(new SetupError('Add at least 2 photos.', 'photos'));
+    await open();
+    await header('What do you enjoy?');
+    await fireEvent.press(button('Finish and submit'));
+    expect(await header('Add 2 to 4 photos')).toBeOnTheScreen();
+    expect(screen.getByText('Add at least 2 photos.')).toBeOnTheScreen();
+  });
+
+  test('a refusal without a step stays here', async () => {
+    mockProfileSetup(complete, twoPhotos);
+    jest
+      .mocked(profileSetup.submitProfile)
+      .mockRejectedValue(new SetupError("That didn't save."));
+    await open();
+    await header('What do you enjoy?');
+    await fireEvent.press(button('Finish and submit'));
+    expect(await screen.findByText("That didn't save.")).toBeOnTheScreen();
+    expect(
+      screen.getByRole('header', { name: 'What do you enjoy?' }),
+    ).toBeOnTheScreen();
+  });
+});

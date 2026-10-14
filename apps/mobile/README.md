@@ -12,6 +12,8 @@ React Native CLI (bare workflow) with TypeScript. No Expo, no EAS (CLAUDE.md har
    - USB device: `adb reverse tcp:54321 tcp:54321`, then `http://127.0.0.1:54321`
 5. `npm start` (Metro) and, in another terminal, `npm run android`.
 
+Photo uploads need the media Edge Function with R2 secrets. Without them, finish profile setup locally by giving your account two confirmed photos with `scripts/dev/confirmed_photos.sql` (instructions inside; local only).
+
 Sign in with any email: the code arrives in the local mail catcher at http://127.0.0.1:54324. A new account lands on the hello screen (onboarding); a Member with a Submitted Profile lands on the tabs.
 
 ## Scripts

@@ -50,7 +50,7 @@ export async function createMember(
     }),
   );
 
-  // Profile content is set up directly, as the profile screens (#38) don't exist yet.
+  // Profile content is set up directly (photos need the media function, which CI doesn't run).
   await check(
     admin
       .from('profiles')

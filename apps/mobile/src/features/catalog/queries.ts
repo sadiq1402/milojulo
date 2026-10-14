@@ -1,11 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAreaNames, fetchPromptQuestions, fetchTagNames } from './api';
+import {
+  fetchAreaList,
+  fetchAreaNames,
+  fetchIndustryList,
+  fetchPromptQuestionList,
+  fetchPromptQuestions,
+  fetchTagList,
+  fetchTagNames,
+} from './api';
 
 // Catalogs change only with a migration, so they're loaded once per session.
 export const catalogKeys = {
   areas: ['areas'],
   tags: ['tags'],
   promptQuestions: ['prompt-questions'],
+  areaList: ['area-list'],
+  tagList: ['tag-list'],
+  promptQuestionList: ['prompt-question-list'],
+  industryList: ['industry-list'],
 };
 
 export function useAreaNames() {
@@ -35,6 +47,38 @@ export function usePromptQuestions() {
   return useQuery({
     queryKey: catalogKeys.promptQuestions,
     queryFn: fetchPromptQuestions,
+    staleTime: Infinity,
+  });
+}
+
+export function useAreaList() {
+  return useQuery({
+    queryKey: catalogKeys.areaList,
+    queryFn: fetchAreaList,
+    staleTime: Infinity,
+  });
+}
+
+export function useTagList() {
+  return useQuery({
+    queryKey: catalogKeys.tagList,
+    queryFn: fetchTagList,
+    staleTime: Infinity,
+  });
+}
+
+export function usePromptQuestionList() {
+  return useQuery({
+    queryKey: catalogKeys.promptQuestionList,
+    queryFn: fetchPromptQuestionList,
+    staleTime: Infinity,
+  });
+}
+
+export function useIndustryList() {
+  return useQuery({
+    queryKey: catalogKeys.industryList,
+    queryFn: fetchIndustryList,
     staleTime: Infinity,
   });
 }
