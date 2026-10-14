@@ -1,3 +1,25 @@
+# Circles (#15) ‖ Circle screens (#48), in parallel
+
+The pair skipped earlier; resumed 2026-10-14. Contract (messages are the DB's exact text; the app maps them):
+
+- Tables: `circles` (`id`, `name varchar(50)`, `area_id text`→areas, `tag_id`→tags (the interest), `description varchar(300)`, `is_active boolean default true`, `created_by uuid`, `created_at`); `circle_members` (pk (`circle_id`,`user_id`), `joined_at`). RLS on, default deny, no direct client writes except leaving (see below). `activities.circle_id uuid` nullable, FK→circles on delete set null.
+- Member-facing functions (security definer, `search_path=''`, revoke from public/anon; empty/err for non-visible):
+  - `browse_circles()` → `circle_id, name, area_id, tag_id, description, member_count int, i_am_member bool`; active circles only; visible caller only (empty otherwise); joined first, then name. 
+  - `get_circle(circle_id)` → same columns + nothing extra; active circles for visible members, plus the caller's own circles and admins; unknown/inactive to a non-member → no row.
+  - `circle_members_of(circle_id)` → `member_id, display_name, cover_photo_id, area_id`; only when the caller is a member of that circle (else empty); excludes blocked (either way), banned, deleted, Auto-hidden, non-visible (reuse `is_reachable`/visibility + `cover_photo_id`).
+  - `circle_activities(circle_id)` → the circle's upcoming Activities, same shape and rules as `activity_board()` rows (reuse `can_see_activity`), soonest first; visible caller.
+  - `join_circle(circle_id)` → void; refusals `your profile is not visible`, `no circle to join` (unknown/inactive); idempotent (already a member = ok).
+  - `leave_circle(circle_id)` → void; `you are not in this circle` if not a member. (Leaving does not touch the Member's posted Activities.)
+- `post_activity` gains `circle_id uuid default null` (last arg): if set, caller must be a member of that active circle, else `join the circle to post to it`. 
+- `activity_board()` and `get_activity()` gain `circle_id uuid` and `circle_name varchar` — `circle_name` is NULL when the circle is archived (`is_active=false`), so an archived circle drops its label but the Activity stays (CONTEXT: Locked/Circle rules). 
+- Admin (is_admin() only; app does not call these — for seed/dashboard): `admin_create_circle(name, area_id, tag_id, description)` → uuid, `admin_edit_circle(circle_id, name, area_id, tag_id, description)`, `admin_archive_circle(circle_id)`. A dev seed `supabase/seed/dev/circles.sql` creates a couple of active Circles with the admin path so #48 and the phone can browse.
+- App (#48) `src/features/circles/api.ts`: `fetchCircles()`, `fetchCircle(id)`, `fetchCircleMembers(id)`, `fetchCircleActivities(id)`, `joinCircle(id)`, `leaveCircle(id)`; refusals→friendly copy (exact DB text as keys). Screens `CirclesScreen`, `CircleDetailScreen` replacing the Circles tab placeholder. Member tap → existing `Profile` route (memberId). Post-to-circle → CreateActivity with the circle pre-selected (`ActivityForm`/`postActivity` gain optional `circleId`); the Circle label shows on `ActivityCard`/detail from `circle_name`. Until #15 merges, hand-add the new fn/column types to `database.types.ts`.
+- Shared local Supabase: never `db reset`; integration tests through `flock /tmp/milojulo-integration.lock`.
+
+- [ ] #15 agent: migration, admin + member functions, board/get_activity circle label, dev seed, pgTAP, docs
+- [ ] #48 agent: circles data module, Circles + CircleDetail screens, post-to-circle, label on the board, tests
+- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each
+
 # Media links (#35) ‖ Profile setup (#38), in parallel
 
 Founder choices (2026-10-14): build these next; image library react-native-image-crop-picker (pick, crop locked to 4:5, compress). Scope: profile photos only; chat media links come with #12 ‖ #45, R2 cleanup on account deletion with #20. R2 signing is hand-rolled AWS SigV4 with Web Crypto (no new dependency). Contract:
