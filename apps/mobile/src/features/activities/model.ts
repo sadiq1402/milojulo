@@ -49,6 +49,10 @@ export type BoardActivity = {
   description: string | null;
   startsWhen: StartsWhen;
   isMine: boolean;
+  // The Circle this Activity was posted to; the name is null when that Circle is archived,
+  // so the label drops but the Activity stays (CONTEXT: an archived Circle disappears).
+  circleId: string | null;
+  circleName: string | null;
 };
 
 export type JoinRequestStatus = Database['public']['Enums']['request_status'];
@@ -99,6 +103,8 @@ export type ActivityFields = {
   capacity: number;
   description: string;
   venueDetail: string;
+  // Set when posting from a Circle; the host must be a member of it.
+  circleId: string | null;
 };
 
 // Leave a field out to keep it; an empty description or venue clears it.

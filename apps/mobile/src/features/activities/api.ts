@@ -54,6 +54,9 @@ const refusals: Record<string, { message: string; field?: ActivityField }> = {
   'no activity to cancel': {
     message: 'This Activity is already over or cancelled.',
   },
+  'join the circle to post to it': {
+    message: 'Join this Circle before posting an Activity to it.',
+  },
 };
 
 function refusal(error: { message: string }): ActivityError {
@@ -64,7 +67,8 @@ function refusal(error: { message: string }): ActivityError {
 }
 
 // Generated function types drop nullability; description and ends_at can be null.
-function toBoardActivity(row: BoardRow): BoardActivity {
+// Exported so the Circle feed, which returns the same board rows, reuses it.
+export function toBoardActivity(row: BoardRow): BoardActivity {
   return {
     id: row.id,
     hostId: row.host_id,
@@ -79,6 +83,9 @@ function toBoardActivity(row: BoardRow): BoardActivity {
     description: row.description ?? null,
     startsWhen: row.starts_when as StartsWhen,
     isMine: row.is_mine,
+    circleId: row.circle_id ?? null,
+    // Null when the Circle is archived: no label, but the Activity stays.
+    circleName: row.circle_name ?? null,
   };
 }
 
@@ -130,6 +137,7 @@ export async function postActivity(fields: ActivityFields): Promise<string> {
     capacity: fields.capacity,
     description: blankToUndefined(fields.description),
     venue_detail: blankToUndefined(fields.venueDetail),
+    circle_id: fields.circleId ?? undefined,
   });
   if (error) {
     throw refusal(error);
