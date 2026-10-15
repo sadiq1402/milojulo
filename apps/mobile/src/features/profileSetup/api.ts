@@ -1,5 +1,6 @@
 import type { Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
+import { wordFilterCopy, wordFilterRefusal } from '../wordFilter';
 import {
   SetupError,
   type Basics,
@@ -14,8 +15,9 @@ export const couldNotLoad =
   "We couldn't load your profile. Check your connection and try again.";
 const fallback = "That didn't save. Check your connection and try again.";
 
-// Keys are the database's exact messages (submit_profile and the minimum guard).
+// Keys are the database's exact messages (submit_profile, the minimum guard, the word filter).
 const refusals: Record<string, { message: string; step?: SetupStep }> = {
+  [wordFilterRefusal]: { message: wordFilterCopy },
   'accept the terms first': {
     message: 'Accept the terms and give your date of birth first.',
   },

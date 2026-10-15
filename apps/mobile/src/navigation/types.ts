@@ -1,3 +1,4 @@
+import type { SetupStep } from '../features/profileSetup/model';
 import type { ReportTarget } from '../features/reports/api';
 
 export type SignedOutParams = {
@@ -11,6 +12,10 @@ export type MemberParams = {
   Chat: { connectionId: string };
   Profile: { memberId: string };
   SafetyCentre: undefined;
+  Settings: undefined;
+  BlockedPeople: undefined;
+  // One profile setup step, opened from the Me tab.
+  EditProfile: { section: SetupStep };
   ActivityDetail: { activityId: string };
   // Posting from a Circle pre-selects it and shows its name.
   CreateActivity: { circleId: string; circleName: string } | undefined;

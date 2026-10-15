@@ -11,7 +11,12 @@ import {
 } from '../../features/profileSetup/model';
 import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { ChoiceChips, Field, toggle } from './parts';
-import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
+import {
+  SetupStepScreen,
+  useEditing,
+  useNotice,
+  type StepProps,
+} from './SetupStepScreen';
 
 const slots = Object.keys(availabilityLabels) as AvailabilitySlot[];
 
@@ -30,6 +35,7 @@ export function InterestsStep({
   beforeLeave,
 }: Props) {
   const tags = useTagList();
+  const editing = useEditing();
   const updateDraft = useUpdateDraft(userId);
   const [interests, setInterests] = useState<Interests>({
     tagIds: draft.tagIds,
@@ -46,17 +52,21 @@ export function InterestsStep({
   const submit = useMutation({
     mutationFn: async () => {
       await persist();
-      await submitProfile();
+      // An edit of a profile already submitted only saves.
+      if (!editing) {
+        await submitProfile();
+      }
     },
     onSuccess: onDone,
     onError: error => {
-      if (error instanceof SetupError && error.step) {
+      if (!editing && error instanceof SetupError && error.step) {
         onRefused(error.step, error.message);
       }
     },
   });
   const stayingHere =
-    submit.error && !(submit.error instanceof SetupError && submit.error.step);
+    submit.error &&
+    (editing || !(submit.error instanceof SetupError && submit.error.step));
 
   return (
     <SetupStepScreen

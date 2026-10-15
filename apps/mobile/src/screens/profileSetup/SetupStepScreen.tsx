@@ -1,4 +1,10 @@
-import React, { useState, type MutableRefObject, type ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  type MutableRefObject,
+  type ReactNode,
+} from 'react';
 import { Button, ErrorText, FlowScreen } from '../../components';
 import type {
   ProfileDraft,
@@ -17,6 +23,10 @@ export type StepProps = {
   // The step sets what to save when the Member leaves it backwards.
   beforeLeave: MutableRefObject<(() => Promise<void>) | undefined>;
 };
+
+// Set by the Me tab's edit screen: the same steps, one at a time, saved with "Save".
+export const EditingContext = createContext(false);
+export const useEditing = () => useContext(EditingContext);
 
 // A new object each time, so the same message shown twice counts as new.
 export type Notice = { message: string };
@@ -59,10 +69,15 @@ export function SetupStepScreen({
   below,
   children,
 }: Props) {
+  const editing = useEditing();
   return (
     <FlowScreen
-      barTitle="Your profile"
-      progress={{ step: setupSteps.indexOf(step) + 1, of: setupSteps.length }}
+      barTitle={editing ? 'Edit profile' : 'Your profile'}
+      progress={
+        editing
+          ? undefined
+          : { step: setupSteps.indexOf(step) + 1, of: setupSteps.length }
+      }
       title={title}
       intro={intro}
       onBack={onBack}
@@ -70,12 +85,12 @@ export function SetupStepScreen({
         <>
           {error ? <ErrorText text={error} /> : null}
           <Button
-            label={nextLabel}
+            label={editing ? 'Save' : nextLabel}
             onPress={onNext}
             disabled={nextDisabled}
             loading={saving}
           />
-          {below}
+          {editing ? null : below}
         </>
       }
     >

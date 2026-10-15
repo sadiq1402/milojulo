@@ -9,7 +9,13 @@ import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { ChoiceChips, Field } from './parts';
 import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
-export function BasicsStep({ userId, draft, onDone, notice }: StepProps) {
+export function BasicsStep({
+  userId,
+  draft,
+  onDone,
+  onBack,
+  notice,
+}: StepProps) {
   const areas = useAreaList();
   const updateDraft = useUpdateDraft(userId);
   const [displayName, setDisplayName] = useState(draft.displayName ?? '');
@@ -27,6 +33,7 @@ export function BasicsStep({ userId, draft, onDone, notice }: StepProps) {
     <SetupStepScreen
       step="basics"
       title="What should we call you?"
+      onBack={onBack}
       error={save.error?.message ?? shownNotice}
       onNext={() => save.mutate()}
       nextDisabled={!basicsDone({ displayName, areaId })}

@@ -15,7 +15,11 @@ import { CircleDetailScreen } from '../screens/circles/CircleDetailScreen';
 import { CirclesScreen } from '../screens/circles/CirclesScreen';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
-import { PlaceholderScreen } from '../screens/PlaceholderScreen';
+import { BlockedPeopleScreen } from '../screens/me/BlockedPeopleScreen';
+import { EditProfileScreen } from '../screens/me/EditProfileScreen';
+import { MeScreen } from '../screens/me/MeScreen';
+import { SafetyCentreScreen } from '../screens/me/SafetyCentreScreen';
+import { SettingsScreen } from '../screens/me/SettingsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ReportScreen } from '../screens/reports/ReportScreen';
 import type { MemberParams } from './types';
@@ -48,10 +52,6 @@ function NavTabBar({ state, navigation, insets }: BottomTabBarProps) {
   );
 }
 
-const MeScreen = () => <PlaceholderScreen title="Me" canSignOut />;
-// Until the Safety Centre ticket (#43).
-const SafetyCentreScreen = () => <PlaceholderScreen title="Safety Centre" />;
-
 // Rendered as a component so its hooks (the Inbox badge) have their own place.
 const renderTabBar = (props: BottomTabBarProps) => <NavTabBar {...props} />;
 
@@ -78,6 +78,9 @@ export function MemberNavigator() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="SafetyCentre" component={SafetyCentreScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="BlockedPeople" component={BlockedPeopleScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
       <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
       <Stack.Screen name="EditActivity" component={EditActivityScreen} />
