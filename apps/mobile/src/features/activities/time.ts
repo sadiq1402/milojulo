@@ -141,3 +141,11 @@ export function formatWhen(
     ? `${startDay}, ${from.text} to ${to.text} ${to.half}`
     : `${startDay}, ${formatTime(start.minutes)} to ${formatTime(end.minutes)}`;
 }
+
+// "10 Sep 2026", the India calendar day of an instant.
+export function dayMonthYear(instant: string): string {
+  const [year, month, day] = indiaParts(new Date(instant))
+    .dateKey.split('-')
+    .map(Number);
+  return `${day} ${months[month - 1]} ${year}`;
+}

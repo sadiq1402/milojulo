@@ -5,6 +5,12 @@ export type ConsentKind = Database['public']['Enums']['consent_kind'];
 export type ConsentDocument = { id: string; url: string | null };
 export type ConsentDocuments = Record<ConsentKind, ConsentDocument>;
 
+export const consentNames: Record<ConsentKind, string> = {
+  terms: 'Terms',
+  guidelines: 'Community Guidelines',
+  data_notice: 'Data notice',
+};
+
 // The version of each document in force now; all three must be accepted together.
 export async function fetchConsentDocuments(): Promise<ConsentDocuments> {
   const { data, error } = await supabase

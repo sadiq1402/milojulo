@@ -19,12 +19,12 @@ import { toBirthDate } from '../../features/consents/birthDate';
 import { colors, fontFamily, fonts, spacing } from '../../theme';
 
 // Until the lawyer-reviewed documents have URLs.
-const placeholderUrls = {
+export const placeholderUrls = {
   terms: 'https://example.com/milojulo/terms',
   guidelines: 'https://example.com/milojulo/community-guidelines',
 };
 
-const collected = [
+export const collected = [
   ['Email', 'to sign you in'],
   ['Date of birth', 'to confirm you are 18 or older'],
   [
@@ -35,7 +35,7 @@ const collected = [
   ['Messages and media', 'to deliver your chats'],
 ];
 
-function DocLink({
+export function DocLink({
   label,
   doc,
   fallback,

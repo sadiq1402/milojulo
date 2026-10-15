@@ -14,6 +14,9 @@ export type MemberParams = {
   SafetyCentre: undefined;
   Settings: undefined;
   BlockedPeople: undefined;
+  ConsentSettings: undefined;
+  DataCopy: undefined;
+  DeleteAccount: DeleteAccountParams;
   // One profile setup step, opened from the Me tab.
   EditProfile: { section: SetupStep };
   ActivityDetail: { activityId: string };
@@ -36,4 +39,13 @@ export type MemberParams = {
     memberId: string;
     memberName?: string;
   };
+};
+
+// Opened from Settings, or from the consent step after a withdrawal, where pausing makes no sense.
+export type DeleteAccountParams = { offerPause?: boolean } | undefined;
+
+// A Member who withdrew a consent: accept again, or delete the account.
+export type ReconsentParams = {
+  Reconsent: undefined;
+  DeleteAccount: DeleteAccountParams;
 };

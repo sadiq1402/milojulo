@@ -1,4 +1,5 @@
 import {
+  dayMonthYear,
   addDays,
   dayLabel,
   dayOptions,
@@ -97,4 +98,9 @@ test('when an Activity happens, in India time', () => {
   expect(formatWhen('2026-10-12T17:30:00Z', '2026-10-12T19:30:00Z', now)).toBe(
     'Today, 11:00 pm to Tomorrow, 1:00 am',
   );
+});
+
+test('a date reads as day, month and year in India time', () => {
+  expect(dayMonthYear('2026-09-10T20:00:00Z')).toBe('11 Sep 2026');
+  expect(dayMonthYear('2026-09-10T10:00:00Z')).toBe('10 Sep 2026');
 });

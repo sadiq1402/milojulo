@@ -18,7 +18,7 @@ import { Section } from './Section';
 
 type Props = NativeStackScreenProps<MemberParams, 'Settings'>;
 
-// Only built features have rows; the rest arrive with #20 and the push ticket.
+// Only built features have rows; notifications arrive with the push ticket.
 export function SettingsScreen({ navigation }: Props) {
   const userId = useSession().session!.user.id;
   const state = useMyDiscoverState(userId);
@@ -53,12 +53,30 @@ export function SettingsScreen({ navigation }: Props) {
         {pause.isError ? <ErrorText text={pause.error.message} /> : null}
       </Section>
 
-      <Section title="Privacy">
+      <Section title="Privacy and data">
         <List>
+          <ListRow
+            title="Consent settings"
+            onPress={() => navigation.navigate('ConsentSettings')}
+          />
           <ListRow
             title="Blocked people"
             subtitle="See and unblock"
             onPress={() => navigation.navigate('BlockedPeople')}
+          />
+          <ListRow
+            title="Request a copy of my data"
+            onPress={() => navigation.navigate('DataCopy')}
+          />
+        </List>
+      </Section>
+
+      <Section title="Account">
+        <List>
+          <ListRow
+            title="Delete account"
+            titleColor={colors.danger}
+            onPress={() => navigation.navigate('DeleteAccount')}
           />
         </List>
       </Section>

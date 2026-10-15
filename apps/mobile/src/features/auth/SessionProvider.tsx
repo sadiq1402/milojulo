@@ -6,6 +6,7 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { onSessionChange } from './api';
 
 type SessionState = { session: Session | null; loading: boolean };
@@ -20,9 +21,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     session: null,
     loading: true,
   });
+  const client = useQueryClient();
   useEffect(
-    () => onSessionChange(session => setState({ session, loading: false })),
-    [],
+    () =>
+      onSessionChange(session => {
+        // Signed out (or deleted): nothing the account loaded may stay for the next one.
+        if (!session) {
+          client.clear();
+        }
+        setState({ session, loading: false });
+      }),
+    [client],
   );
   return (
     <SessionContext.Provider value={state}>{children}</SessionContext.Provider>

@@ -4,17 +4,20 @@ import { StyleSheet, View } from 'react-native';
 import { BrandLoader } from '../components/BrandLoader';
 import { useAccountStage } from '../features/account/useAccountStage';
 import { useSession } from '../features/auth/SessionProvider';
+import { DeleteAccountScreen } from '../screens/account/DeleteAccountScreen';
 import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
+import { ReconsentScreen } from '../screens/gettingIn/ReconsentScreen';
 import { EmailScreen } from '../screens/gettingIn/EmailScreen';
 import { OtpScreen } from '../screens/gettingIn/OtpScreen';
 import { ProfileSetupScreen } from '../screens/profileSetup/ProfileSetupScreen';
 import { WelcomeScreen } from '../screens/gettingIn/WelcomeScreen';
 import { LoadErrorScreen } from '../screens/StatusScreen';
 import { MemberNavigator } from './MemberNavigator';
-import type { SignedOutParams } from './types';
+import type { ReconsentParams, SignedOutParams } from './types';
 
 const SignedOut = createNativeStackNavigator<SignedOutParams>();
 const Onboarding = createNativeStackNavigator();
+const Reconsent = createNativeStackNavigator<ReconsentParams>();
 // Signed out, then one onboarding step per account stage, then a Member's tabs.
 // A completed step refreshes the stage, which swaps in the next screen.
 // While the session or stage loads, the BrandLoader covers the app and fades out into the first screen.
@@ -58,6 +61,18 @@ function Screens({
   }
   if (stage.data === 'member') {
     return <MemberNavigator />;
+  }
+  if (stage.data === 'reconsent') {
+    return (
+      <Reconsent.Navigator screenOptions={{ headerShown: false }}>
+        <Reconsent.Screen name="Reconsent" component={ReconsentScreen} />
+        <Reconsent.Screen
+          name="DeleteAccount"
+          component={DeleteAccountScreen}
+          initialParams={{ offerPause: false }}
+        />
+      </Reconsent.Navigator>
+    );
   }
   return (
     <Onboarding.Navigator screenOptions={{ headerShown: false }}>
