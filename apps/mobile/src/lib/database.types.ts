@@ -377,6 +377,38 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"meetup_feedback": {
+                  Row: {
+                    "activity_id": string | null,"created_at": string,"did_meet": boolean,"id": string,"keep": boolean,"other_user_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activity_id"?: string | null,"created_at"?: string,"did_meet": boolean,"id"?: string,"keep": boolean,"other_user_id": string,"user_id": string
+                  }
+                  Update: {
+                    "activity_id"?: string | null,"created_at"?: string,"did_meet"?: boolean,"id"?: string,"keep"?: boolean,"other_user_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meetup_feedback_activity_id_fkey"
+      columns: ["activity_id"]
+isOneToOne: false
+      referencedRelation: "activities"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meetup_feedback_other_user_id_fkey"
+      columns: ["other_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meetup_feedback_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"messages": {
                   Row: {
                     "activity_id": string | null,"body": string | null,"connection_id": string,"created_at": string,"id": string,"media_deleted_at": string | null,"media_duration_ms": number | null,"media_height": number | null,"media_key": string | null,"media_mime": string | null,"media_width": number | null,"removed_at": string | null,"sender_id": string,"type": Database["public"]['Enums']["message_type"],"message_evidence": Json | null
@@ -604,6 +636,11 @@ isOneToOne: false
 "activity_ends_at":
 { Args: { "activity": Omit<Database["public"]['Tables']["activities"]['Row'], Database["public"]['Tables']["activities"]['ComputedFields']> }; Returns: string
                            },
+"activity_feedback_pairs":
+{ Args: { "member_id": string }; Returns: {
+              "activity_id": string,"activity_title": string,"ends_at": string,"other_user_id": string
+            }[]
+                           },
 "activity_is_locked":
 { Args: { "activity_id": string }; Returns: boolean
                            },
@@ -750,6 +787,11 @@ isOneToOne: false
 "join_circle":
 { Args: { "circle_id": string }; Returns: undefined
                            },
+"kept_connections":
+{ Args: { "since": string }; Returns: {
+              "activity_id": string,"kept_at": string,"user_a": string,"user_b": string
+            }[]
+                           },
 "leave_circle":
 { Args: { "circle_id": string }; Returns: undefined
                            },
@@ -786,6 +828,11 @@ isOneToOne: false
 "pending_chat_upload":
 { Args: { "member_id": string,"upload_id": string }; Returns: {
               "media_key": string,"mime": string,"size": number,"upload_key": string
+            }[]
+                           },
+"pending_meetup_feedback":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "activity_id": string,"activity_title": string,"cover_photo_id": string,"display_name": string,"ends_at": string,"other_user_id": string
             }[]
                            },
 "pending_photo_upload":
@@ -859,6 +906,9 @@ isOneToOne: false
 { Args: { "member_id": string,"photo_position": number }; Returns: {
               "discarded_keys": (string)[],"object_key": string,"photo_id": string,"upload_key": string
             }[]
+                           },
+"submit_meetup_feedback":
+{ Args: { "activity"?: string,"did_meet"?: boolean,"keep"?: boolean,"other_user": string }; Returns: undefined
                            },
 "submit_profile":
 { Args: Record<PropertyKey, never>; Returns: undefined
