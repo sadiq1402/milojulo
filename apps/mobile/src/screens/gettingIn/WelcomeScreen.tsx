@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.orchid, overflow: 'hidden' },
   fill: { flex: 1 },
   header: { gap: spacing.sm },
-  mark: { width: 112, aspectRatio: markAspectRatio },
+  mark: { width: 72, aspectRatio: markAspectRatio },
   content: {
     flex: 1,
     paddingHorizontal: spacing.xl,

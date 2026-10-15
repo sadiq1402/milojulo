@@ -1,4 +1,5 @@
 <resources>
-    <!-- Written by scripts/brand-assets.sh from colors.ink in design/tokens.ts: the dark brand surface. -->
+    <!-- Written by scripts/brand-assets.sh from design/tokens.ts: ink behind the app icon, ground behind the launch screens. -->
     <color name="brand_ink">#2B1233</color>
+    <color name="brand_ground">#FFF7FB</color>
 </resources>

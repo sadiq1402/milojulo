@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 import { BrandLoader } from '../src/components/BrandLoader';
+import { colors } from '../src/theme';
 import * as account from '../src/features/account/api';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -30,6 +31,13 @@ const motionOn = () => {
 test('shows the logo, labelled MiloJulo', async () => {
   await render(<BrandLoader ready={false} onDone={() => {}} />);
   expect(screen.getByRole('image', { name: 'MiloJulo' })).toBeOnTheScreen();
+});
+
+test('sits on the light brand ground (founder, light loader)', async () => {
+  await render(<BrandLoader ready={false} onDone={() => {}} />);
+  expect(screen.getByTestId('brand-loader')).toHaveStyle({
+    backgroundColor: colors.ground,
+  });
 });
 
 test('with reduce motion on, the logo stands still and fully shown', async () => {

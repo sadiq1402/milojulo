@@ -9,9 +9,9 @@ import Svg, {
 } from 'react-native-svg';
 import { colors } from '../theme';
 
-// The dark brand surface behind the logo (BrandLoader, Welcome): ink deepening to orchid, with an
-// orchid glow where the logo sits, so the white "Milo" and the gradient "Julo" both read.
-export function BrandBackground({ glowY = '44%' }: { glowY?: string }) {
+// The light brand surface behind the logo (BrandLoader): soft white deepening to lilac, with a
+// subtle orchid glow where the logo sits; matches the light launch screens.
+export function BrandBackground() {
   return (
     <Svg
       style={StyleSheet.absoluteFill}
@@ -21,14 +21,14 @@ export function BrandBackground({ glowY = '44%' }: { glowY?: string }) {
     >
       <Defs>
         <LinearGradient id="brandGround" x1="0" y1="0" x2="0.6" y2="1">
-          <Stop offset="0" stopColor={colors.ink} />
-          <Stop offset="0.55" stopColor={colors.ink} />
-          <Stop offset="1" stopColor={colors.orchidDark} />
+          <Stop offset="0" stopColor={colors.ground} />
+          <Stop offset="0.55" stopColor={colors.ground} />
+          <Stop offset="1" stopColor={colors.lilacSoft} />
         </LinearGradient>
-        <RadialGradient id="brandGlow" cx="50%" cy={glowY} r="55%">
-          <Stop offset="0" stopColor={colors.orchid} stopOpacity={0.45} />
-          <Stop offset="0.6" stopColor={colors.violet} stopOpacity={0.12} />
-          <Stop offset="1" stopColor={colors.violet} stopOpacity={0} />
+        <RadialGradient id="brandGlow" cx="50%" cy="44%" r="55%">
+          <Stop offset="0" stopColor={colors.tintStrong} stopOpacity={0.55} />
+          <Stop offset="0.6" stopColor={colors.orchid} stopOpacity={0.06} />
+          <Stop offset="1" stopColor={colors.orchid} stopOpacity={0} />
         </RadialGradient>
       </Defs>
       <Rect width="100%" height="100%" fill="url(#brandGround)" />

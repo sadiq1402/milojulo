@@ -105,7 +105,7 @@ export function BrandLoader({ ready, onDone }: Props) {
       testID="brand-loader"
       style={[StyleSheet.absoluteFill, styles.screen, { opacity: fade }]}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <BrandBackground />
       <Animated.View
         testID="brand-loader-logo"
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: layout.pageMargin,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.ground,
   },
   logo: { width: 280, aspectRatio: logoAspectRatio },
 });
