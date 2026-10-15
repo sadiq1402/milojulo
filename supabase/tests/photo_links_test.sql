@@ -16,11 +16,12 @@ begin
 end;
 $$;
 
--- 01 Asha (Friends) has photos 1 and 2 live, 3 Auto-hidden and 4 taken down.
+-- 01 Asha (Friends, Kharadi, so the Baner Members below are beyond Discover range) has photos 1 and 2 live, 3 Auto-hidden and 4 taken down.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003601');
 insert into public.photos (user_id, object_key, position, uploaded_at, hidden_at, removed_at) values
   ('00000000-0000-0000-0000-000000003601', 'asha/3.jpg', 3, now(), now(), null),
   ('00000000-0000-0000-0000-000000003601', 'asha/4.jpg', 4, now(), null, now());
+update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000003601';
 select id as asha_cover from public.photos
 where user_id = '00000000-0000-0000-0000-000000003601' and position = 1 \gset
 
@@ -33,8 +34,9 @@ select is_empty(format($$ select 1 from public.photo_links('00000000-0000-0000-0
   :'asha_pending'), 'a pending upload gets no link, even for its owner');
 reset role;
 
--- Discover and profile view: 02 shares Friends with Asha; 03 holds only Networking.
+-- Discover and profile view: 02 lives near Asha; 03 is 16 km away in Baner.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003602');
+update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000003602';
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003603', '{networking}');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003602', '00000000-0000-0000-0000-000000003601'), 2,
   'a Member who may see Asha in Discover gets her live photos, not the hidden or taken-down ones');
@@ -103,7 +105,9 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-00
   'a Block outweighs a Connection');
 
 -- Join Requests and Activities: Asha hosts one; 10 is waiting, 11 was declined, 12 and 13 are going.
+-- 10 lives in Kharadi, beyond the Baner Members' Discover range.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003610', '{networking}');
+update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000003610';
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003611', '{networking}');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003612', '{activities}');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003613', '{networking}');

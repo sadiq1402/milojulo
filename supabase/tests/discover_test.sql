@@ -47,8 +47,8 @@ select ok(pg_temp.in_feed('00000000-0000-0000-0000-0000000000d2'),
   'a Visible Member sees another Visible Member who shares a Mode');
 select ok(not pg_temp.in_feed('00000000-0000-0000-0000-0000000000d1'),
   'a Member does not see themselves');
-select ok(not pg_temp.in_feed('00000000-0000-0000-0000-0000000000d3'),
-  'a Member who shares no Mode does not appear');
+select ok(pg_temp.in_feed('00000000-0000-0000-0000-0000000000d3'),
+  'a Member who shares no Mode appears too');
 select ok(not pg_temp.in_feed('00000000-0000-0000-0000-0000000000d4'),
   'a Paused Member does not appear');
 select ok(not pg_temp.in_feed('00000000-0000-0000-0000-0000000000d5'),
@@ -114,7 +114,7 @@ select '00000000-0000-0000-0000-0000000000f4', id from public.tags where slug in
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000f1');
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(f)) from public.discover_feed() f $$,
-  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'cover_photo_id', 'shared_tag_ids',
+  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'cover_photo_id', 'shared_tag_ids',
         'why_you_match', 'cursor'],
   'a feed card carries only safe columns, never date of birth');
 select is(
@@ -137,26 +137,26 @@ select is(
   'a feed card lists only the tags both Members picked');
 select is(
   (select why_you_match from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f2'),
-  'You both want friends, like badminton and cafes, and are free on weekends.',
+  'You both want friends, like badminton and cafes, and are free on weekends. About 5 km away.',
   'why-you-match names only the shared Modes, tags and availability');
 select is(
   (select why_you_match from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f3'),
-  'You both want activity partners.',
+  'You both want activity partners. Less than 2 km away.',
   'why-you-match leaves out tags and availability when none are shared');
 select is(
   (select why_you_match from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f4'),
-  'You both want friends, like badminton and cafes, and are free on weekday evenings and weekends.',
+  'You both want friends, like badminton and cafes, and are free on weekday evenings and weekends. Less than 2 km away.',
   'why-you-match names at most 2 shared tags');
 
 select set_eq($$ select user_id from public.discover_feed('activities') $$,
   array['00000000-0000-0000-0000-0000000000f3'::uuid],
-  'filtering by a Mode shows only Members who share that Mode');
+  'filtering by a Mode shows only Members who chose that Mode');
 select ok(not exists (select 1 from public.discover_feed('friends')
                       where user_id = '00000000-0000-0000-0000-0000000000f3'),
-  'filtering by a Mode hides Members who share only another Mode');
+  'filtering by a Mode hides Members who chose only another Mode');
 select results_eq($$ select user_id from public.discover_feed() limit 2 $$,
   array['00000000-0000-0000-0000-0000000000f4'::uuid, '00000000-0000-0000-0000-0000000000f2'],
-  'Members sharing more tags, availability and Area come first');
+  'Members sharing more tags, availability and nearness come first');
 select is((select count(*)::integer from public.discover_feed(null, 2)), 2,
   'a page holds at most the requested number of Members');
 select results_eq(

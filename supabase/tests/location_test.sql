@@ -61,9 +61,9 @@ select lives_ok($$ select public.set_location(18.5515, 73.9348) $$, 'an update a
 reset role;
 select pg_temp.hours_ago(pg_temp.m('01'), 2);
 select pg_temp.act_as_member(pg_temp.m('01'));
-select throws_ok($$ select public.set_location(19.0760, 72.8777) $$, 'P0001', 'that location is outside Pune',
+select throws_ok($$ select public.set_location(19.0760, 72.8777) $$, 'P0001', 'MiloJulo isn''t in your city yet',
   'a point in Mumbai is refused');
-select throws_ok($$ select public.set_location(null, 73.7868) $$, 'P0001', 'that location is outside Pune',
+select throws_ok($$ select public.set_location(null, 73.7868) $$, 'P0001', 'MiloJulo isn''t in your city yet',
   'a missing coordinate is refused');
 select lives_ok($$ select public.set_location(18.5204, 73.8567) $$, 'a point in central Pune is accepted');
 reset role;

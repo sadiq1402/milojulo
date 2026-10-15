@@ -62,10 +62,12 @@ beforeAll(async () => {
 
 afterAll(() => signOut());
 
-test('the feed shows visible Members with a shared Mode, with why we match and shared tags', async () => {
+test('the feed shows visible Members nearby, with why we match and shared tags', async () => {
   const feed = await wholeFeed();
-  expect(ids(feed)).toEqual(expect.arrayContaining([ravi.id, neha.id]));
-  expect(ids(feed)).not.toContain(kabir.id);
+  // No shared Mode needed (decision 42): Kabir appears too.
+  expect(ids(feed)).toEqual(
+    expect.arrayContaining([ravi.id, neha.id, kabir.id]),
+  );
   expect(ids(feed)).not.toContain(me.id);
   expect(feed.find(card => card.id === ravi.id)).toMatchObject({
     name: 'Ravi',
@@ -141,8 +143,11 @@ test('tag and prompt names come from the catalog', async () => {
   ).toEqual(['A perfect Sunday in Pune is…', "I'm looking for people to…"]);
 });
 
-test('a profile without a shared Mode is not available', async () => {
-  expect(await fetchProfile(kabir.id)).toBeNull();
+test('a profile without a shared Mode still opens, naming their Mode', async () => {
+  expect(await fetchProfile(kabir.id)).toMatchObject({
+    modes: [],
+    whyYouMatch: 'Kabir wants professional contacts. Less than 2 km away.',
+  });
 });
 
 test('after blocking, the Member leaves the feed and their profile closes', async () => {
