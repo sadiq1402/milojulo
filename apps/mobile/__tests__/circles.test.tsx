@@ -77,9 +77,12 @@ beforeEach(() => {
     .mocked(catalog.fetchTags)
     .mockResolvedValue(numbered({ 1: 'Trekking', 2: 'Badminton' }));
   jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(numbered({}));
-  jest
-    .mocked(discover.fetchMyDiscoverState)
-    .mockResolvedValue({ modes: ['friends'], paused: false });
+  jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+    modes: ['friends'],
+    paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
+  });
   jest
     .mocked(discover.fetchFeedPage)
     .mockResolvedValue({ cards: [], nextCursor: null });
@@ -134,9 +137,12 @@ describe('the Circles list', () => {
   });
 
   test('a Paused Member is told Circles are hidden and can unpause', async () => {
-    jest
-      .mocked(discover.fetchMyDiscoverState)
-      .mockResolvedValue({ modes: ['friends'], paused: true });
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: true,
+      rangeKm: 10,
+      inServiceRegion: true,
+    });
     jest.mocked(circles.fetchCircles).mockResolvedValue([]);
     await openCircles();
     expect(await screen.findByText('Your profile is paused')).toBeOnTheScreen();
