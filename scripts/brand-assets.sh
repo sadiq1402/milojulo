@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generates the app icon, launch screens and in-app logo from design/brand/logo.png (#92).
+# Generates the app icon, launch screens and in-app images from design/brand/logo.png and logo-orchid.png.
 # Needs ImageMagick 7 (`magick`); uses pngquant to shrink the PNGs when installed.
 # Works with the bash 3 on macOS. Run from anywhere: scripts/brand-assets.sh
 set -euo pipefail
@@ -8,6 +8,7 @@ command -v magick >/dev/null || { echo "ImageMagick 7 (magick) is required" >&2;
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/design/brand/logo.png"
+ORCHID_SRC="$ROOT/design/brand/logo-orchid.png"
 APP="$ROOT/apps/mobile"
 RES="$APP/android/app/src/main/res"
 IOS="$APP/ios/MiloJulo/Images.xcassets"
@@ -15,35 +16,70 @@ ASSETS="$APP/src/assets/brand"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-# Dark brand surface: colors.ink in design/tokens.ts, also written to Android's colors.xml.
-INK="$(sed -n "s/^[[:space:]]*ink: '\(#[0-9A-Fa-f]\{6\}\)'.*/\1/p" "$ROOT/design/tokens.ts")"
-[ -n "$INK" ] || { echo "colors.ink not found in design/tokens.ts" >&2; exit 1; }
-
-# The logo is three bands separated by empty rows: mark, wordmark, tagline. Find them from the
-# alpha (50% threshold, which ignores the faint specks around the artwork).
-read -r W H <<<"$(magick identify -format '%w %h' "$SRC")"
-magick "$SRC" -alpha extract -threshold 50% -scale "1x$H!" -depth 8 txt:- |
-  awk -F'[(,)]' 'NR > 1 { print ($3 > 0) }' >"$TMP/rows"
-BANDS="$(awk '
-  $1 && !on { start = NR - 1; on = 1 }
-  !$1 && on { print start, NR - 2; on = 0 }
-  END { if (on) print start, NR - 1 }' "$TMP/rows")"
-[ "$(echo "$BANDS" | wc -l | tr -d ' ')" = 3 ] || {
-  echo "expected mark, wordmark and tagline bands in $SRC, found: $BANDS" >&2
-  exit 1
+# token <name>: a colour from design/tokens.ts.
+token() {
+  local v
+  v="$(sed -n "s/^[[:space:]]*$1: '\(#[0-9A-Fa-f]\{6\}\)'.*/\1/p" "$ROOT/design/tokens.ts")"
+  [ -n "$v" ] || { echo "colors.$1 not found in design/tokens.ts" >&2; exit 1; }
+  echo "$v"
 }
-read -r _ MARK_END <<<"$(echo "$BANDS" | sed -n 1p)"
-read -r _ WORD_END <<<"$(echo "$BANDS" | sed -n 2p)"
-read -r TAG_START _ <<<"$(echo "$BANDS" | sed -n 3p)"
+# Dark surface behind the app icon; light surface behind the launch screens (founder, 2026-10-15).
+INK="$(token ink)"
+GROUND="$(token ground)"
 
-# Mark: everything above the wordmark, trimmed to its alpha box.
-magick "$SRC" -crop "${W}x$((MARK_END + 1))+0+0" +repage "$TMP/top.png"
-BOX="$(magick "$TMP/top.png" -alpha extract -threshold 50% -format '%@' info:)"
-MARK="$TMP/mark.png"
-magick "$TMP/top.png" -crop "$BOX" +repage "$MARK"
-# Logo without the tagline: down to the middle of the gap above the tagline.
-LOGO_H=$(((WORD_END + TAG_START) / 2 + 1))
-magick "$SRC" -crop "${W}x$LOGO_H+0+0" +repage "$TMP/logo.png"
+# crop_logo <src> <name> <gap> [clean]: a logo is three bands, mark, wordmark and tagline, split by rows whose
+# coverage (0-255) is at most <gap>: 0 for logo.png; 12 (about 5%) for logo-orchid.png, whose M
+# touches the J of the wordmark, so no row there is empty.
+# Finds them from the alpha (50% threshold, which ignores faint specks) and writes $TMP/<name>-mark.png
+# (above the wordmark, trimmed to its alpha box) and $TMP/<name>-logo.png (mark and wordmark, cut in
+# the middle of the gap above the tagline). Sets CROP to "<width> <logo height> <mark box>".
+# With <clean> set, alpha islands under 150 px are dropped from the source (stray specks) and under
+# 2000 px from the cropped mark (a sliver of the wordmark's J above the cut).
+crop_logo() {
+  local src="$1" name="$2" w h bands mark_end word_end tag_start logo_h box
+  if [ -n "${4:-}" ]; then
+    despeckle "$src" "$TMP/$name-src.png" 150
+    src="$TMP/$name-src.png"
+  fi
+  read -r w h <<<"$(magick identify -format '%w %h' "$src")"
+  magick "$src" -alpha extract -threshold 50% -scale "1x$h!" -depth 8 txt:- |
+    awk -v gap="$3" -F'[(,)]' 'NR > 1 { print ($3 > gap) }' >"$TMP/rows"
+  bands="$(awk '
+    $1 && !on { start = NR - 1; on = 1 }
+    !$1 && on { print start, NR - 2; on = 0 }
+    END { if (on) print start, NR - 1 }' "$TMP/rows")"
+  [ "$(echo "$bands" | wc -l | tr -d ' ')" = 3 ] || {
+    echo "expected mark, wordmark and tagline bands in $src, found: $bands" >&2
+    exit 1
+  }
+  read -r _ mark_end <<<"$(echo "$bands" | sed -n 1p)"
+  read -r _ word_end <<<"$(echo "$bands" | sed -n 2p)"
+  read -r tag_start _ <<<"$(echo "$bands" | sed -n 3p)"
+  magick "$src" -crop "${w}x$((mark_end + 1))+0+0" +repage "$TMP/top.png"
+  [ -z "${4:-}" ] || despeckle "$TMP/top.png" "$TMP/top.png" 2000
+  box="$(magick "$TMP/top.png" -alpha extract -threshold 50% -format '%@' info:)"
+  magick "$TMP/top.png" -crop "$box" +repage "$TMP/$name-mark.png"
+  logo_h=$(((word_end + tag_start) / 2 + 1))
+  magick "$src" -crop "${w}x$logo_h+0+0" +repage "$TMP/$name-logo.png"
+  CROP="$w $logo_h $box"
+}
+
+# despeckle <in> <out> <px>: clears the alpha of opaque islands under <px> pixels.
+despeckle() {
+  magick "$1" -alpha extract -threshold 50% -define connected-components:area-threshold="$3" \
+    -define connected-components:mean-color=true -connected-components 8 "$TMP/keep.png"
+  magick "$1" \( +clone -alpha extract "$TMP/keep.png" -compose multiply -composite \) \
+    -alpha off -compose CopyOpacity -composite "$2"
+}
+
+# The original logo (white "Milo", for dark surfaces) gives the app icon and Welcome's mark; the
+# orchid logo (dark "Milo", for light surfaces) gives the launch screens and the loader's logo.
+crop_logo "$SRC" orig 0
+read -r _ _ BOX <<<"$CROP"
+MARK="$TMP/orig-mark.png"
+crop_logo "$ORCHID_SRC" orchid 12 clean
+read -r W LOGO_H ORCHID_BOX <<<"$CROP"
+ORCHID_MARK="$TMP/orchid-mark.png"
 
 # Writes a PNG small: 8-bit, no metadata, max zlib; pngquant (when installed) on top.
 save() {
@@ -53,10 +89,10 @@ save() {
   fi
 }
 
-# mark_on <canvas px> <mark box px> <out> [background]: the mark centred, fitted inside a square box.
+# mark_on <canvas px> <mark box px> <out> [background] [mark file]: a mark centred, fitted inside a square box.
 mark_on() {
   magick -size "$1x$1" "xc:${4:-none}" \
-    \( "$MARK" -filter Lanczos -resize "$2x$2" \) -gravity center -composite "$TMP/out.png"
+    \( "${5:-$MARK}" -filter Lanczos -resize "$2x$2" \) -gravity center -composite "$TMP/out.png"
   save "$TMP/out.png" "$3"
 }
 
@@ -83,17 +119,18 @@ for spec in mdpi:1 hdpi:1.5 xhdpi:2 xxhdpi:3 xxxhdpi:4; do
   mark_on "$(px 108 "$s")" "$(px 50 "$s")" "$dir/ic_launcher_foreground.png"
 
   # Android 12+ splash icon: Android's spec canvas is 288 dp (icon shown inside a 192 dp circle),
-  # mark in a 136 dp box so it fits the circle.
-  mark_on "$(px 288 "$s")" "$(px 136 "$s")" "$RES/drawable-$d/splash_icon.png"
+  # the orchid mark in a 96 dp box.
+  mark_on "$(px 288 "$s")" "$(px 96 "$s")" "$RES/drawable-$d/splash_icon.png" none "$ORCHID_MARK"
 
-  # Pre-12 launch background: the mark at 120 dp, centred on ink by drawable/launch_background.xml.
-  mark_on "$(px 120 "$s")" "$(px 120 "$s")" "$RES/drawable-$d/launch_mark.png"
+  # Pre-12 launch background: the orchid mark at 88 dp, centred on ground by drawable/launch_background.xml.
+  mark_on "$(px 88 "$s")" "$(px 88 "$s")" "$RES/drawable-$d/launch_mark.png" none "$ORCHID_MARK"
 done
 
 cat >"$RES/values/colors.xml" <<EOF
 <resources>
-    <!-- Written by scripts/brand-assets.sh from colors.ink in design/tokens.ts: the dark brand surface. -->
+    <!-- Written by scripts/brand-assets.sh from design/tokens.ts: ink behind the app icon, ground behind the launch screens. -->
     <color name="brand_ink">$INK</color>
+    <color name="brand_ground">$GROUND</color>
 </resources>
 EOF
 
@@ -108,27 +145,27 @@ for spec in 20:2 20:3 29:2 29:3 40:2 40:3 60:2 60:3; do
   save "$TMP/out.png" "$APPICON/icon-${pt}@${sc}x.png"
 done
 
-# iOS launch screen mark, 120 pt.
+# iOS launch screen: the orchid mark at 88 pt (LaunchScreen.storyboard sizes it, on ground).
 LAUNCH="$IOS/LaunchLogo.imageset"
 mkdir -p "$LAUNCH"
 for sc in 1 2 3; do
   suffix=$([ "$sc" = 1 ] && echo "" || echo "@${sc}x")
-  mark_on $((120 * sc)) $((120 * sc)) "$LAUNCH/launch-logo$suffix.png"
+  mark_on $((88 * sc)) $((88 * sc)) "$LAUNCH/launch-logo$suffix.png" none "$ORCHID_MARK"
 done
 
-# In-app logo (BrandLoader and Welcome), 280 pt wide: mark and wordmark, no tagline (founder).
+# In-app logo (BrandLoader, on the light surface), 280 pt wide: the orchid mark and wordmark, no tagline.
 mkdir -p "$ASSETS"
 for sc in 1 2 3; do
   suffix=$([ "$sc" = 1 ] && echo "" || echo "@${sc}x")
-  magick "$TMP/logo.png" -filter Lanczos -resize "$((280 * sc))x" "$TMP/out.png"
+  magick "$TMP/orchid-logo.png" -filter Lanczos -resize "$((280 * sc))x" "$TMP/out.png"
   save "$TMP/out.png" "$ASSETS/logo$suffix.png"
 done
 
-# In-app mark (Welcome, above the text name), 120 pt wide: two figures and the heart only.
+# In-app mark (Welcome, above the text name), 72 pt wide: two figures and the heart only.
 read -r MW MH <<<"$(magick identify -format '%w %h' "$MARK")"
 for sc in 1 2 3; do
   suffix=$([ "$sc" = 1 ] && echo "" || echo "@${sc}x")
-  magick "$MARK" -filter Lanczos -resize "$((120 * sc))x" "$TMP/out.png"
+  magick "$MARK" -filter Lanczos -resize "$((72 * sc))x" "$TMP/out.png"
   save "$TMP/out.png" "$ASSETS/mark$suffix.png"
 done
 
@@ -140,4 +177,4 @@ export const brandMark = require('./mark.png');
 export const markAspectRatio = $MW / $MH;
 EOF
 
-echo "Brand assets written: ink $INK, mark $BOX, logo ${W}x$LOGO_H."
+echo "Brand assets written: ink $INK, ground $GROUND, mark $BOX, orchid mark $ORCHID_BOX, logo ${W}x$LOGO_H."

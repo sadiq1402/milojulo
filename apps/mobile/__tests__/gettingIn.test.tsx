@@ -38,7 +38,7 @@ describe('welcome', () => {
     await renderApp(null);
     const header = await screen.findByRole('header', { name: 'MiloJulo' });
     expect(header).toBeOnTheScreen();
-    expect(screen.getByTestId('welcome-mark')).toBeOnTheScreen();
+    expect(screen.getByTestId('welcome-mark')).toHaveStyle({ width: 72 });
     expect(screen.getByText('Milo')).toBeOnTheScreen();
     expect(screen.getByText('Julo')).toBeOnTheScreen();
     expect(screen.getByTestId('welcome-screen')).toHaveStyle({
