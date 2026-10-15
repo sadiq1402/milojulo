@@ -132,9 +132,12 @@ beforeEach(() => {
   );
   jest.mocked(catalog.fetchTags).mockResolvedValue(numbered({}));
   jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(numbered({}));
-  jest
-    .mocked(discover.fetchMyDiscoverState)
-    .mockResolvedValue({ modes: ['friends'], paused: false });
+  jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+    modes: ['friends'],
+    paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
+  });
   jest
     .mocked(discover.fetchFeedPage)
     .mockResolvedValue({ cards: [], nextCursor: null });
@@ -222,14 +225,20 @@ describe('the Activity Board', () => {
   });
 
   test('a Paused Member is told why the board is empty and can unpause', async () => {
-    jest
-      .mocked(discover.fetchMyDiscoverState)
-      .mockResolvedValue({ modes: ['friends'], paused: true });
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: true,
+      rangeKm: 10,
+      inServiceRegion: true,
+    });
     jest.mocked(activities.fetchBoard).mockResolvedValue([]);
     jest.mocked(discover.unpause).mockImplementation(async () => {
-      jest
-        .mocked(discover.fetchMyDiscoverState)
-        .mockResolvedValue({ modes: ['friends'], paused: false });
+      jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+        modes: ['friends'],
+        paused: false,
+        rangeKm: 10,
+        inServiceRegion: true,
+      });
       jest.mocked(activities.fetchBoard).mockResolvedValue([chai]);
     });
     await openBoard();

@@ -84,11 +84,11 @@ select is_empty(
   'the Casual feed leaves out Members outside the Dating Preferences');
 select is(
   (select row(modes, why_you_match)::text from public.get_profile('00000000-0000-0000-0000-0000000000c2')),
-  row('{friends}'::public.mode[], 'You both want friends. Less than 2 km away.')::text,
+  row('{friends}'::public.mode[], 'Less than 2 km away. You both want friends.')::text,
   'the profile view shows only Eligible Modes, and so does why-you-match');
 select is(
   (select why_you_match from public.get_profile('00000000-0000-0000-0000-0000000000c3')),
-  'You both want friends and something casual. Less than 2 km away.',
+  'Less than 2 km away. You both want friends and something casual.',
   'why-you-match names a Dating Mode the pair is eligible for');
 reset role;
 

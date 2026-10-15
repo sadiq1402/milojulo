@@ -5,6 +5,7 @@ import {
   fetchFeedPage,
   fetchMyDiscoverState,
   fetchProfile,
+  saveRange,
   unpause,
   type FeedCard,
 } from '../src/features/discover/api';
@@ -23,7 +24,11 @@ async function wholeFeed(mode: FeedCard['modes'][number] | null = null) {
   const cards: FeedCard[] = [];
   let cursor: string | null = null;
   do {
-    const page = await fetchFeedPage({ mode, pageSize: 2, cursor });
+    const page = await fetchFeedPage({
+      modes: mode ? [mode] : [],
+      pageSize: 2,
+      cursor,
+    });
     expect(page.cards.length).toBeLessThanOrEqual(2);
     cards.push(...page.cards);
     cursor = page.nextCursor;
@@ -90,11 +95,27 @@ test('filtering by a Mode shows only Members who share that Mode', async () => {
   expect(activities).not.toContain(neha.id);
 });
 
-test('my own Modes and pause state come from my profile', async () => {
+test('my own Modes, pause state, range and service region come from my profile', async () => {
   expect(await fetchMyDiscoverState(me.id)).toEqual({
     modes: ['friends', 'activities'],
     paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
   });
+});
+
+test('the chosen range is saved on my profile, Anywhere in Pune as no range', async () => {
+  await saveRange(me.id, null);
+  expect((await fetchMyDiscoverState(me.id)).rangeKm).toBeNull();
+  await saveRange(me.id, 25);
+  expect((await fetchMyDiscoverState(me.id)).rangeKm).toBe(25);
+  await saveRange(me.id, 10);
+});
+
+test('cards carry a rounded distance band and their Modes', async () => {
+  const card = (await wholeFeed()).find(c => c.id === ravi.id)!;
+  expect(card.distanceBand).toMatch(/km$/);
+  expect(card.theirModes.length).toBeGreaterThan(0);
 });
 
 test('a Paused Member gets an empty feed until they unpause', async () => {
@@ -103,7 +124,7 @@ test('a Paused Member gets an empty feed until they unpause', async () => {
     .update({ paused_at: new Date().toISOString() })
     .eq('id', me.id);
   expect((await fetchMyDiscoverState(me.id)).paused).toBe(true);
-  expect((await fetchFeedPage({ mode: null })).cards).toEqual([]);
+  expect((await fetchFeedPage({ modes: [] })).cards).toEqual([]);
 
   await unpause();
   expect((await fetchMyDiscoverState(me.id)).paused).toBe(false);
@@ -146,7 +167,7 @@ test('tag and prompt names come from the catalog', async () => {
 test('a profile without a shared Mode still opens, naming their Mode', async () => {
   expect(await fetchProfile(kabir.id)).toMatchObject({
     modes: [],
-    whyYouMatch: 'Kabir wants professional contacts. Less than 2 km away.',
+    whyYouMatch: "Less than 2 km away. They're here for Networking.",
   });
 });
 

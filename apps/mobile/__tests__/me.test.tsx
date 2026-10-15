@@ -38,9 +38,12 @@ beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   jest.mocked(chat.fetchConversations).mockResolvedValue([]);
-  jest
-    .mocked(discover.fetchMyDiscoverState)
-    .mockResolvedValue({ modes: ['friends'], paused: false });
+  jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+    modes: ['friends'],
+    paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
+  });
   jest
     .mocked(discover.fetchFeedPage)
     .mockResolvedValue({ cards: [], nextCursor: null });
@@ -182,9 +185,12 @@ describe('the Me tab', () => {
   });
 
   test('a Paused Member sees it on Me', async () => {
-    jest
-      .mocked(discover.fetchMyDiscoverState)
-      .mockResolvedValue({ modes: ['friends'], paused: true });
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: true,
+      rangeKm: 10,
+      inServiceRegion: true,
+    });
     await openMe();
     expect(await screen.findByText('Paused')).toBeOnTheScreen();
   });
@@ -210,9 +216,12 @@ describe('Settings', () => {
   });
 
   test('a Paused Member can unpause from the same switch', async () => {
-    jest
-      .mocked(discover.fetchMyDiscoverState)
-      .mockResolvedValue({ modes: ['friends'], paused: true });
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: true,
+      rangeKm: 10,
+      inServiceRegion: true,
+    });
     await openSettings();
     const toggle = await screen.findByRole('switch', {
       name: 'Pause my profile',
