@@ -82,7 +82,7 @@ Owner can select own row and update: display_name, area_id, modes, availability,
 | `photos` | `id`, `user_id`, `provider text default 'r2'`, `object_key` (`<member id>/<photo id>.jpg`), `position 1..4` (1 = cover; lists use the first live photo, so a hidden or removed cover gives way to the next), `width`, `height`, `uploaded_at`, `hidden_at`, `removed_at`, `removed_by`; unique (user_id, position), deferrable | Only confirmed uploads: `confirm_photo_upload()` inserts the row with `uploaded_at` set, after the media Edge Function has checked the file is in R2. Live = uploaded, not hidden, not removed. Owner selects, reorders, deletes. Others never read the table; they get signed URLs from the media function (`photo_links()`) |
 | `chat_uploads` | `id` pk (the upload id), `media_key` unique (`chat/<connection id>/<id>.jpg\|mp4\|m4a`; staged at `uploads/` + it), `sender_id`, `connection_id`, `kind` (image, video, voice), `mime` (type and extension from `chat_media_format(kind)`), `size` (the signed Content-Length; confirm checks the file against it), `created_at`, `confirmed_at`, `used_at` | Chat upload slots (#12). No client access; the media function makes them with `start_chat_upload()` (same send rules as messages plus Media Consent), checks them through `pending_chat_upload()` and confirms them with `confirm_chat_upload()` once the file is at its live key (within an hour). A confirmed slot is used by at most one message |
 | `photo_uploads` | `id` (becomes the photo id), `user_id`, `position 1..4`, `object_key` (the live key; the file is staged at `uploads/` + it), `created_at`; unique (user_id, position) | Upload slots waiting for their file (#35), kept apart from `photos` so a replacement uploads while the old photo stays live. No client access; only the media function, through `start_photo_upload()`, `pending_photo_upload()` and `confirm_photo_upload()`. A new slot for a position replaces the earlier one there; slots older than an hour can't be confirmed and are discarded when the Member's next slot is made |
-| `consents` | pk (user_id, document_id), `accepted_at`, `withdrawn_at` | owner reads; written by `accept_consents()`, withdrawn by `withdraw_consent()` |
+| `consents` | pk (user_id, document_id), `accepted_at`, `withdrawn_at` | owner reads; written by `accept_consents()` (which also clears a withdrawal), withdrawn by `withdraw_consent()`. A Member with a withdrawn current document is not visible (Discover, profile view, Circles) and their Activities leave the board until they accept again (decision 37); as for a Paused Member their Connections stay in chat lists and keep their photo links, but `is_reachable` is false (out of Join Request lists and the learning loop) and `can_send_in` refuses them as senders (the other side can still send) |
 | `device_tokens` | `token text pk`, `user_id`, `platform` (android, ios), `last_seen_at` | owner CRUD; read by the push Edge Function (service role) |
 
 Reviewer Account: seeded per environment by `supabase/seed/reviewer.sql` (service role, not a migration) through `seed_reviewer()`, which gives it a profile with an adult date of birth and the current consents. Metrics queries exclude it by its account id.
@@ -103,7 +103,7 @@ Connection rules (docs/adr/0001):
 
 Realtime: an insert trigger on `messages` broadcasts to private topic `connection:<id>`; a policy on `realtime.messages` allows members of that Connection only. Unread = messages newer than my `last_read_at`. Mute only suppresses push for that Member.
 
-Chat media: uploads capped at 20 MB for video (upload Edge Function). Media Expiry: the `purge-chat-media` Edge Function, scheduled daily by pg_cron through pg_net, deletes R2 objects older than 90 days and sets `media_deleted_at`; the message stays.
+Chat media: uploads capped at 20 MB for video (upload Edge Function). Media Expiry: the `purge-chat-media` Edge Function (not built yet), scheduled daily at 03:00 India time by the pg_cron job `purge-chat-media` through pg_net (URL and key from Vault, supabase/README.md), deletes R2 objects older than 90 days and sets `media_deleted_at`; the message stays.
 
 ### Activities and circles
 | Table | Columns | Access |
@@ -123,7 +123,7 @@ Spots left = capacity − accepted Join Requests (the host is not counted). Toni
 | `reports` | `id`, `reporter_id` (nullable: null for word-filter flags and after the reporter's deletion), `target_type`, `target_id uuid`, `target_user_id`, `reason`, `details varchar(500)`, `evidence jsonb` (snapshot taken by `report()`), `evidence_media_key`, `status`, `handled_by`, `handled_at`, `internal_note` | insert via `report()` only; no Member reads them (reporters can't read back); admins select (admin writes come with the moderation tools) |
 | `admin_actions` | `id`, `admin_id`, `action text`, `target_type`, `target_id`, `note` | admin insert/select only; never updated |
 | `meetup_feedback` | `id`, `user_id`, `other_user_id`, `activity_id` (nullable, on delete set null), `did_meet bool`, `keep bool`, `created_at`; unique nulls not distinct (user_id, other_user_id, activity_id) | owner inserts via `submit_meetup_feedback()` and reads own; admin reads for metrics; no direct writes |
-| `data_requests` | `id`, `user_id`, `kind`, `status` (pending, done), `completed_at` | owner inserts and reads own; admin/service completes |
+| `data_requests` | `id`, `user_id`, `kind data_request_kind`, `status data_request_status` (pending, done), `created_at`, `completed_at` | owner and admins select; no direct writes. Made by `request_data_copy()` (access) and `delete_account()` (erasure); completed by the founder (access) or the account purge (erasure, by cascade) |
 
 Moderation:
 - **Auto-hide**: `report()` sets `hidden_at` on the target profile, photo or Activity once 3 distinct reporters (word-filter flags excluded) have reported it within 7 days. An admin then clears `hidden_at` or takes it down.
@@ -139,7 +139,7 @@ Learning loop (Kept Connection = both rows have `did_meet` and `keep` true):
 
 ## Functions
 Shared helpers (security definer, fixed `search_path`, few and tested):
-`is_admin()`, `is_visible(uid)` (active, submitted, not paused, not hidden, not deleted, at least 2 live photos), `is_blocked(a, b)`, `is_connection_member(connection_id)`, `eligible_modes(a, b)` (shared Modes, Dating Modes filtered by both Members' Dating Preferences).
+`is_admin()`, `is_visible(uid)` (active, submitted, not paused, not hidden, not deleted, no current consent withdrawn, at least 2 live photos), `is_blocked(a, b)`, `is_connection_member(connection_id)`, `eligible_modes(a, b)` (shared Modes, Dating Modes filtered by both Members' Dating Preferences).
 
 Business functions:
 | Function | Notes |
@@ -163,7 +163,7 @@ Business functions:
 | `match_reason(a, b)` | templated text |
 | `send_request(to, mode, note)`, `respond_request(id, accept)`, `close_connection(id)` | rules above |
 | `propose_mode_change(connection, mode)`, `respond_mode_change(id, accept)` | rules above |
-| `my_connections()` | the caller's Connections for the Inbox and chat list: requests both ways (with direction and note), accepted, and closed as history; declined left out. Other side: first name, cover photo id and Area only, also while Paused; banned or Auto-hidden Members keep their name but no photo. Plus Mode, status, the newest message not removed by moderation, and unread = the other side's messages newer than my `last_read_at`. Newest activity first. A Block's closed Connection looks like any other close (decision 19) |
+| `my_connections()` | the caller's Connections for the Inbox and chat list: requests both ways (with direction and note), accepted, and closed as history; declined left out, and so are Connections with a deleted Member (the other side can still read that history directly from `messages` until the purge erases it). A consent-withdrawn Member's Connections stay, as a Paused Member's do. Other side: first name, cover photo id and Area only, also while Paused; banned or Auto-hidden Members keep their name but no photo. Plus Mode, status, the newest message not removed by moderation, and unread = the other side's messages newer than my `last_read_at`. Newest activity first. A Block's closed Connection looks like any other close (decision 19) |
 | `my_blocks()` | Members the caller has blocked, first name only; never who has blocked the caller |
 | `join_activity_request(activity)`, `respond_activity_request(id, accept)`, `withdraw_activity_request(id)` | |
 | `browse_circles()`, `get_circle(circle)`, `circle_members_of(circle)`, `circle_activities(circle)`, `join_circle(circle)`, `leave_circle(circle)` | `activity_board()` and `get_activity()` also return `circle_id` and a `circle_name` that is NULL once the Circle is archived |
@@ -173,7 +173,9 @@ Business functions:
 | `pending_meetup_feedback()` | the caller's Activity pairs (as above, the same eligibility) whose Activity ended 2 hours to 14 days ago and that the caller hasn't answered; `other_user_id`, `display_name`, `cover_photo_id`, `activity_id`, `activity_title`, `ends_at`, newest first. Not executable by `anon` |
 | `kept_connections(since)` | admin only (Members get no rows): each pair of people once, by any route (an Activity or chat), as `user_a < user_b` and `kept_at`, the earliest time both had answered met and keep on one route (decision 35); only pairs whose `kept_at` is at or after `since` |
 | `admin_takedown(target_type, target_id, note)`, `admin_ban(user_id, reason)`, `admin_restore(target_type, target_id)` | admin only; write admin_actions |
-| `withdraw_consent(document_id)`, `delete_account()` | delete sets deleted_at and queues an erasure data_request; the purge Edge Function removes R2 objects then the auth user (cascade) |
+| `withdraw_consent(document_id)` | the caller's own accepted, not yet withdrawn consent; refuses `no consent to withdraw` (unknown, not mine, already withdrawn). Not executable by anon |
+| `request_data_copy()` | a pending access data_request for the caller, returns its id; refuses `you already have a data copy request in progress`. Not executable by anon |
+| `delete_account()` | sets `deleted_at` (out of Discover, profile view, the board, Circles, chat lists, Join Requests and photo links at once) and queues an erasure data_request; refuses `your account is already being deleted`. Not executable by anon. The account-purge Edge Function (not built yet) deletes the Member's R2 objects, then the auth user: the cascade removes profile, photos, prompts, tags, consents, Connections with both sides' messages, Join Requests, Circle memberships, meetup feedback and data requests; reports stay with `reporter_id` / `target_user_id` nulled and their evidence intact |
 | `expire_activities()` | pg_cron |
 
 Triggers: word filter (`banned_terms`), profile minimum, `updated_at`, message broadcast.

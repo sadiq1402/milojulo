@@ -34,7 +34,7 @@ A Member's own choice to stop meeting new people: hidden from Discover, cannot p
 A profile that has met the minimum (a first name, 2 photos, 2 prompts, a Mode, an Area, and gender and Dating Preferences if a Dating Mode is held) and been submitted once; it can never fall back below the minimum.
 
 **Visible Member**:
-A Member who is Active, has a Submitted Profile, is not Paused, not Auto-hidden and not deleted; the only kind others can discover.
+A Member who is Active, has a Submitted Profile, is not Paused, not Auto-hidden, not deleted and has not withdrawn a current required consent; the only kind others can discover.
 
 **Reviewer Account**:
 The seeded account store reviewers use to sign in, already past the age gate and consents; excluded from metrics.
