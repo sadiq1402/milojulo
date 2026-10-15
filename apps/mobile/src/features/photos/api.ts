@@ -1,12 +1,13 @@
 import { supabase } from '../../lib/supabase';
+import {
+  fallback,
+  fetchSignedUrls,
+  invokeMedia,
+  refusalFrom,
+} from '../media/mediaFunction';
 import type { MyPhoto } from './model';
 
 export type { MyPhoto } from './model';
-
-// The media function signs at most this many links per call.
-const urlBatchSize = 60;
-
-const fallback = "That didn't work. Check your connection and try again.";
 
 // Keys are the media function's and the database's exact messages.
 const refusals: Record<string, string> = {
@@ -26,31 +27,9 @@ const refusals: Record<string, string> = {
     'Your profile needs at least 2 photos. Add another before removing this one.',
 };
 
-const refusal = (message?: string) =>
-  new Error((message && refusals[message]) || fallback);
-
-// The function answers refusals as { error: '<message>' }; supabase-js hands back the Response.
-async function refusalMessage(error: unknown): Promise<string | undefined> {
-  const context = (error as { context?: { json?: () => Promise<unknown> } })
-    .context;
-  if (typeof context?.json !== 'function') {
-    return undefined;
-  }
-  try {
-    const body = (await context.json()) as { error?: unknown };
-    return typeof body?.error === 'string' ? body.error : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function invokeMedia<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('media', { body });
-  if (error) {
-    throw refusal(await refusalMessage(error));
-  }
-  return data as T;
-}
+const refusal = refusalFrom(refusals);
+const invoke = <T>(body: Record<string, unknown>) =>
+  invokeMedia<T>(body, refusals);
 
 // Upload link, PUT to R2, then confirm; the photo takes `position`, replacing any photo there.
 export async function uploadPhoto(
@@ -63,7 +42,7 @@ export async function uploadPhoto(
   } catch {
     throw new Error("We couldn't read that photo. Try another one.");
   }
-  const { photoId, uploadUrl } = await invokeMedia<{
+  const { photoId, uploadUrl } = await invoke<{
     photoId: string;
     uploadUrl: string;
     expiresIn: number;
@@ -86,7 +65,7 @@ export async function uploadPhoto(
   if (!put.ok) {
     throw refusal("the photo didn't arrive; try again");
   }
-  await invokeMedia({ action: 'photo-confirm', photoId });
+  await invoke({ action: 'photo-confirm', photoId });
   return photoId;
 }
 
@@ -119,7 +98,7 @@ export async function movePhoto(photoId: string, position: number) {
 // The media function deletes the row and its R2 file; then the gap closes, so the cover stays
 // the first photo.
 export async function deletePhoto(photoId: string) {
-  await invokeMedia({ action: 'photo-delete', photoId });
+  await invoke({ action: 'photo-delete', photoId });
   const rest = await fetchMyPhotos();
   for (const [index, photo] of rest.entries()) {
     if (photo.position !== index + 1) {
@@ -132,18 +111,5 @@ export async function deletePhoto(photoId: string) {
 export async function fetchPhotoUrls(
   photoIds: string[],
 ): Promise<Record<string, string>> {
-  const ids = [...new Set(photoIds)];
-  const batches: string[][] = [];
-  for (let i = 0; i < ids.length; i += urlBatchSize) {
-    batches.push(ids.slice(i, i + urlBatchSize));
-  }
-  const results = await Promise.all(
-    batches.map(batch =>
-      invokeMedia<{ urls: Record<string, string> }>({
-        action: 'photo-urls',
-        photoIds: batch,
-      }),
-    ),
-  );
-  return Object.assign({}, ...results.map(result => result.urls));
+  return fetchSignedUrls('photo-urls', 'photoIds', photoIds, refusals);
 }

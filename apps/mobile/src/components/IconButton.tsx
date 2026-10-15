@@ -8,6 +8,7 @@ type Props = {
   accessibilityLabel: string;
   onPress: () => void;
   color?: string;
+  disabled?: boolean;
 };
 
 export function IconButton({
@@ -15,15 +16,18 @@ export function IconButton({
   accessibilityLabel,
   onPress,
   color = colors.ink,
+  disabled = false,
 }: Props) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={disabled ? { disabled } : undefined}
+      disabled={disabled}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <Icon name={icon} color={color} />
+      <Icon name={icon} color={disabled ? colors.secondary : color} />
     </Pressable>
   );
 }

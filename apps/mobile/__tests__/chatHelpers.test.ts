@@ -14,6 +14,7 @@ const message = (id: string, createdAt: string): Message => ({
   body: id,
   activityId: null,
   createdAt,
+  media: null,
 });
 
 describe('merging messages from a load, a catch-up and the live channel', () => {

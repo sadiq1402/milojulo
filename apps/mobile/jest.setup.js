@@ -14,6 +14,34 @@ jest.mock('react-native-image-crop-picker', () => ({
   default: { openPicker: jest.fn(), openCamera: jest.fn() },
 }));
 
+// Chat media natives (#45): compression, voice record/play and video playback.
+jest.mock('react-native-compressor', () => ({
+  __esModule: true,
+  Video: { compress: jest.fn() },
+  getVideoMetaData: jest.fn(),
+}));
+jest.mock('react-native-nitro-sound', () => ({
+  __esModule: true,
+  OutputFormatAndroidType: { MPEG_4: 2 },
+  AudioEncoderAndroidType: { AAC: 3 },
+  default: {
+    startRecorder: jest.fn(),
+    stopRecorder: jest.fn(),
+    addRecordBackListener: jest.fn(),
+    removeRecordBackListener: jest.fn(),
+    startPlayer: jest.fn(),
+    stopPlayer: jest.fn(),
+    addPlayBackListener: jest.fn(),
+    removePlayBackListener: jest.fn(),
+    addPlaybackEndListener: jest.fn(),
+    removePlaybackEndListener: jest.fn(),
+  },
+}));
+jest.mock('react-native-video', () => {
+  const { View } = require('react-native');
+  return { __esModule: true, default: View };
+});
+
 // Unit tests never reach Supabase; they mock the feature data modules instead.
 jest.mock('./src/lib/supabase', () => ({ supabase: {} }));
 

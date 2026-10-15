@@ -23,6 +23,21 @@ const glyphs = {
       <Path d="M9 6.5l1-2h4l1 2" />
     </>
   ),
+  image: (
+    <>
+      <Rect x="4" y="5" width="16" height="14" rx="3" />
+      <Circle cx="9" cy="10" r="1.6" />
+      <Path d="M5 17l4.5-4.5L13 16l3-3 3 3.5" />
+    </>
+  ),
+  mic: (
+    <>
+      <Rect x="9" y="3" width="6" height="11" rx="3" />
+      <Path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3" />
+    </>
+  ),
+  play: <Path d="M8 5.5v13l11-6.5z" />,
+  pause: <Path d="M8 5v14M16 5v14" />,
   send: <Path d="M21 3L10 14M21 3l-6.5 18-3.5-7-7-3.5z" />,
   shieldCheck: (
     <>

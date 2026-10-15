@@ -1,4 +1,29 @@
-import type { Message } from './api';
+import type { Message, MessageMedia } from './api';
+
+export type MediaFields = {
+  media_mime: string | null;
+  media_width: number | null;
+  media_height: number | null;
+  media_duration_ms: number | null;
+  media_deleted_at: string | null;
+};
+
+// One mapping for media fields, whether from a stored row or a send still on its way.
+export function toMessageMedia(
+  type: Message['type'],
+  row: MediaFields,
+): MessageMedia | null {
+  if (type !== 'image' && type !== 'video' && type !== 'voice') {
+    return null;
+  }
+  return {
+    mime: row.media_mime,
+    width: row.media_width,
+    height: row.media_height,
+    durationMs: row.media_duration_ms,
+    expired: row.media_deleted_at !== null,
+  };
+}
 
 // One copy per id, oldest first, whichever source (load, catch-up, live) it came from.
 export function mergeMessages(

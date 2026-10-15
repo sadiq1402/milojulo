@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BottomSheet, Button, Text } from '../../components';
+import { BottomSheet, Button, Switch, Text } from '../../components';
 import { modeLabels, type Mode } from '../../features/modes';
 import { colors, spacing } from '../../theme';
 
@@ -20,6 +20,9 @@ type Props = {
   onBlock: () => void;
   onCloseChat: () => void;
   onSafety: () => void;
+  // Casual Connections only: my side of Media Consent.
+  mediaConsent?: boolean;
+  onMediaConsent?: (on: boolean) => void;
 };
 
 export function ChatMenu({
@@ -35,6 +38,8 @@ export function ChatMenu({
   onBlock,
   onCloseChat,
   onSafety,
+  mediaConsent,
+  onMediaConsent,
 }: Props) {
   const [view, setViewState] = useState<'menu' | 'modes' | 'block' | 'close'>(
     'menu',
@@ -118,6 +123,22 @@ export function ChatMenu({
         </View>
       ) : (
         <View style={styles.stack}>
+          {accepted && mediaConsent !== undefined && onMediaConsent ? (
+            <View style={styles.consent}>
+              <View style={styles.fill}>
+                <Text variant="title">Allow photos and video</Text>
+                <Text variant="bodySmall" color={colors.secondary}>
+                  In Casual, photos and video work only once you both switch
+                  this on. You can switch it off at any time.
+                </Text>
+              </View>
+              <Switch
+                value={mediaConsent}
+                onValueChange={onMediaConsent}
+                accessibilityLabel="Allow photos and video"
+              />
+            </View>
+          ) : null}
           {accepted ? (
             <Button
               label="Change Mode"
@@ -155,4 +176,11 @@ export function ChatMenu({
 
 const styles = StyleSheet.create({
   stack: { gap: spacing.xs },
+  fill: { flex: 1 },
+  consent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
 });
