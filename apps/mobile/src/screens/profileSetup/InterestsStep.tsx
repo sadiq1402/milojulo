@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useTagList } from '../../features/catalog/queries';
-import { saveInterests, submitProfile } from '../../features/profileSetup/api';
+import { saveInterests } from '../../features/profileSetup/api';
 import {
   availabilityLabels,
   SetupError,
@@ -16,8 +16,10 @@ import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 const slots = Object.keys(availabilityLabels) as AvailabilitySlot[];
 
 type Props = StepProps & {
+  // Setup submits the profile after saving; an edit only saves.
+  submit?: () => Promise<void>;
   // A submit refusal another step fixes.
-  onRefused: (step: SetupStep, message: string) => void;
+  onRefused?: (step: SetupStep, message: string) => void;
 };
 
 export function InterestsStep({
@@ -25,9 +27,11 @@ export function InterestsStep({
   draft,
   onDone,
   onBack,
+  submit: submitAfter,
   onRefused,
   notice,
   beforeLeave,
+  editing,
 }: Props) {
   const tags = useTagList();
   const updateDraft = useUpdateDraft(userId);
@@ -46,21 +50,23 @@ export function InterestsStep({
   const submit = useMutation({
     mutationFn: async () => {
       await persist();
-      await submitProfile();
+      await submitAfter?.();
     },
     onSuccess: onDone,
     onError: error => {
-      if (error instanceof SetupError && error.step) {
+      if (onRefused && error instanceof SetupError && error.step) {
         onRefused(error.step, error.message);
       }
     },
   });
   const stayingHere =
-    submit.error && !(submit.error instanceof SetupError && submit.error.step);
+    submit.error &&
+    (!onRefused || !(submit.error instanceof SetupError && submit.error.step));
 
   return (
     <SetupStepScreen
       step="interests"
+      editing={editing}
       title="What do you enjoy?"
       onBack={onBack}
       error={(stayingHere ? submit.error?.message : undefined) ?? shownNotice}

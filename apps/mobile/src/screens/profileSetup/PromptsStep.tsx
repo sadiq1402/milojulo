@@ -22,6 +22,7 @@ export function PromptsStep({
   onBack,
   notice,
   beforeLeave,
+  editing,
 }: StepProps) {
   const questions = usePromptQuestionList();
   const updateDraft = useUpdateDraft(userId);
@@ -84,6 +85,7 @@ export function PromptsStep({
   return (
     <SetupStepScreen
       step="prompts"
+      editing={editing}
       title="Two lines that start a conversation"
       onBack={onBack}
       error={

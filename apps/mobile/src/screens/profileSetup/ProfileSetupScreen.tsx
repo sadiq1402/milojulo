@@ -8,6 +8,7 @@ import {
   setupSteps,
   type SetupStep,
 } from '../../features/profileSetup/model';
+import { submitProfile } from '../../features/profileSetup/api';
 import { useProfileDraft } from '../../features/profileSetup/queries';
 import { LoadErrorScreen, LoadingScreen } from '../StatusScreen';
 import { BasicsStep } from './BasicsStep';
@@ -120,6 +121,7 @@ export function ProfileSetupScreen() {
       return (
         <InterestsStep
           {...props}
+          submit={submitProfile}
           onDone={() => refreshStage()}
           onRefused={(refusedAt, message) => go(refusedAt, message)}
         />

@@ -16,6 +16,8 @@ export type StepProps = {
   notice?: Notice;
   // The step sets what to save when the Member leaves it backwards.
   beforeLeave: MutableRefObject<(() => Promise<void>) | undefined>;
+  // Opened alone from the Me tab: no progress, and the main button is "Save".
+  editing?: boolean;
 };
 
 // A new object each time, so the same message shown twice counts as new.
@@ -43,6 +45,7 @@ type Props = {
   nextDisabled: boolean;
   saving: boolean;
   below?: ReactNode;
+  editing?: boolean;
   children: ReactNode;
 };
 
@@ -57,12 +60,17 @@ export function SetupStepScreen({
   nextDisabled,
   saving,
   below,
+  editing = false,
   children,
 }: Props) {
   return (
     <FlowScreen
-      barTitle="Your profile"
-      progress={{ step: setupSteps.indexOf(step) + 1, of: setupSteps.length }}
+      barTitle={editing ? 'Edit profile' : 'Your profile'}
+      progress={
+        editing
+          ? undefined
+          : { step: setupSteps.indexOf(step) + 1, of: setupSteps.length }
+      }
       title={title}
       intro={intro}
       onBack={onBack}
@@ -70,12 +78,12 @@ export function SetupStepScreen({
         <>
           {error ? <ErrorText text={error} /> : null}
           <Button
-            label={nextLabel}
+            label={editing ? 'Save' : nextLabel}
             onPress={onNext}
             disabled={nextDisabled}
             loading={saving}
           />
-          {below}
+          {editing ? null : below}
         </>
       }
     >

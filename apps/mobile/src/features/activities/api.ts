@@ -1,5 +1,6 @@
 import type { Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
+import { wordFilterCopy, wordFilterRefusal } from '../wordFilter';
 import {
   ActivityError,
   fieldMessages,
@@ -25,6 +26,7 @@ const lockedMessage =
 
 // Keys are the database's exact messages.
 const refusals: Record<string, { message: string; field?: ActivityField }> = {
+  [wordFilterRefusal]: { message: wordFilterCopy },
   'unpause your profile to post activities': {
     message: 'Your profile is paused. Unpause it to post Activities.',
   },

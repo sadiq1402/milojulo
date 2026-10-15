@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Input } from '../../components';
 import { signOut } from '../../features/auth/api';
 import { useAreaList } from '../../features/catalog/queries';
@@ -9,24 +9,35 @@ import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { ChoiceChips, Field } from './parts';
 import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
-export function BasicsStep({ userId, draft, onDone, notice }: StepProps) {
+export function BasicsStep({
+  userId,
+  draft,
+  onDone,
+  onBack,
+  notice,
+  beforeLeave,
+  editing,
+}: StepProps) {
   const areas = useAreaList();
   const updateDraft = useUpdateDraft(userId);
   const [displayName, setDisplayName] = useState(draft.displayName ?? '');
   const [areaId, setAreaId] = useState(draft.areaId);
   const shownNotice = useNotice(notice, { displayName, areaId });
-  const save = useMutation({
-    mutationFn: () => saveBasics(userId, { displayName, areaId: areaId! }),
-    onSuccess: () => {
-      updateDraft({ displayName: displayName.trim(), areaId });
-      onDone();
-    },
+  async function persist() {
+    await saveBasics(userId, { displayName, areaId: areaId! });
+    updateDraft({ displayName: displayName.trim(), areaId });
+  }
+  useEffect(() => {
+    beforeLeave.current = persist;
   });
+  const save = useMutation({ mutationFn: persist, onSuccess: onDone });
 
   return (
     <SetupStepScreen
       step="basics"
+      editing={editing}
       title="What should we call you?"
+      onBack={onBack}
       error={save.error?.message ?? shownNotice}
       onNext={() => save.mutate()}
       nextDisabled={!basicsDone({ displayName, areaId })}

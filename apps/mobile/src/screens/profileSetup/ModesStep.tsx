@@ -35,6 +35,7 @@ export function ModesStep({
   onBack,
   notice,
   beforeLeave,
+  editing,
 }: StepProps) {
   const industries = useIndustryList();
   const updateDraft = useUpdateDraft(userId);
@@ -82,6 +83,7 @@ export function ModesStep({
   return (
     <SetupStepScreen
       step="modes"
+      editing={editing}
       title="What are you open to?"
       intro="Pick one or more. You only see people whose choices overlap with yours."
       onBack={onBack}

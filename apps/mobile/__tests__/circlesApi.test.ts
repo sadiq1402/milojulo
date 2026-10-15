@@ -162,3 +162,22 @@ test('posting to a Circle sends its id and words the not-a-member refusal', asyn
     }),
   ).rejects.toThrow('Join this Circle before posting an Activity to it.');
 });
+
+test('a title or description the word filter refuses reads as friendly copy', async () => {
+  refuse("that wording isn't allowed; please change it");
+  await expect(
+    postActivity({
+      title: 'x',
+      type: 'outdoors',
+      areaId: 'baner',
+      startsAt: '2027-01-15T00:00:00Z',
+      endsAt: null,
+      capacity: 6,
+      description: '',
+      venueDetail: '',
+      circleId: null,
+    }),
+  ).rejects.toThrow(
+    "Some of that wording isn't allowed on MiloJulo. Please change it.",
+  );
+});
