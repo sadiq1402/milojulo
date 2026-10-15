@@ -32,7 +32,7 @@ Other docs: docs/04-safety-compliance.md, docs/06-brand-colour.md, docs/07-scree
 4. Functions that bypass RLS (security definer) are few, reviewed, and tested. Set a fixed `search_path`.
 5. Every RLS rule gets an automated test that runs in CI before migrations are applied.
 6. Schema changes are migration files in `supabase/migrations/`, never dashboard edits.
-7. Store only a coarse location cell, never exact coordinates. No religion or community fields in V1.
+7. Exact coordinates live only in `member_locations` (latest point, fixed per-Member offset, no history, deleted with the account), which no client role can read; use them only inside security definer functions and show distances as rounded bands (decision 40, docs/adr/0003). No religion or community fields in V1.
 8. Messages use a client-generated UUID for idempotent sends. Client must catch up after reconnect.
 9. Media is never public: private bucket, signed URLs only, issued after visibility and block checks, batched per feed call. Account deletion must delete the user's R2 objects.
 10. Never commit secrets. Use `.env.example` as the template.

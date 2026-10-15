@@ -41,6 +41,13 @@ language sql as $$
   values (account_id, account_id || '@test.milojulo', 'authenticated', 'authenticated');
 $$;
 
+-- The latest effective version of each consent document.
+create function pg_temp.current_docs() returns uuid[]
+language sql stable as $$
+  select array_agg(id) from (select distinct on (kind) id from public.consent_documents
+                             where effective_at <= now() order by kind, effective_at desc) d;
+$$;
+
 -- A Member who has given their date of birth and accepted every current document. Run as postgres.
 create function pg_temp.create_member(member_id uuid) returns void
 language plpgsql as $$
@@ -48,7 +55,7 @@ begin
   perform pg_temp.create_account(member_id);
   perform pg_temp.act_as_member(member_id);
   perform public.accept_consents('1995-06-15',
-    (select array_agg(id) from public.consent_documents where version = 'v1'));
+    pg_temp.current_docs());
   reset role;
 end;
 $$;

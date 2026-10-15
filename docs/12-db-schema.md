@@ -57,7 +57,8 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 | `display_name varchar(30)` | first name |
 | `date_of_birth date` | never leaves the server; functions return age |
 | `gender gender` | nullable; required while a Dating Mode is held |
-| `area_id` → areas | coarse location; no other location stored |
+| `area_id` → areas | neighbourhood; its centre stands in for a Member with no `member_locations` row |
+| `discover_range_km smallint` | 2, 5, 10, 25 or 50, or null for anywhere in Pune; default 10; owner updates it |
 | `modes mode[]` | at least one once submitted; GIN index |
 | `availability availability_slot[]` | three fixed slots |
 | `profession varchar(40)` | optional, Networking, display-only |
@@ -71,7 +72,9 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 | `banned_at`, `banned_reason` | |
 | `deleted_at` | set by `delete_account()`; hides the Member at once until the purge runs |
 
-Owner can select own row and update: display_name, area_id, modes, availability, gender, profession, industry_id, career_stage, pref_*, notify_*, paused_at (via `set_paused()`). Everyone else: only through `discover_feed()` / `get_profile()`.
+**`member_locations`** (decision 40, docs/adr/0003): `user_id pk` → profiles, `point geography(Point)` (the phone's latest point moved by the offset), `offset_m`, `offset_azimuth` (drawn once: 200 to 500 m, random direction), `updated_at`. RLS on, no policies: nobody reads or writes it directly, owner and admins included.
+
+Owner can select own row and update: display_name, area_id, discover_range_km, modes, availability, gender, profession, industry_id, career_stage, pref_*, notify_*, paused_at (via `set_paused()`). Everyone else: only through `discover_feed()` / `get_profile()`.
 
 **Profile minimum** (trigger `enforce_profile_minimum`, active once `submitted_at` is set): a first name, at least 2 live photos, 2 prompts, 1 Mode, an Area, and gender plus Dating Preferences while a Dating Mode is held. Deletes or updates that would break it are rejected; replacing is fine. An admin Takedown of a photo may break the photo minimum: the Member is then not visible until they add one.
 
@@ -139,7 +142,7 @@ Learning loop (Kept Connection = both rows have `did_meet` and `keep` true):
 
 ## Functions
 Shared helpers (security definer, fixed `search_path`, few and tested):
-`is_admin()`, `is_visible(uid)` (active, submitted, not paused, not hidden, not deleted, no current consent withdrawn, at least 2 live photos), `is_blocked(a, b)`, `is_connection_member(connection_id)`, `eligible_modes(a, b)` (shared Modes, Dating Modes filtered by both Members' Dating Preferences).
+`is_admin()`, `is_visible(uid)` (active, submitted, not paused, not hidden, not deleted, every current consent accepted and not withdrawn, at least 2 live photos), `is_blocked(a, b)`, `is_connection_member(connection_id)`, `eligible_modes(a, b)` (shared Modes, Dating Modes filtered by both Members' Dating Preferences).
 
 Business functions:
 | Function | Notes |
@@ -175,8 +178,11 @@ Business functions:
 | `admin_takedown(target_type, target_id, note)`, `admin_ban(user_id, reason)`, `admin_restore(target_type, target_id)` | admin only; write admin_actions |
 | `withdraw_consent(document_id)` | the caller's own accepted, not yet withdrawn consent; refuses `no consent to withdraw` (unknown, not mine, already withdrawn). Not executable by anon |
 | `request_data_copy()` | a pending access data_request for the caller, returns its id; refuses `you already have a data copy request in progress`. Not executable by anon |
-| `delete_account()` | sets `deleted_at` (out of Discover, profile view, the board, Circles, chat lists, Join Requests and photo links at once) and queues an erasure data_request; refuses `your account is already being deleted`. Not executable by anon. The account-purge Edge Function (not built yet) deletes the Member's R2 objects, then the auth user: the cascade removes profile, photos, prompts, tags, consents, Connections with both sides' messages, Join Requests, Circle memberships, meetup feedback and data requests; reports stay with `reporter_id` / `target_user_id` nulled and their evidence intact |
+| `delete_account()` | deletes the Member Location at once, sets `deleted_at` (out of Discover, profile view, the board, Circles, chat lists, Join Requests and photo links at once) and queues an erasure data_request; refuses `your account is already being deleted`. Not executable by anon. The account-purge Edge Function (not built yet) deletes the Member's R2 objects, then the auth user: the cascade removes profile, photos, prompts, tags, consents, Connections with both sides' messages, Join Requests, Circle memberships, meetup feedback and data requests; reports stay with `reporter_id` / `target_user_id` nulled and their evidence intact |
 | `expire_activities()` | pg_cron |
+| `set_location(lat, lng)` | the caller's Member Location; not executable by anon. Refuses `create your profile first` (no profile, or deleted), `that location is outside Pune` (null, or outside 18.40 to 18.75 N, 73.65 to 74.05 E: the implausible-jump check), `you can update your location once an hour` |
+| `member_point(member)` | internal (no client role): the Member's offset point, else their Area's centre; for `discover_feed()` |
+| `needs_reconsent()` | true when the caller has a current consent document not accepted or withdrawn (the data notice moved to v2 with location); the app sends them to Reconsent. Not executable by anon |
 
 Triggers: word filter (`banned_terms`), profile minimum, `updated_at`, message broadcast.
 
@@ -186,7 +192,7 @@ Edge Functions (service role, thin): sign R2 upload/download URLs, push via FCM,
 - `availability` table → `profiles.availability` array (three fixed slots).
 - `notification_settings` table → two booleans on `profiles`.
 - `photos.is_primary` dropped: position 1 is the cover.
-- `profiles.coarse_cell` dropped: `area_id` is the coarse location; distance uses `areas.center`.
+- `profiles.coarse_cell` dropped; distance uses `member_locations` (decision 40), falling back to `areas.center`.
 - `profiles.intents` → `profiles.modes` (glossary: Mode).
 - No pre-approval: `profile_status` → `account_status` (active, banned) plus `paused_at`; `photo_status`, `approved_at`, `approved_by`, `reviewed_*` dropped; `hidden_at` / `removed_at` added for after-the-fact moderation.
 - Added `connection_members`, `connection_mode_changes`, `activity_venues`, `industries`.

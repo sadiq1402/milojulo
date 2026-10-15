@@ -15,7 +15,7 @@ create function pg_temp.id(key text) returns uuid
 language sql stable as $$ select v from ids where k = $1 $$;
 
 create function pg_temp.doc(doc_kind text) returns uuid
-language sql stable as $$ select id from public.consent_documents where kind::text = doc_kind and version = 'v1' $$;
+language sql stable as $$ select id from public.consent_documents where kind::text = doc_kind order by effective_at desc limit 1 $$;
 
 -- What the viewer sees of the subject on each surface where Members find each other. Run as postgres.
 create function pg_temp.seen_by(viewer text, subject text) returns text[]
@@ -124,7 +124,7 @@ select throws_ok(format($$ select public.withdraw_consent(%L) $$, pg_temp.doc('g
 reset role;
 
 select pg_temp.as_member('a1');
-select public.accept_consents('1995-06-15', (select array_agg(id) from public.consent_documents where version = 'v1'));
+select public.accept_consents('1995-06-15', pg_temp.current_docs());
 select is((select count(*) from public.consents where withdrawn_at is not null), 0::bigint,
   'accepting the current documents again clears the withdrawal');
 reset role;
@@ -236,7 +236,7 @@ select is((select count(*) from pg_temp.media_photo_count('b1', 'c2')), 0::bigin
   'a stranger gets none');
 
 select pg_temp.as_member('c2');
-select public.accept_consents('1995-06-15', (select array_agg(id) from public.consent_documents where version = 'v1'));
+select public.accept_consents('1995-06-15', pg_temp.current_docs());
 select lives_ok($$ insert into public.messages (id, connection_id, type, body)
                    values (gen_random_uuid(), (select v from ids where k = 'hk'), 'text', 'Back') $$,
   'after accepting again they can send');

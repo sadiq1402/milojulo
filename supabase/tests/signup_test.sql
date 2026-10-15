@@ -5,7 +5,7 @@ select plan(10);
 select pg_temp.create_account('00000000-0000-0000-0000-0000000000f1');
 
 create temp table current_docs on commit drop as
-  select array_agg(id) as ids from public.consent_documents where version = 'v1';
+  select pg_temp.current_docs() as ids;
 grant select on current_docs to authenticated, anon;
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000f1');

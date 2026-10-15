@@ -32,7 +32,7 @@ Not legal advice; a lawyer must review the notice, terms and privacy policy befo
 | Rights requests and grievances | Published support email, a rights-request channel, grievance answers within the legal limit (no more than 90 days) |
 | Processor contracts | Review terms of Supabase, Cloudflare, the email provider and the push service |
 
-Data minimisation: no religion or community fields, coarse area only (never exact location), no company or education details.
+Data minimisation: no religion or community fields, location only as one offset point per Member (latest only, no history, readable by no one, deleted with the account, shown as rounded distance bands; decision 40), the data notice (v2) says so, no company or education details.
 
 ## Elevated exposure to design for
 - **Casual mode and media in chat** raise moderation and store-review exposure: chat images and video in Casual need both people to allow media in that chat, reported media is copied to evidence for moderators, label Casual clearly, and read Google's and Apple's rules for dating apps before submitting.

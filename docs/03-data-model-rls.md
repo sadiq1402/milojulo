@@ -6,7 +6,8 @@ Sixteen tables in Supabase Postgres. RLS on every table, default deny.
 
 | Table | Key fields | Who can access |
 |---|---|---|
-| profiles | user id, display name, date of birth, area, coarse location cell, intents, prompts, preferences (age range, gender, distance), optional profession/industry, status (pending, approved, paused, banned) | Owner reads and edits; others only through the discovery function |
+| profiles | user id, display name, date of birth, area, intents, discover range (km), prompts, preferences (age range, gender, distance), optional profession/industry, status (pending, approved, paused, banned) | Owner reads and edits; others only through the discovery function |
+| member_locations | user id, offset point (latest only), offset, updated at | Nobody, owner included; only security definer functions (decision 40) |
 | photos | user id, R2 object key, status (pending, approved, rejected) | Owner; others get approved photos by signed URL |
 | tags, profile_tags | curated tag catalog; user-to-tag links | Catalog readable by signed-in users; links by owner and discovery function |
 | availability | user id, time slots | Owner; used by the matching function |
@@ -35,7 +36,7 @@ Sixteen tables in Supabase Postgres. RLS on every table, default deny.
 `is_blocked(a, b)`, `discover_feed(mode_filter, limit, cursor)`, `match_reason(a, b)` (templated text), `send_request(to, note)`, `respond_request(id, accept)`, `block_user(id)`, `report(target_type, target_id, reason, details)`, `accept_consents(birth_date, document_ids)` (creates the profile; open sign-up, decision 27), `join_activity_request(activity)`, `join_circle(circle)`, `submit_meetup_feedback(...)`, `delete_account()` (also triggers R2 cleanup), `expire_activities()` (pg_cron).
 
 ## Matching (rule-based, SQL)
-Candidates: same or nearby area/cell, overlapping modes, not blocked, visible, availability overlap. Score: shared intent, shared interests/activity tags, availability overlap, distance. "Why you match" is a template filled from the overlap (for example "You both want friends, like badminton and cafés, and are free on weekends"). Keep matching in one module/function so AI can later become one more signal.
+Candidates: within the viewer's Discover Range of their Member Location (or Area centre), Casual only to Casual (decision 38), not blocked, visible, availability overlap. Score: shared intent, shared interests/activity tags, availability overlap, distance. "Why you match" is a template filled from the overlap (for example "You both want friends, like badminton and cafés, and are free on weekends"). Keep matching in one module/function so AI can later become one more signal.
 
 ## Illustrative sketch (verify and test before use)
 ```sql
