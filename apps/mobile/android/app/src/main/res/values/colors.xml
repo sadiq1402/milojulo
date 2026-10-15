@@ -1,0 +1,4 @@
+<resources>
+    <!-- colors.ink in design/tokens.ts: the dark brand surface behind the icon and launch screen. -->
+    <color name="brand_ink">#2B1233</color>
+</resources>

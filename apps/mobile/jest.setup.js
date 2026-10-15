@@ -50,6 +50,20 @@ require('react-native').AppState.addEventListener = () => ({
   remove: () => {},
 });
 
+// Same for AccessibilityInfo. Reduce motion is on, so the BrandLoader stands still and hands over
+// at once; tests of its animation turn it off.
+const { AccessibilityInfo } = require('react-native');
+AccessibilityInfo.isReduceMotionEnabled = () => Promise.resolve(true);
+AccessibilityInfo.addEventListener = () => ({ remove: () => {} });
+
+// The native animation module is a stub that never reports a mounted view's animation finished,
+// so run timing animations on the JS driver, whose frames run on real timers here (wrap waits for
+// them in act).
+const { Animated } = require('react-native');
+const timing = Animated.timing;
+Animated.timing = (value, config) =>
+  timing(value, { ...config, useNativeDriver: false });
+
 // FlatList renders rows in timed batches, which land mid-test as unwrapped updates. Unit tests
 // check what is shown, not virtualisation, so render every row at once instead.
 jest.mock('react-native/Libraries/Lists/FlatList', () => {
