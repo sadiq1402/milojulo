@@ -115,6 +115,20 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"banned_terms": {
+                  Row: {
+                    "term": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "term": string
+                  }
+                  Update: {
+                    "term"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"blocks": {
                   Row: {
                     "blocked_id": string,"blocker_id": string,"created_at": string
@@ -339,9 +353,9 @@ isOneToOne: false
                   ]
                 },"messages": {
                   Row: {
-                    "activity_id": string | null,"body": string | null,"connection_id": string,"created_at": string,"id": string,"media_deleted_at": string | null,"media_duration_ms": number | null,"media_height": number | null,"media_key": string | null,"media_mime": string | null,"media_width": number | null,"removed_at": string | null,"sender_id": string,"type": Database["public"]['Enums']["message_type"]
+                    "activity_id": string | null,"body": string | null,"connection_id": string,"created_at": string,"id": string,"media_deleted_at": string | null,"media_duration_ms": number | null,"media_height": number | null,"media_key": string | null,"media_mime": string | null,"media_width": number | null,"removed_at": string | null,"sender_id": string,"type": Database["public"]['Enums']["message_type"],"message_evidence": Json | null
                   }
-                  ComputedFields: never
+                  ComputedFields: "message_evidence"
                   Insert: {
                     "activity_id"?: string | null,"body"?: string | null,"connection_id": string,"created_at"?: string,"id": string,"media_deleted_at"?: string | null,"media_duration_ms"?: number | null,"media_height"?: number | null,"media_key"?: string | null,"media_mime"?: string | null,"media_width"?: number | null,"removed_at"?: string | null,"sender_id"?: string,"type": Database["public"]['Enums']["message_type"]
                   }
@@ -699,6 +713,12 @@ isOneToOne: false
                            },
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
+                           },
+"matches_banned_term":
+{ Args: { "content": string }; Returns: boolean
+                           },
+"message_evidence":
+{ Args: { "m": Omit<Database["public"]['Tables']["messages"]['Row'], Database["public"]['Tables']["messages"]['ComputedFields']> }; Returns: Json
                            },
 "move_photo":
 { Args: { "new_position": number,"photo_id": string }; Returns: undefined
