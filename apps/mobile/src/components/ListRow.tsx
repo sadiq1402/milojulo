@@ -20,6 +20,8 @@ type Props = {
   right?: ReactNode;
   onPress?: () => void;
   accessibilityLabel?: string;
+  // Destructive rows (Delete account) read in the danger colour.
+  titleColor?: string;
 };
 
 export function ListRow({
@@ -29,12 +31,13 @@ export function ListRow({
   right,
   onPress,
   accessibilityLabel,
+  titleColor,
 }: Props) {
   const content = (
     <>
       {left}
       <View style={styles.grow}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} color={titleColor} numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (

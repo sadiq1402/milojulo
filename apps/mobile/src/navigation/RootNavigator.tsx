@@ -4,7 +4,11 @@ import { StyleSheet, View } from 'react-native';
 import { BrandLoader } from '../components/BrandLoader';
 import { useAccountStage } from '../features/account/useAccountStage';
 import { useSession } from '../features/auth/SessionProvider';
-import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
+import { DeleteAccountScreen } from '../screens/account/DeleteAccountScreen';
+import {
+  AgeConsentScreen,
+  ReconsentScreen,
+} from '../screens/gettingIn/AgeConsentScreen';
 import { EmailScreen } from '../screens/gettingIn/EmailScreen';
 import { OtpScreen } from '../screens/gettingIn/OtpScreen';
 import { ProfileSetupScreen } from '../screens/profileSetup/ProfileSetupScreen';
@@ -63,6 +67,15 @@ function Screens({
     <Onboarding.Navigator screenOptions={{ headerShown: false }}>
       {stage.data === 'consent' ? (
         <Onboarding.Screen name="AgeConsent" component={AgeConsentScreen} />
+      ) : stage.data === 'reconsent' ? (
+        <>
+          <Onboarding.Screen name="Reconsent" component={ReconsentScreen} />
+          <Onboarding.Screen
+            name="DeleteAccount"
+            component={DeleteAccountScreen}
+            initialParams={{ pauseInstead: false }}
+          />
+        </>
       ) : (
         <Onboarding.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       )}

@@ -323,6 +323,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"data_requests": {
+                  Row: {
+                    "completed_at": string | null,"created_at": string,"id": string,"kind": Database["public"]['Enums']["data_request_kind"],"status": Database["public"]['Enums']["data_request_status"],"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["data_request_kind"],"status"?: Database["public"]['Enums']["data_request_status"],"user_id": string
+                  }
+                  Update: {
+                    "completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["data_request_kind"],"status"?: Database["public"]['Enums']["data_request_status"],"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"consent_documents": {
                   Row: {
                     "created_at": string,"effective_at": string,"id": string,"kind": Database["public"]['Enums']["consent_kind"],"url": string | null,"version": string
@@ -731,6 +745,9 @@ isOneToOne: false
 "current_consent_documents":
 { Args: Record<PropertyKey, never>; Returns: string[]
                            },
+"delete_account":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "delete_photo":
 { Args: { "member_id": string,"photo_id": string }; Returns: string
                            },
@@ -875,11 +892,17 @@ isOneToOne: false
 "send_request":
 { Args: { "mode": Database["public"]['Enums']["mode"],"note"?: string,"to_member": string }; Returns: string
                            },
+"request_data_copy":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "set_media_consent":
 { Args: { "connection_id": string,"consent": boolean }; Returns: undefined
                            },
 "set_paused":
 { Args: { "paused": boolean }; Returns: undefined
+                           },
+"withdraw_consent":
+{ Args: { "document_id": string }; Returns: undefined
                            },
 "shared_tags":
 { Args: { "a": string,"b": string }; Returns: {
@@ -924,7 +947,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_status": "active"|"banned","activity_status": "open"|"cancelled"|"expired"|"removed","activity_type": "sports"|"food_chai"|"outdoors"|"games"|"learning","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","report_reason": "fake_or_spam"|"harassment"|"inappropriate_content"|"underage"|"felt_unsafe"|"other"|"word_filter","report_status": "open"|"actioned"|"dismissed","report_target": "profile"|"message"|"activity"|"photo","request_status": "requested"|"accepted"|"declined"|"cancelled"|"withdrawn","tag_kind": "interest"|"activity"
+            "account_status": "active"|"banned","activity_status": "open"|"cancelled"|"expired"|"removed","activity_type": "sports"|"food_chai"|"outdoors"|"games"|"learning","availability_slot": "weekday_evenings"|"weekends"|"early_mornings","career_stage": "student"|"early"|"mid"|"senior"|"founder","connection_direction": "incoming"|"outgoing","connection_status": "requested"|"accepted"|"declined"|"closed","consent_kind": "terms"|"guidelines"|"data_notice","data_request_kind": "access"|"erasure","data_request_status": "pending"|"done","gender": "woman"|"man"|"nonbinary","message_type": "text"|"image"|"video"|"voice"|"activity_card","mode": "friends"|"activities"|"networking"|"dating"|"serious"|"casual","mode_change_outcome": "accepted"|"declined"|"lapsed","report_reason": "fake_or_spam"|"harassment"|"inappropriate_content"|"underage"|"felt_unsafe"|"other"|"word_filter","report_status": "open"|"actioned"|"dismissed","report_target": "profile"|"message"|"activity"|"photo","request_status": "requested"|"accepted"|"declined"|"cancelled"|"withdrawn","tag_kind": "interest"|"activity"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1044,7 +1067,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "account_status": ["active", "banned"],"activity_status": ["open", "cancelled", "expired", "removed"],"activity_type": ["sports", "food_chai", "outdoors", "games", "learning"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"report_reason": ["fake_or_spam", "harassment", "inappropriate_content", "underage", "felt_unsafe", "other", "word_filter"],"report_status": ["open", "actioned", "dismissed"],"report_target": ["profile", "message", "activity", "photo"],"request_status": ["requested", "accepted", "declined", "cancelled", "withdrawn"],"tag_kind": ["interest", "activity"]
+            "account_status": ["active", "banned"],"activity_status": ["open", "cancelled", "expired", "removed"],"activity_type": ["sports", "food_chai", "outdoors", "games", "learning"],"availability_slot": ["weekday_evenings", "weekends", "early_mornings"],"career_stage": ["student", "early", "mid", "senior", "founder"],"connection_direction": ["incoming", "outgoing"],"connection_status": ["requested", "accepted", "declined", "closed"],"consent_kind": ["terms", "guidelines", "data_notice"],"data_request_kind": ["access", "erasure"],"data_request_status": ["pending", "done"],"gender": ["woman", "man", "nonbinary"],"message_type": ["text", "image", "video", "voice", "activity_card"],"mode": ["friends", "activities", "networking", "dating", "serious", "casual"],"mode_change_outcome": ["accepted", "declined", "lapsed"],"report_reason": ["fake_or_spam", "harassment", "inappropriate_content", "underage", "felt_unsafe", "other", "word_filter"],"report_status": ["open", "actioned", "dismissed"],"report_target": ["profile", "message", "activity", "photo"],"request_status": ["requested", "accepted", "declined", "cancelled", "withdrawn"],"tag_kind": ["interest", "activity"]
           }
         }
 } as const

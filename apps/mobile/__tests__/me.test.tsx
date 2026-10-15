@@ -222,16 +222,9 @@ describe('Settings', () => {
     await waitFor(() => expect(me.setPaused).toHaveBeenCalledWith(false));
   });
 
-  test('rows for features not built yet are hidden', async () => {
+  test('notification rows wait for push', async () => {
     await openSettings();
-    for (const hidden of [
-      /Delete account/,
-      /Notifications/,
-      /Consent/,
-      /copy of my data/,
-    ]) {
-      expect(screen.queryByText(hidden)).toBeNull();
-    }
+    expect(screen.queryByText(/Notifications/)).toBeNull();
   });
 
   test('blocked people are listed and can be unblocked', async () => {

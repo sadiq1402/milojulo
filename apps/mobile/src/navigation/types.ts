@@ -14,6 +14,10 @@ export type MemberParams = {
   SafetyCentre: undefined;
   Settings: undefined;
   BlockedPeople: undefined;
+  ConsentSettings: undefined;
+  DataCopy: undefined;
+  // The consent step opens it too, without the pause alternative.
+  DeleteAccount: { pauseInstead?: boolean } | undefined;
   // One profile setup step, opened from the Me tab.
   EditProfile: { section: SetupStep };
   ActivityDetail: { activityId: string };

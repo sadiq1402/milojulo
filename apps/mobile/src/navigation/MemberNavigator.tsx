@@ -15,6 +15,9 @@ import { CircleDetailScreen } from '../screens/circles/CircleDetailScreen';
 import { CirclesScreen } from '../screens/circles/CirclesScreen';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
+import { ConsentSettingsScreen } from '../screens/account/ConsentSettingsScreen';
+import { DataCopyScreen } from '../screens/account/DataCopyScreen';
+import { DeleteAccountScreen } from '../screens/account/DeleteAccountScreen';
 import { BlockedPeopleScreen } from '../screens/me/BlockedPeopleScreen';
 import { EditProfileScreen } from '../screens/me/EditProfileScreen';
 import { MeScreen } from '../screens/me/MeScreen';
@@ -81,6 +84,9 @@ export function MemberNavigator() {
       <Stack.Screen name="SafetyCentre" component={SafetyCentreScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="BlockedPeople" component={BlockedPeopleScreen} />
+      <Stack.Screen name="ConsentSettings" component={ConsentSettingsScreen} />
+      <Stack.Screen name="DataCopy" component={DataCopyScreen} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
       <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
