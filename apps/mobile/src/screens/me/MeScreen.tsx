@@ -58,7 +58,9 @@ export function MeScreen() {
       <View style={styles.who}>
         <Avatar name={name} size="profile" uri={cover.data ?? undefined} />
         <View style={styles.grow}>
-          <Text variant="h2">{age === undefined ? name : `${name}, ${age}`}</Text>
+          <Text variant="h2">
+            {age === undefined ? name : `${name}, ${age}`}
+          </Text>
           {area ? <Text color={colors.secondary}>{area}</Text> : null}
           {state.data?.paused ? <Tag label="Paused" tone="butter" /> : null}
         </View>
@@ -106,7 +108,9 @@ export function MeScreen() {
         <ListRow
           title="Settings"
           subtitle={
-            state.data?.paused ? 'Your profile is paused' : 'Pause, blocked people'
+            state.data?.paused
+              ? 'Your profile is paused'
+              : 'Pause, blocked people'
           }
           onPress={() => navigation.navigate('Settings')}
         />

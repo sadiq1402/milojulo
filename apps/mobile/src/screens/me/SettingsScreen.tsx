@@ -25,7 +25,7 @@ export function SettingsScreen({ navigation }: Props) {
   const pause = useSetPaused();
   const paused = pause.isPending
     ? pause.variables
-    : (state.data?.paused ?? false);
+    : state.data?.paused ?? false;
 
   return (
     <Screen

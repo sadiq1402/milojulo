@@ -1,9 +1,5 @@
 import { ageOn } from '../src/features/consents/birthDate';
-import {
-  fetchMyBlocks,
-  setPaused,
-  unblock,
-} from '../src/features/me/api';
+import { fetchMyBlocks, setPaused, unblock } from '../src/features/me/api';
 import { saveBasics, savePrompts } from '../src/features/profileSetup/api';
 import { supabase } from '../src/lib/supabase';
 
@@ -91,7 +87,9 @@ describe('the word filter', () => {
     const select = () => ({
       eq: jest.fn().mockResolvedValue({ data: [], error: null }),
     });
-    const insert = jest.fn().mockResolvedValue({ error: { message: wordFilter } });
+    const insert = jest
+      .fn()
+      .mockResolvedValue({ error: { message: wordFilter } });
     stub.from = jest.fn(() => ({ select, insert }));
     await expect(
       savePrompts('me', [{ position: 1, questionId: 1, answer: 'x' }]),

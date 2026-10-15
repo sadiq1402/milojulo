@@ -1,6 +1,10 @@
 import { supabase } from '../../lib/supabase';
 
-export type BlockedMember = { memberId: string; name: string; blockedAt: string };
+export type BlockedMember = {
+  memberId: string;
+  name: string;
+  blockedAt: string;
+};
 
 export const couldNotLoad =
   "We couldn't load this. Check your connection and try again.";

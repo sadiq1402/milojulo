@@ -73,10 +73,7 @@ export function SafetyCentreScreen({ navigation }: Props) {
           <Text>
             If you are in danger, call the national emergency number first.
           </Text>
-          <Button
-            label="Call 112"
-            onPress={() => Linking.openURL('tel:112')}
-          />
+          <Button label="Call 112" onPress={() => Linking.openURL('tel:112')} />
         </Card>
       </Section>
 
@@ -85,11 +82,7 @@ export function SafetyCentreScreen({ navigation }: Props) {
         variant="secondary"
         onPress={() => Linking.openURL(`mailto:${supportEmail}`)}
       />
-      <Text
-        variant="bodySmall"
-        color={colors.secondary}
-        style={styles.centred}
-      >
+      <Text variant="bodySmall" color={colors.secondary} style={styles.centred}>
         We reply to safety reports within 24 hours.
       </Text>
     </Screen>

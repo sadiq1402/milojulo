@@ -66,9 +66,11 @@ beforeEach(() => {
   jest.mocked(profileSetup.saveBasics).mockResolvedValue();
   jest.mocked(profileSetup.saveModes).mockResolvedValue();
   jest.mocked(me.setPaused).mockResolvedValue();
-  jest.mocked(me.fetchMyBlocks).mockResolvedValue([
-    { memberId: 'rohan', name: 'Rohan', blockedAt: '2026-10-02T10:00:00Z' },
-  ]);
+  jest
+    .mocked(me.fetchMyBlocks)
+    .mockResolvedValue([
+      { memberId: 'rohan', name: 'Rohan', blockedAt: '2026-10-02T10:00:00Z' },
+    ]);
   jest.mocked(me.unblock).mockResolvedValue();
 });
 
@@ -271,8 +273,12 @@ describe('the Safety Centre', () => {
     expect(
       screen.getByText('Choose a public place for the first meeting.'),
     ).toBeOnTheScreen();
-    expect(screen.getByText(/menu on their profile, chat or Activity/)).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: /Report a problem/ })).toBeNull();
+    expect(
+      screen.getByText(/menu on their profile, chat or Activity/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /Report a problem/ }),
+    ).toBeNull();
   });
 
   test('Call 112 dials the emergency number; Contact support writes an email', async () => {
