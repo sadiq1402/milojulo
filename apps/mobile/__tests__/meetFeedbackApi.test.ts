@@ -1,4 +1,5 @@
 import {
+  AlreadyAnsweredError,
   fetchPendingFeedback,
   hasAnswered,
   submitMeetFeedback,
@@ -11,6 +12,16 @@ const rpc = jest.fn();
 (supabase as unknown as { rpc: jest.Mock }).rpc = rpc;
 
 describe('submitMeetFeedback', () => {
+  test('an answer already given is its own error', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { message: 'you already answered' },
+    });
+    await expect(
+      submitMeetFeedback({ otherUserId: 'isha', didMeet: true, keep: true }),
+    ).rejects.toBeInstanceOf(AlreadyAnsweredError);
+  });
+
   test('sends both answers about an Activity', async () => {
     rpc.mockResolvedValue({ data: null, error: null });
     await submitMeetFeedback({
@@ -46,7 +57,6 @@ describe('submitMeetFeedback', () => {
       'no one to give feedback about',
       "You can't answer about this person any more.",
     ],
-    ['you already answered', "You've already answered about this one."],
     [
       'something else',
       "That didn't work. Check your connection and try again.",
@@ -79,18 +89,12 @@ function ownRows(rows: unknown[] | null, error: unknown = null) {
 }
 
 describe('hasAnswered', () => {
-  test('a chat answer is one about the pair with no Activity', async () => {
+  test('We met is an answer about the pair with no Activity', async () => {
     const filters = ownRows([{ id: 'f1' }]);
     await expect(hasAnswered('isha')).resolves.toBe(true);
     expect(filters).toContainEqual(['from', 'meetup_feedback']);
     expect(filters).toContainEqual(['eq', 'other_user_id', 'isha']);
     expect(filters).toContainEqual(['is', 'activity_id', null]);
-  });
-
-  test('an Activity answer is one about the pair and that Activity', async () => {
-    const filters = ownRows([]);
-    await expect(hasAnswered('isha', 'badminton')).resolves.toBe(false);
-    expect(filters).toContainEqual(['eq', 'activity_id', 'badminton']);
   });
 
   test('a failed load says so', async () => {

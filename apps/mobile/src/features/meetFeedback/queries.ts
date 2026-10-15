@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchPendingFeedback, hasAnswered, submitMeetFeedback } from './api';
+import {
+  fetchPendingFeedback,
+  hasAnswered,
+  submitMeetFeedback,
+  type MeetAnswer,
+} from './api';
 
 export const meetFeedbackKeys = {
   all: ['meet-feedback'],
   pending: ['meet-feedback', 'pending'],
-  answered: (otherUserId: string, activityId?: string) => [
-    'meet-feedback',
-    'answered',
-    otherUserId,
-    activityId ?? null,
-  ],
+  answered: (otherUserId: string) => ['meet-feedback', 'answered', otherUserId],
 };
 
 export function usePendingFeedback() {
@@ -31,8 +31,8 @@ export function useHasAnswered(otherUserId: string | undefined) {
 export function useSubmitMeetFeedback() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (answer: Parameters<typeof submitMeetFeedback>[0]) =>
-      submitMeetFeedback(answer),
+    // Wrapped: TanStack passes its context as a second argument.
+    mutationFn: (answer: MeetAnswer) => submitMeetFeedback(answer),
     onSettled: () =>
       client.invalidateQueries({ queryKey: meetFeedbackKeys.all }),
   });

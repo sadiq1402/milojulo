@@ -3,6 +3,7 @@ import {
   dayLabel,
   dayOptions,
   defaultStart,
+  endedWhen,
   formatTime,
   formatWhen,
   indiaParts,
@@ -11,6 +12,19 @@ import {
 
 // 2026-10-12 is a Monday. 20:00 UTC is 01:30 the next day in India.
 const mondayNoonIndia = new Date('2026-10-12T06:30:00Z');
+
+test.each([
+  ['2026-10-12T04:30:00Z', 'earlier today'],
+  // 22:00 on Sunday in India.
+  ['2026-10-11T16:30:00Z', 'last night'],
+  ['2026-10-11T06:30:00Z', 'yesterday'],
+  ['2026-10-10T06:30:00Z', 'on Saturday'],
+  ['2026-10-06T06:30:00Z', 'on Tuesday'],
+  ['2026-10-05T06:30:00Z', 'on Mon 5 Oct'],
+  ['2026-10-01T06:30:00Z', 'on Thu 1 Oct'],
+])('an Activity that ended at %p reads %p', (endsAt, label) => {
+  expect(endedWhen(endsAt, mondayNoonIndia)).toBe(label);
+});
 
 test('India date and minutes come from UTC + 5:30, whatever the phone zone', () => {
   expect(indiaParts(mondayNoonIndia)).toEqual({

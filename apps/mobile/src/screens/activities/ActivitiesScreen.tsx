@@ -60,6 +60,8 @@ export function ActivitiesScreen() {
         </View>
       ) : board.isError ? (
         <View style={styles.padded}>
+          {/* The prompts don't depend on the board, so a failed board still shows them. */}
+          <MeetPrompts />
           <Text color={colors.danger}>{board.error.message}</Text>
           <Button
             label="Try again"

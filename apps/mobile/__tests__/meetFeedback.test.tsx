@@ -15,7 +15,14 @@ jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
-jest.mock('../src/features/meetFeedback/api');
+// Keep the real error class, so the screen can tell an earlier answer apart.
+jest.mock('../src/features/meetFeedback/api', () => ({
+  AlreadyAnsweredError: jest.requireActual('../src/features/meetFeedback/api')
+    .AlreadyAnsweredError,
+  fetchPendingFeedback: jest.fn(),
+  hasAnswered: jest.fn(),
+  submitMeetFeedback: jest.fn(),
+}));
 
 const me = sessionFor('asha@example.com');
 
@@ -118,7 +125,9 @@ describe('We met, from the chat menu', () => {
   test('a refusal reads as the data module words it', async () => {
     jest
       .mocked(meetFeedback.submitMeetFeedback)
-      .mockRejectedValue(new Error("You've already answered about this one."));
+      .mockRejectedValue(
+        new Error("You can't answer about this person any more."),
+      );
     await openChatMenu();
     await fireEvent.press(
       await screen.findByRole('button', { name: 'We met' }),
@@ -126,7 +135,25 @@ describe('We met, from the chat menu', () => {
     await answer('Not this time', 'Yes, keep it');
     await fireEvent.press(screen.getByRole('button', { name: 'Submit' }));
     expect(
-      await screen.findByText("You've already answered about this one."),
+      await screen.findByText("You can't answer about this person any more."),
+    ).toBeOnTheScreen();
+  });
+
+  test('an answer already given elsewhere ends on the thanks, not an error', async () => {
+    jest
+      .mocked(meetFeedback.submitMeetFeedback)
+      .mockRejectedValue(new meetFeedback.AlreadyAnsweredError());
+    await openChatMenu();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'We met' }),
+    );
+    await answer('Yes, we met', 'Yes, keep it');
+    await fireEvent.press(screen.getByRole('button', { name: 'Submit' }));
+    expect(
+      await screen.findByRole('header', { name: 'Thanks for telling us' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText("You'd already answered about this one."),
     ).toBeOnTheScreen();
   });
 });
@@ -140,7 +167,8 @@ describe('after an Activity', () => {
         coverPhotoId: null,
         activityId: 'badminton',
         activityTitle: 'Badminton doubles',
-        endsAt: '2026-10-14T16:30:00Z',
+        // Over a week back, so the label doesn't depend on today's date.
+        endsAt: '2026-01-01T06:30:00Z',
       },
     ]);
   });
@@ -156,6 +184,7 @@ describe('after an Activity', () => {
       }),
     );
     expect(await screen.findByText('Badminton doubles')).toBeOnTheScreen();
+    expect(screen.getByText('with Isha · on Thu 1 Jan')).toBeOnTheScreen();
     await answer('Yes, we met', 'Yes, keep it');
     await fireEvent.press(screen.getByRole('button', { name: 'Submit' }));
     expect(
@@ -167,5 +196,19 @@ describe('after an Activity', () => {
       didMeet: true,
       keep: true,
     });
+  });
+
+  test('the prompts show even when the board fails to load', async () => {
+    jest.mocked(activities.fetchBoard).mockRejectedValue(new Error('offline'));
+    await renderApp(me);
+    await fireEvent.press(
+      await screen.findByRole('tab', { name: /^Activities/ }),
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'Did you meet Isha at Badminton doubles?',
+      }),
+    ).toBeOnTheScreen();
+    expect(await screen.findByText('offline')).toBeOnTheScreen();
   });
 });

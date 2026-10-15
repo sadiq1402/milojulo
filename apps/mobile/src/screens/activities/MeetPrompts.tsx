@@ -33,6 +33,7 @@ export function MeetPrompts() {
                 otherName: row.otherName,
                 activityId: row.activityId,
                 activityTitle: row.activityTitle,
+                endsAt: row.endsAt,
               })
             }
           />

@@ -20,9 +20,9 @@ import { EditProfileScreen } from '../screens/me/EditProfileScreen';
 import { MeScreen } from '../screens/me/MeScreen';
 import { SafetyCentreScreen } from '../screens/me/SafetyCentreScreen';
 import { SettingsScreen } from '../screens/me/SettingsScreen';
+import { MeetFeedbackScreen } from '../screens/meetFeedback/MeetFeedbackScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ReportScreen } from '../screens/reports/ReportScreen';
-import { MeetFeedbackScreen } from '../screens/meetFeedback/MeetFeedbackScreen';
 import type { MemberParams } from './types';
 
 const Stack = createNativeStackNavigator<MemberParams>();

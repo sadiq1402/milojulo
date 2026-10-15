@@ -10,11 +10,16 @@ import {
   Text,
   TopBar,
 } from '../../components';
+import { endedWhen } from '../../features/activities/time';
+import { AlreadyAnsweredError } from '../../features/meetFeedback/api';
 import { useSubmitMeetFeedback } from '../../features/meetFeedback/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, sizes, spacing } from '../../theme';
 
 type Props = NativeStackScreenProps<MemberParams, 'MeetFeedback'>;
+
+const privateNote =
+  'Only you see your answer. A connection counts as kept when you both say yes.';
 
 function Question({
   title,
@@ -55,15 +60,19 @@ function Question({
 }
 
 export function MeetFeedbackScreen({ navigation, route }: Props) {
-  const { otherUserId, otherName, activityId, activityTitle } = route.params;
+  const { otherUserId, otherName, activityId, activityTitle, endsAt } =
+    route.params;
   const submit = useSubmitMeetFeedback();
   const [didMeet, setDidMeet] = useState<boolean>();
   const [keep, setKeep] = useState<boolean>();
-  const [missing, setMissing] = useState(false);
+  const [tried, setTried] = useState(false);
+  // Once both are chosen the reminder goes by itself.
+  const missing = tried && (didMeet === undefined || keep === undefined);
+  const alreadyAnswered = submit.error instanceof AlreadyAnsweredError;
 
   const send = () => {
+    setTried(true);
     if (didMeet === undefined || keep === undefined) {
-      setMissing(true);
       return;
     }
     submit.mutate({
@@ -74,7 +83,7 @@ export function MeetFeedbackScreen({ navigation, route }: Props) {
     });
   };
 
-  if (submit.isSuccess) {
+  if (submit.isSuccess || alreadyAnswered) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
         <View style={styles.body}>
@@ -82,14 +91,17 @@ export function MeetFeedbackScreen({ navigation, route }: Props) {
             Thanks for telling us
           </Text>
           <Text color={colors.secondary}>
-            Only you see your answer. If you both want to keep it, it counts as
-            a kept connection.
+            {alreadyAnswered
+              ? "You'd already answered about this one."
+              : privateNote}
           </Text>
           <Button label="Done" onPress={navigation.goBack} />
         </View>
       </SafeAreaView>
     );
   }
+
+  const when = endsAt ? ` · ${endedWhen(endsAt)}` : '';
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
@@ -102,6 +114,7 @@ export function MeetFeedbackScreen({ navigation, route }: Props) {
             {activityTitle ? (
               <Text variant="bodySmall" color={colors.secondary}>
                 with {otherName}
+                {when}
               </Text>
             ) : null}
           </View>
@@ -110,10 +123,7 @@ export function MeetFeedbackScreen({ navigation, route }: Props) {
           level="h1"
           title="Did you two meet?"
           value={didMeet}
-          onChange={value => {
-            setDidMeet(value);
-            setMissing(false);
-          }}
+          onChange={setDidMeet}
           options={[
             { label: 'Yes, we met', value: true },
             { label: 'Not this time', value: false },
@@ -123,10 +133,7 @@ export function MeetFeedbackScreen({ navigation, route }: Props) {
           level="h2"
           title="Keep the connection?"
           value={keep}
-          onChange={value => {
-            setKeep(value);
-            setMissing(false);
-          }}
+          onChange={setKeep}
           options={[
             {
               label: 'Yes, keep it',
@@ -147,8 +154,7 @@ export function MeetFeedbackScreen({ navigation, route }: Props) {
             color={colors.orchidDark}
             style={styles.fill}
           >
-            Only you see your answer. A connection counts as kept when you both
-            say yes.
+            {privateNote}
           </Text>
         </View>
         {missing || submit.error ? (
@@ -195,7 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: layout.cardPadding,
     borderRadius: radius.r24,
     backgroundColor: colors.selected,
   },

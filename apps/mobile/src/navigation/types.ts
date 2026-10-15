@@ -27,6 +27,7 @@ export type MemberParams = {
     otherName: string;
     activityId?: string;
     activityTitle?: string;
+    endsAt?: string;
   };
   // memberId is whom "Also block" blocks: the owner, sender or host of what's reported.
   Report: {

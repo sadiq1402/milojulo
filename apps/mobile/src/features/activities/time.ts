@@ -75,6 +75,26 @@ export function dayLabel(dateKey: string, todayKey: string): string {
   }`;
 }
 
+// How long ago an Activity ended: "earlier today", "last night", "on Saturday", "on Thu 1 Oct".
+export function endedWhen(endsAt: string, now: Date = new Date()): string {
+  const todayKey = indiaParts(now).dateKey;
+  const end = indiaParts(new Date(endsAt));
+  if (end.dateKey === todayKey) {
+    return 'earlier today';
+  }
+  if (end.dateKey === addDays(todayKey, -1)) {
+    return end.minutes >= 17 * 60 ? 'last night' : 'yesterday';
+  }
+  const date = new Date(`${end.dateKey}T00:00:00Z`);
+  const weekday = weekdays[date.getUTCDay()];
+  const daysAgo = Math.round((Date.parse(todayKey) - date.getTime()) / dayMs);
+  return daysAgo < 7
+    ? `on ${weekday}`
+    : `on ${weekday.slice(0, 3)} ${date.getUTCDate()} ${
+        months[date.getUTCMonth()]
+      }`;
+}
+
 function clock(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = String(minutes % 60).padStart(2, '0');

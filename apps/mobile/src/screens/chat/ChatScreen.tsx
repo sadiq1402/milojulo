@@ -40,6 +40,7 @@ import {
   useVoiceRecorder,
 } from '../../features/chat/useChatMedia';
 import { useModeChange } from '../../features/chat/useModeChange';
+import { useHasAnswered } from '../../features/meetFeedback/queries';
 import { modeLabels } from '../../features/modes';
 import { useSecureScreen } from '../../lib/secureScreen';
 import type { MemberParams } from '../../navigation/types';
@@ -53,7 +54,6 @@ import {
 } from '../../theme';
 import { ChatMenu } from './ChatMenu';
 import { formatDuration } from './MediaContent';
-import { useHasAnswered } from '../../features/meetFeedback/queries';
 import { MessageBubble } from './MessageBubble';
 import { ModeChangeCard } from './ModeChangeCard';
 
@@ -76,10 +76,9 @@ export function ChatScreen({
   const name = conversation?.otherName ?? '';
   const accepted = conversation?.status === 'accepted';
   // A closed chat was accepted before, so the pair can still say they met.
+  const everAccepted = accepted || conversation?.status === 'closed';
   const answered = useHasAnswered(
-    accepted || conversation?.status === 'closed'
-      ? conversation.otherId
-      : undefined,
+    everAccepted ? conversation?.otherId : undefined,
   );
   const [choosingMode, setChoosingMode] = useState(false);
   const modeChange = useModeChange(
