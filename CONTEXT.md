@@ -1,6 +1,6 @@
 # MiloJulo
 
-Intent-first social discovery for Pune: people pick the kinds of connection they want, discover others whose choices overlap, and are nudged toward meeting in real life.
+Intent-first social discovery for Pune: people pick the kinds of connection they want, discover others nearby, and are nudged toward meeting in real life.
 
 ## Language
 
@@ -34,7 +34,7 @@ A Member's own choice to stop meeting new people: hidden from Discover, cannot p
 A profile that has met the minimum (a first name, 2 photos, 2 prompts, a Mode, an Area, and gender and Dating Preferences if a Dating Mode is held) and been submitted once; it can never fall back below the minimum.
 
 **Visible Member**:
-A Member who is Active, has a Submitted Profile, is not Paused, not Auto-hidden, not deleted and has not withdrawn a current required consent; the only kind others can discover.
+A Member who is Active, has a Submitted Profile, is not Paused, not Auto-hidden, not deleted and has accepted every current required consent (none missing or withdrawn); the only kind others can discover.
 
 **Reviewer Account**:
 The seeded account store reviewers use to sign in, already past the age gate and consents; excluded from metrics.
@@ -109,8 +109,15 @@ A small admin-created community tied to one Area and one interest, which Members
 _Avoid_: Group, community (as a noun for this concept)
 
 **Area**:
-One of the fixed Pune neighbourhoods a Member or Activity belongs to; the only location MiloJulo knows.
-_Avoid_: Location, cell
+One of the fixed Pune neighbourhoods a Member or Activity belongs to; its centre stands in for a Member who has no Member Location.
+_Avoid_: cell
+
+**Member Location**:
+The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. At most one update an hour, Pune only, no history, deleted with the account (decision 40).
+_Avoid_: Location history, GPS, exact location (in product copy)
+
+**Discover Range**:
+How far from their Member Location a Member wants Discover to look: 2, 5, 10, 25 or 50 km, or anywhere in Pune; 10 km by default. One-way: it limits only what that Member sees.
 
 ### Moderation
 

@@ -6,7 +6,7 @@ select pg_temp.create_account('00000000-0000-0000-0000-0000000000c1');
 select pg_temp.create_account('00000000-0000-0000-0000-0000000000c2');
 
 create temp table current_docs on commit drop as
-  select array_agg(id) as ids from public.consent_documents where version = 'v1';
+  select pg_temp.current_docs() as ids;
 grant select on current_docs to authenticated, anon;
 
 -- 18 today in Pune, and one day short of 18.
@@ -50,7 +50,7 @@ select lives_ok(
 
 select results_eq(
   $$ select d.kind::text, d.version from public.consents c join public.consent_documents d on d.id = c.document_id order by 1 $$,
-  $$ values ('data_notice', 'v1'), ('guidelines', 'v1'), ('terms', 'v1') $$,
+  $$ values ('data_notice', 'v2'), ('guidelines', 'v1'), ('terms', 'v1') $$,
   'the Member''s consent to each current document and version is recorded');
 
 reset role;
