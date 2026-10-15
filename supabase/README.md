@@ -42,6 +42,20 @@ npx supabase functions deploy media --project-ref <ref>
 
 `config.toml` sets `verify_jwt = false` for `media`: the function verifies the caller itself (Auth `getUser`), so a signed-out request gets its own `{ "error": "sign in first" }`.
 
+## Scheduled jobs (pg_cron)
+
+- `expire-activities` (every 15 minutes): SQL only.
+- `purge-chat-media` (daily, 21:30 UTC = 03:00 India time, #20): calls the `purge-chat-media` Edge Function over `pg_net` with the service role. The function itself is not built yet, so until it is deployed each run gets a 404 (harmless; see `net._http_response`).
+
+**Vault secrets (founder, once per project):** the job reads the project URL and service role key from Vault, so neither is in git. In the dashboard SQL editor of the hosted project:
+
+```sql
+select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
+select vault.create_secret('<service role key>', 'service_role_key');
+```
+
+To change one later: `select vault.update_secret((select id from vault.secrets where name = 'service_role_key'), '<new key>');`. Without them the job's URL is null and the request fails without doing anything.
+
 ## Continuous deployment
 
 `.github/workflows/deploy.yml` deploys to the hosted project automatically on every push to `main` that touches `supabase/migrations/**` or `supabase/functions/**`: it links the project, runs `supabase db push` (applies only new migrations), and redeploys the `media` function when a function file changed. PRs are gated by `db-tests` / `function-tests` before merge, so only tested changes reach it.
