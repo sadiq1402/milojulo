@@ -57,7 +57,7 @@ select is(
   (select row(display_name, age, area_id, modes, why_you_match)::text
    from public.get_profile('00000000-0000-0000-0000-0000000000a2')),
   row('Asha', 30, 'kharadi', '{friends}'::public.mode[],
-      'You both want friends, like trekking, and are free on weekends. About 16 km away.')::text,
+      'About 16 km away. You both want friends, like trekking, and are free on weekends.')::text,
   'a profile shows name, age, Area, shared Modes and why-you-match');
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(p)) from public.get_profile('00000000-0000-0000-0000-0000000000a2') p $$,

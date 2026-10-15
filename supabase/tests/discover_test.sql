@@ -137,15 +137,15 @@ select is(
   'a feed card lists only the tags both Members picked');
 select is(
   (select why_you_match from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f2'),
-  'You both want friends, like badminton and cafes, and are free on weekends. About 5 km away.',
+  'About 5 km away. You both want friends, like badminton and cafes, and are free on weekends.',
   'why-you-match names only the shared Modes, tags and availability');
 select is(
   (select why_you_match from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f3'),
-  'You both want activity partners. Less than 2 km away.',
+  'Less than 2 km away. You both want activity partners.',
   'why-you-match leaves out tags and availability when none are shared');
 select is(
   (select why_you_match from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f4'),
-  'You both want friends, like badminton and cafes, and are free on weekday evenings and weekends. Less than 2 km away.',
+  'Less than 2 km away. You both want friends, like badminton and cafes, and are free on weekday evenings and weekends.',
   'why-you-match names at most 2 shared tags');
 
 select set_eq($$ select user_id from public.discover_feed('activities') $$,

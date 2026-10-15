@@ -93,12 +93,12 @@ select is_empty($$ select 1 from public.discover_feed('casual', 50) $$,
 
 -- What the card says
 select is(pg_temp.card(pg_temp.m('04'))::text,
-  row('{}'::public.mode[], '{networking}'::public.mode[], '<2 km', 'Ravi wants professional contacts. Less than 2 km away.')::text,
+  row('{}'::public.mode[], '{networking}'::public.mode[], '<2 km', 'Less than 2 km away. They''re here for Networking.')::text,
   'with no shared Mode, the card names the other Member''s Mode and the distance');
 select matches((select distance_band from public.discover_feed(null, 50) where user_id = pg_temp.m('02')),
   '^~[345] km$', 'distance shows as a rounded band');
 select matches((select why_you_match from public.discover_feed(null, 50) where user_id = pg_temp.m('02')),
-  '^You both want friends\. About [345] km away\.$', 'why-you-match mentions the distance');
+  '^About [345] km away\. You both want friends\.$', 'why-you-match mentions the distance');
 select set_eq($$ select jsonb_object_keys(to_jsonb(f)) from public.discover_feed() f $$,
   array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'cover_photo_id',
         'shared_tag_ids', 'why_you_match', 'cursor'],
