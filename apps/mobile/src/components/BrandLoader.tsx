@@ -7,12 +7,9 @@ import {
   StatusBar,
   StyleSheet,
 } from 'react-native';
+import { brandLogo, logoAspectRatio } from '../assets/brand';
 import { colors, layout } from '../theme';
 import { BrandBackground } from './BrandBackground';
-
-export const brandLogo = require('../assets/brand/logo.png');
-// The mark and wordmark, without the tagline (1316 x 1111 in design/brand/logo.png).
-export const logoSize = { width: 280, height: 236 };
 
 const native = { useNativeDriver: true } as const;
 
@@ -116,7 +113,7 @@ export function BrandLoader({ ready, onDone }: Props) {
       >
         <Image
           source={brandLogo}
-          style={logoSize}
+          style={styles.logo}
           resizeMode="contain"
           accessible
           accessibilityRole="image"
@@ -134,4 +131,5 @@ const styles = StyleSheet.create({
     padding: layout.pageMargin,
     backgroundColor: colors.ink,
   },
+  logo: { width: 280, aspectRatio: logoAspectRatio },
 });

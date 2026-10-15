@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { AccessibilityInfo, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 import { BrandLoader } from '../src/components/BrandLoader';
 import * as account from '../src/features/account/api';
 import { renderApp, sessionFor } from '../test/render';
@@ -13,10 +13,19 @@ afterEach(() => jest.restoreAllMocks());
 // Lets JS-driven animation frames run inside act.
 const wait = (ms: number) =>
   act(() => new Promise<void>(resolve => setTimeout(resolve, ms)));
-const motionOn = () =>
+// Motion on. Jest's native animation stub never reports a mounted view's animation finished, so
+// these tests run timing animations on the JS driver, whose frames run on real timers.
+const timing = Animated.timing;
+const motionOn = () => {
   jest
     .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
     .mockResolvedValue(false);
+  jest
+    .spyOn(Animated, 'timing')
+    .mockImplementation((value, config) =>
+      timing(value, { ...config, useNativeDriver: false }),
+    );
+};
 
 test('shows the logo, labelled MiloJulo', async () => {
   await render(<BrandLoader ready={false} onDone={() => {}} />);

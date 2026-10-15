@@ -4,8 +4,8 @@ import React from 'react';
 import { Image, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text } from '../../components';
+import { brandLogo, logoAspectRatio } from '../../assets/brand';
 import { BrandBackground } from '../../components/BrandBackground';
-import { brandLogo } from '../../components/BrandLoader';
 import type { SignedOutParams } from '../../navigation/types';
 import {
   colors,
@@ -108,8 +108,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     gap: layout.sectionGap,
   },
-  // The mark and wordmark (1316 x 1111), centred.
-  logo: { width: 200, height: 169, alignSelf: 'center' },
+  logo: { width: 200, aspectRatio: logoAspectRatio, alignSelf: 'center' },
   stickers: { flexDirection: 'row', flexWrap: 'wrap', gap: sizes.chip.gap },
   sticker: {
     height: sizes.chip.height,
