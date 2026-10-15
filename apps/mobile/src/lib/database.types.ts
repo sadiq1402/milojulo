@@ -795,7 +795,7 @@ isOneToOne: false
 { Args: { "member_id": string,"photo_id": string }; Returns: string
                            },
 "discover_feed":
-{ Args: { "after"?: string,"mode_filter"?: Database["public"]['Enums']["mode"],"page_size"?: number }; Returns: {
+{ Args: { "after"?: string,"mode_filter"?: (Database["public"]['Enums']["mode"])[],"page_size"?: number }; Returns: {
               "age": number,"area_id": string,"cover_photo_id": string,"cursor": string,"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"shared_tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
             }[]
                            },

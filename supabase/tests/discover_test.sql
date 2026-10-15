@@ -148,10 +148,10 @@ select is(
   'Less than 2 km away. You both want friends, like badminton and cafes, and are free on weekday evenings and weekends.',
   'why-you-match names at most 2 shared tags');
 
-select set_eq($$ select user_id from public.discover_feed('activities') $$,
+select set_eq($$ select user_id from public.discover_feed('{activities}') $$,
   array['00000000-0000-0000-0000-0000000000f3'::uuid],
   'filtering by a Mode shows only Members who chose that Mode');
-select ok(not exists (select 1 from public.discover_feed('friends')
+select ok(not exists (select 1 from public.discover_feed('{friends}')
                       where user_id = '00000000-0000-0000-0000-0000000000f3'),
   'filtering by a Mode hides Members who chose only another Mode');
 select results_eq($$ select user_id from public.discover_feed() limit 2 $$,
