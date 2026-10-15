@@ -81,3 +81,81 @@ begin
   reset role;
 end;
 $$;
+
+-- An accepted Connection under the given Mode between two Members (new visible ones unless
+-- create_members is false). Run as postgres; leaves the role reset.
+create function pg_temp.accepted_pair(a uuid, b uuid, conn_mode public.mode default 'friends',
+  create_members boolean default true) returns uuid
+language plpgsql as $$
+declare
+  conn uuid;
+begin
+  if create_members then
+    perform pg_temp.create_visible_member(a);
+    perform pg_temp.create_visible_member(b);
+  end if;
+  perform pg_temp.act_as_member(a);
+  conn := public.send_request(b, conn_mode);
+  perform pg_temp.act_as_member(b);
+  perform public.respond_request(conn, true);
+  reset role;
+  return conn;
+end;
+$$;
+
+-- A chat upload slot the media function made but has not confirmed; returns its upload id.
+-- Run as postgres; leaves the role reset.
+create function pg_temp.chat_slot(sender uuid, conn uuid, kind public.message_type, size integer default 1000)
+returns uuid
+language plpgsql as $$
+declare
+  slot uuid;
+begin
+  perform pg_temp.act_as_service();
+  select upload_id into slot from public.start_chat_upload(sender, conn, kind, size);
+  reset role;
+  return slot;
+end;
+$$;
+
+-- A slot the media function made and confirmed (its file arrived); returns the media key a
+-- message carries. Run as postgres; leaves the role reset.
+create function pg_temp.chat_upload(sender uuid, conn uuid, kind public.message_type) returns text
+language plpgsql as $$
+declare
+  slot uuid := pg_temp.chat_slot(sender, conn, kind);
+  key text;
+begin
+  perform pg_temp.act_as_service();
+  key := public.confirm_chat_upload(sender, slot);
+  reset role;
+  return key;
+end;
+$$;
+
+-- The mime a message of each media kind carries.
+create function pg_temp.mime_of(kind public.message_type) returns text
+language sql as $$
+  select case kind when 'image' then 'image/jpeg' when 'video' then 'video/mp4' else 'audio/mp4' end;
+$$;
+
+-- A media message insert (on conflict do nothing, as the app retries), to pass to lives_ok /
+-- throws_ok. The mime defaults to the kind's, the duration to 1 s for video and voice.
+create function pg_temp.media_insert(msg_id uuid, sender uuid, conn uuid, kind public.message_type, key text,
+  duration_ms integer default null, mime text default null) returns text
+language sql as $$
+  select format($q$ insert into public.messages
+                      (id, connection_id, sender_id, type, media_key, media_mime, media_duration_ms)
+                    values (%L, %L, %L, %L, %L, %L, %L) on conflict (id) do nothing $q$,
+                msg_id, conn, sender, kind, key, coalesce(mime, pg_temp.mime_of(kind)),
+                coalesce(duration_ms, case when kind in ('video', 'voice') then 1000 end));
+$$;
+
+-- The message ids the media function's chat-urls would sign for the viewer. Run as postgres.
+create function pg_temp.media_links(viewer uuid, ids uuid[]) returns setof uuid
+language plpgsql as $$
+begin
+  perform pg_temp.act_as_service();
+  return query select l.message_id from public.chat_media_links(viewer, ids) l order by 1;
+end;
+$$;
