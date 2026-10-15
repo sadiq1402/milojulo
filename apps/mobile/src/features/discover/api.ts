@@ -20,7 +20,9 @@ export type Profile = {
   name: string;
   age: number;
   areaId: string;
+  // Shared Modes; theirModes are all the Modes I may see and send a request under.
   modes: Mode[];
+  theirModes: Mode[];
   whyYouMatch: string;
   photoIds: string[];
   prompts: { position: number; questionId: number; answer: string }[];
@@ -90,6 +92,7 @@ export async function fetchProfile(memberId: string): Promise<Profile | null> {
     age: row.age,
     areaId: row.area_id,
     modes: row.modes,
+    theirModes: row.their_modes,
     whyYouMatch: row.why_you_match,
     photoIds: row.photo_ids,
     prompts: ((row.prompts ?? []) as PromptRow[]).map(p => ({

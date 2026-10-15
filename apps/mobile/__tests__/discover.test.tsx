@@ -31,12 +31,18 @@ jest.mock('../src/features/reports/api', () => ({
 jest.mock('../src/screens/requests/SendRequestSheet', () => ({
   SendRequestSheet: (props: {
     visible: boolean;
-    member: { id: string; name: string; modes: string[] };
+    member: {
+      id: string;
+      name: string;
+      modes: string[];
+      sharedModes: string[];
+    };
   }) => {
     const { Text } = require('react-native');
     return props.visible ? (
       <Text>
-        Request sheet for {props.member.name}: {props.member.modes.join(', ')}
+        Request sheet for {props.member.name}: {props.member.modes.join(', ')}{' '}
+        shared {props.member.sharedModes.join(', ')}
       </Text>
     ) : null;
   },
@@ -74,6 +80,7 @@ const ishaProfile: Profile = {
   age: 27,
   areaId: 'baner',
   modes: ['friends', 'activities'],
+  theirModes: ['activities', 'friends', 'networking'],
   whyYouMatch: 'You both want friends, like badminton and cafes.',
   photoIds: ['p1', 'p2'],
   prompts: [
@@ -285,13 +292,15 @@ describe('a profile', () => {
     expect(screen.getByText('Trekking')).toBeOnTheScreen();
   });
 
-  test('Send request opens the request sheet with our shared Modes', async () => {
+  test('Send request opens the request sheet with their Modes and our shared ones', async () => {
     await openProfile();
     await fireEvent.press(
       await screen.findByRole('button', { name: 'Send request' }),
     );
     expect(
-      screen.getByText('Request sheet for Isha: friends, activities'),
+      screen.getByText(
+        'Request sheet for Isha: activities, friends, networking shared friends, activities',
+      ),
     ).toBeOnTheScreen();
   });
 

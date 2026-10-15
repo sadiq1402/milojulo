@@ -229,7 +229,12 @@ function ProfileAction({ profile }: { profile: Profile }) {
       <SendRequestSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        member={{ id: profile.id, name: profile.name, modes: profile.modes }}
+        member={{
+          id: profile.id,
+          name: profile.name,
+          modes: profile.theirModes,
+          sharedModes: profile.modes,
+        }}
         onSent={() =>
           client.invalidateQueries({ queryKey: chatKeys.conversations })
         }

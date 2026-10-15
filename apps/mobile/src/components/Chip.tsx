@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import { colors, fontFamily, fonts, radius, sizes } from '../theme';
+import { colors, fontFamily, fonts, radius, sizes, spacing } from '../theme';
 import { Text } from './Text';
 
 type Props = {
@@ -9,9 +9,11 @@ type Props = {
   onPress: () => void;
   // A colour-coded filter chip (a Mode's tint) while it isn't selected.
   tint?: { bg: string; fg: string };
+  // Shown after the label, such as a Shared tag.
+  badge?: ReactNode;
 };
 
-export function Chip({ label, selected = false, onPress, tint }: Props) {
+export function Chip({ label, selected = false, onPress, tint, badge }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -31,6 +33,7 @@ export function Chip({ label, selected = false, onPress, tint }: Props) {
       >
         {label}
       </Text>
+      {badge}
     </Pressable>
   );
 }
@@ -43,6 +46,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.field,
     backgroundColor: colors.card,
+    flexDirection: 'row',
+    gap: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
