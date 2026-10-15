@@ -195,8 +195,9 @@ describe('the Discover feed', () => {
       screen.getByRole('button', { name: 'Modes: All Modes' }),
     );
     expect(await screen.findByText('Show people here for')).toBeOnTheScreen();
-    expect(screen.getByRole('checkbox', { name: 'Dating' })).toBeOnTheScreen();
-    // Casual is offered only to Members who chose Casual.
+    // Only my own Modes: the feed only matches on a Mode both people chose.
+    expect(screen.getByRole('checkbox', { name: 'Friends' })).toBeOnTheScreen();
+    expect(screen.queryByRole('checkbox', { name: 'Dating' })).toBeNull();
     expect(screen.queryByRole('checkbox', { name: 'Casual' })).toBeNull();
 
     jest

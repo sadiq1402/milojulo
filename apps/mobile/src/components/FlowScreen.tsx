@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, type Ref } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +23,7 @@ type Props = {
   icon?: ReactNode;
   children?: ReactNode;
   footer: ReactNode;
+  scrollRef?: Ref<React.ComponentRef<typeof ScrollView>>;
 };
 
 // The plain onboarding layout (Email, Otp, AgeConsent, profile setup): tint and butter
@@ -36,6 +37,7 @@ export function FlowScreen({
   icon,
   children,
   footer,
+  scrollRef,
 }: Props) {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
@@ -48,11 +50,12 @@ export function FlowScreen({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
           {icon}
-          <Text variant="h1" accessibilityRole="header">
+          <Text variant="h1" accessibilityRole="header" style={styles.title}>
             {title}
           </Text>
           {intro ? <Text color={colors.secondary}>{intro}</Text> : null}
@@ -65,6 +68,8 @@ export function FlowScreen({
   );
 }
 
+const dot = { right: 28, size: 44 };
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.ground },
   fill: { flex: 1 },
@@ -74,6 +79,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     gap: layout.blockGap,
   },
+  // Keeps a long heading clear of the butter dot, which sits beside it.
+  title: { paddingRight: dot.right + dot.size - layout.pageMargin },
   footer: { paddingBottom: spacing.xl, gap: spacing.xxs },
   // Decoration from the mockups (390-wide frame).
   tintCircle: {
@@ -87,11 +94,11 @@ const styles = StyleSheet.create({
   },
   butterDot: {
     position: 'absolute',
-    right: 28,
+    right: dot.right,
     top: 118,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: dot.size,
+    height: dot.size,
+    borderRadius: dot.size / 2,
     backgroundColor: colors.butter,
     opacity: 0.85,
   },
