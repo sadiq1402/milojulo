@@ -25,6 +25,7 @@ export type Profile = {
   name: string;
   age: number;
   areaId: string;
+  // Shared Modes; theirModes are all the Modes I may see and send a request under.
   modes: Mode[];
   theirModes: Mode[];
   distanceBand: string;

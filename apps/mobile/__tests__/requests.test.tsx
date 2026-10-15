@@ -369,7 +369,7 @@ describe('Inbox Join Requests', () => {
 });
 
 describe('send request sheet', () => {
-  async function renderSheet(modes: Mode[]) {
+  async function renderSheet(modes: Mode[], sharedModes: Mode[] = modes) {
     const client = new QueryClient({
       defaultOptions: { mutations: { gcTime: Infinity } },
     });
@@ -382,7 +382,7 @@ describe('send request sheet', () => {
           <SendRequestSheet
             visible
             onClose={onClose}
-            member={{ id: 'isha', name: 'Isha', modes }}
+            member={{ id: 'isha', name: 'Isha', modes, sharedModes }}
             onSent={onSent}
           />
         </QueryClientProvider>
@@ -391,17 +391,15 @@ describe('send request sheet', () => {
     return { client, onSent, onClose };
   }
 
-  test('with one Eligible Mode it is chosen already; Send sends the note, then closes and refreshes the Inbox', async () => {
+  test('with one Mode its chip is chosen already; Send sends the note, then closes and refreshes the Inbox', async () => {
     jest.mocked(requests.sendRequest).mockResolvedValue('conn-new');
     const { client, onSent, onClose } = await renderSheet(['friends']);
     expect(
       screen.getByRole('header', { name: 'Say hi to Isha' }),
     ).toBeOnTheScreen();
-    // The only Eligible Mode is shown as a tag, not a choice.
-    expect(screen.getByText('Friends')).toBeOnTheScreen();
     expect(
-      screen.queryByRole('button', { name: 'Friends' }),
-    ).not.toBeOnTheScreen();
+      screen.getByRole('button', { name: /Friends/, selected: true }),
+    ).toBeOnTheScreen();
     await fireEvent.changeText(
       screen.getByLabelText('Add a short note (optional)'),
       'Badminton at Baner?',
@@ -425,19 +423,54 @@ describe('send request sheet', () => {
     });
   });
 
-  test('with several Eligible Modes the Member picks one before sending', async () => {
+  test('their Modes are listed shared first and marked, the first shared one chosen; another can be picked', async () => {
     jest.mocked(requests.sendRequest).mockResolvedValue('conn-new');
-    const { onSent } = await renderSheet(['friends', 'networking']);
-    const send = screen.getByRole('button', { name: 'Send request' });
-    expect(send).toBeDisabled();
+    const { onSent } = await renderSheet(
+      ['activities', 'dating', 'friends', 'networking'],
+      ['dating', 'friends'],
+    );
+    expect(
+      screen
+        .getAllByText(/^(Activities|Dating|Friends|Networking)$/)
+        .map(t => t.props.children),
+    ).toEqual(['Dating', 'Friends', 'Activities', 'Networking']);
+    expect(
+      screen.getByRole('button', { name: 'Dating Shared', selected: true }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Friends Shared', selected: false }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Activities', selected: false }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText("Isha's Modes. Shared ones come first."),
+    ).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Networking' }));
     expect(
       screen.getByRole('button', { name: 'Networking', selected: true }),
     ).toBeOnTheScreen();
-    await fireEvent.press(send);
+    await fireEvent.press(screen.getByRole('button', { name: 'Send request' }));
     expect(requests.sendRequest).toHaveBeenCalledWith('isha', 'networking', '');
     await waitFor(() => expect(onSent).toHaveBeenCalled());
-    await waitFor(() => expect(send).not.toBeBusy());
+  });
+
+  test('with no shared Mode the first of theirs is chosen and the sheet says so', async () => {
+    await renderSheet(['activities', 'networking'], []);
+    expect(
+      screen.getByRole('button', { name: 'Activities', selected: true }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Shared')).not.toBeOnTheScreen();
+    expect(
+      screen.getByText("You don't share a Mode with Isha. Pick one of Isha's."),
+    ).toBeOnTheScreen();
+  });
+
+  test('Casual carries its adult-intent label', async () => {
+    await renderSheet(['casual', 'friends']);
+    expect(
+      screen.getByRole('button', { name: /^Casual.*18\+ · adults only/ }),
+    ).toBeOnTheScreen();
   });
 
   test('a refused request shows why in the sheet and keeps it open', async () => {
