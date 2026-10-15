@@ -24,7 +24,7 @@ describe('sending the location', () => {
 
   test.each([
     'you can update your location once an hour',
-    'that location is outside Pune',
+    "MiloJulo isn't in your city yet",
   ])('passes over "%s" quietly', async message => {
     refused(message);
     await expect(setLocation(18.59, 73.76)).resolves.toBeUndefined();

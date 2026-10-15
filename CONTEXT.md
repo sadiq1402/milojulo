@@ -52,7 +52,7 @@ _Avoid_: Match, friendship
 A proposal by one side of an accepted Connection to move it to another Eligible Mode; the Connection keeps its current Mode until the other side accepts. One open proposal at a time; it lapses after 7 days, and a declined proposer waits 7 days to propose again.
 
 **Eligible Mode**:
-For a pair of Members, a Mode both hold that, if it is a Dating Mode, also passes both Members' Dating Preferences. Discover, Connection Requests, Mode Changes and "Why you match" only use Eligible Modes.
+For a pair of Members, a Mode both hold that, if it is a Dating Mode, also passes both Members' Dating Preferences. Connection Requests and Mode Changes only use Eligible Modes (until #104). Discover no longer needs one: it shows every Visible Member in range, with the Casual and Dating rules of decision 42.
 
 **Media Consent**:
 In a Casual Connection, the per-side switch that must be on for both Members before either can send or open images or video (including ones sent earlier). Changing a Connection's Mode into Casual switches it off on both sides.
@@ -113,11 +113,15 @@ One of the fixed Pune neighbourhoods a Member or Activity belongs to; its centre
 _Avoid_: cell
 
 **Member Location**:
-The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. At most one update an hour, Pune only, no history, deleted with the account (decision 40).
+The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. At most one update an hour, inside an active Service Region only, ignored once older than 7 days, no history, deleted with the account (decisions 40, 42).
 _Avoid_: Location history, GPS, exact location (in product copy)
 
 **Discover Range**:
-How far from their Member Location a Member wants Discover to look: 2, 5, 10, 25 or 50 km, or anywhere in Pune; 10 km by default. One-way: it limits only what that Member sees.
+How far from their Member Location a Member wants Discover to look: 2, 5, 10, 25 or 50 km, or anywhere in their Service Region; 10 km by default. One-way: it limits only what that Member sees, except that a Dating Mode is shown only when the other Member's range includes the viewer too (decision 42).
+
+**Service Region**:
+A city MiloJulo runs in (a bounding box, active or not; Pune first). Locations outside every active one are refused with "MiloJulo isn't in your city yet".
+_Avoid_: city box, Pune box
 
 ### Moderation
 

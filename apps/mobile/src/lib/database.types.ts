@@ -639,6 +639,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"service_regions": {
+                  Row: {
+                    "active": boolean,"id": number,"max_lat": number,"max_lng": number,"min_lat": number,"min_lng": number,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"id"?: never,"max_lat": number,"max_lng": number,"min_lat": number,"min_lng": number,"name": string
+                  }
+                  Update: {
+                    "active"?: boolean,"id"?: never,"max_lat"?: number,"max_lng"?: number,"min_lat"?: number,"min_lng"?: number,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"tags": {
                   Row: {
                     "created_at": string,"id": number,"is_active": boolean,"kind": Database["public"]['Enums']["tag_kind"],"label": string,"slug": string,"sort_order": number
@@ -782,8 +796,19 @@ isOneToOne: false
                            },
 "discover_feed":
 { Args: { "after"?: string,"mode_filter"?: Database["public"]['Enums']["mode"],"page_size"?: number }; Returns: {
-              "age": number,"area_id": string,"cover_photo_id": string,"cursor": string,"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"shared_tag_ids": (number)[],"user_id": string,"why_you_match": string
+              "age": number,"area_id": string,"cover_photo_id": string,"cursor": string,"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"shared_tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
             }[]
+                           },
+"discover_modes":
+{ Args: { "member": string,"viewer": string }; Returns: (Database["public"]['Enums']["mode"])[]
+                           },
+"discover_pair":
+{ Args: { "member": string,"viewer": string }; Returns: {
+              "distance_m": number,"shared_modes": (Database["public"]['Enums']["mode"])[],"their_modes": (Database["public"]['Enums']["mode"])[]
+            }[]
+                           },
+"distance_band":
+{ Args: { "metres": number }; Returns: string
                            },
 "eligible_modes":
 { Args: { "a": string,"b": string }; Returns: (Database["public"]['Enums']["mode"])[]
@@ -809,11 +834,14 @@ isOneToOne: false
                            },
 "get_profile":
 { Args: { "member_id": string }; Returns: {
-              "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"tag_ids": (number)[],"user_id": string,"why_you_match": string
+              "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
             }[]
                            },
 "hosts_activity":
 { Args: { "activity_id": string }; Returns: boolean
+                           },
+"in_service_region":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -858,6 +886,9 @@ isOneToOne: false
                            },
 "message_evidence":
 { Args: { "m": Omit<Database["public"]['Tables']["messages"]['Row'], Database["public"]['Tables']["messages"]['ComputedFields']> }; Returns: Json
+                           },
+"mode_phrase":
+{ Args: { "m": Database["public"]['Enums']["mode"] }; Returns: string
                            },
 "move_photo":
 { Args: { "new_position": number,"photo_id": string }; Returns: undefined
@@ -908,6 +939,9 @@ isOneToOne: false
                            },
 "propose_mode_change":
 { Args: { "connection_id": string,"to_mode": Database["public"]['Enums']["mode"] }; Returns: string
+                           },
+"region_of":
+{ Args: { "point": unknown }; Returns: number
                            },
 "report":
 { Args: { "details"?: string,"reason": Database["public"]['Enums']["report_reason"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
@@ -982,6 +1016,9 @@ isOneToOne: false
                            },
 "withdraw_consent":
 { Args: { "document_id": string }; Returns: undefined
+                           },
+"within_range":
+{ Args: { "other": string,"owner": string }; Returns: boolean
                            }
           }
           Enums: {

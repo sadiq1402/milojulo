@@ -4,7 +4,7 @@ select plan(16);
 
 -- v1 views v2, whose photos at positions 2 and 3 are Auto-hidden and taken down.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000a1', '{friends,activities}');
-update public.profiles set availability = '{weekends}' where id = '00000000-0000-0000-0000-0000000000a1';
+update public.profiles set availability = '{weekends}', discover_range_km = 25 where id = '00000000-0000-0000-0000-0000000000a1';
 insert into public.profile_tags (user_id, tag_id)
 select '00000000-0000-0000-0000-0000000000a1', id from public.tags where slug = 'trekking';
 
@@ -41,7 +41,11 @@ select pg_temp.create_complete_member('00000000-0000-0000-0000-0000000000a8');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000a9');
 update public.photos set removed_at = now()
 where user_id = '00000000-0000-0000-0000-0000000000a9' and position = 1;
-select pg_temp.create_visible_member('00000000-0000-0000-0000-00000000a010', '{networking}');
+-- a010 is about 30 km away, beyond a1's 25 km range.
+select pg_temp.create_visible_member('00000000-0000-0000-0000-00000000a010');
+select pg_temp.act_as_member('00000000-0000-0000-0000-00000000a010');
+select public.set_location(18.45, 74.04);
+reset role;
 
 create function pg_temp.sees(member_id uuid) returns boolean
 language sql as $$
@@ -53,11 +57,11 @@ select is(
   (select row(display_name, age, area_id, modes, why_you_match)::text
    from public.get_profile('00000000-0000-0000-0000-0000000000a2')),
   row('Asha', 30, 'kharadi', '{friends}'::public.mode[],
-      'You both want friends, like trekking, and are free on weekends.')::text,
+      'You both want friends, like trekking, and are free on weekends. About 16 km away.')::text,
   'a profile shows name, age, Area, shared Modes and why-you-match');
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(p)) from public.get_profile('00000000-0000-0000-0000-0000000000a2') p $$,
-  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'why_you_match', 'photo_ids', 'prompts',
+  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'why_you_match', 'photo_ids', 'prompts',
         'tag_ids', 'availability'],
   'a profile carries only safe columns, never date of birth');
 select is(
@@ -92,7 +96,7 @@ select ok(not pg_temp.sees('00000000-0000-0000-0000-0000000000a8'), 'an unsubmit
 select ok(not pg_temp.sees('00000000-0000-0000-0000-0000000000a9'),
   'a profile with fewer than 2 live photos cannot be opened');
 select ok(not pg_temp.sees('00000000-0000-0000-0000-00000000a010'),
-  'the profile of someone who shares no Mode cannot be opened');
+  'the profile of someone beyond the viewer''s range cannot be opened');
 reset role;
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a4');
