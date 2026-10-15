@@ -182,7 +182,10 @@ describe('media in a chat', () => {
     await waitFor(() =>
       expect(media.fetchMediaUrls).toHaveBeenLastCalledWith(['img-2']),
     );
-    expect(await screen.findAllByLabelText('Photo')).toHaveLength(2);
+    // findAll resolves on the first photo; the new one lands once its link does.
+    await waitFor(() =>
+      expect(screen.getAllByLabelText('Photo')).toHaveLength(2),
+    );
   });
 
   test('a video shows a play button and loads the player only when tapped', async () => {
@@ -397,8 +400,9 @@ describe('Media Consent in a Casual Connection', () => {
     expect(
       await screen.findByText('Media is off in this chat'),
     ).toBeOnTheScreen();
+    // "Media is off" shows as soon as the consent state loads; the voice link comes after.
     expect(
-      screen.getByRole('button', { name: 'Play voice message, 0:14' }),
+      await screen.findByRole('button', { name: 'Play voice message, 0:14' }),
     ).toBeOnTheScreen();
     expect(screen.queryByText('Media unavailable')).not.toBeOnTheScreen();
   });
