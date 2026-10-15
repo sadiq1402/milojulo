@@ -13,20 +13,13 @@ import {
 import { chatKeys } from '../../features/chat/queries';
 import { modeLabels, type Mode } from '../../features/modes';
 import { noteMaxLength, sendRequest } from '../../features/requests/api';
-import {
-  colors,
-  fontFamily,
-  fonts,
-  modeTints,
-  sizes,
-  spacing,
-} from '../../theme';
+import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  // modes are the pair's Eligible Modes.
-  member: { id: string; name: string; modes: Mode[] };
+  // modes are all the Modes I may request under; sharedModes the ones we both chose.
+  member: { id: string; name: string; modes: Mode[]; sharedModes: Mode[] };
   onSent?: () => void;
 };
 
@@ -51,8 +44,12 @@ export function SendRequestSheet({ visible, onClose, member, onSent }: Props) {
 
 function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
   const client = useQueryClient();
-  const only = member.modes.length === 1 ? member.modes[0] : undefined;
-  const [mode, setMode] = useState<Mode | undefined>(only);
+  const isShared = (m: Mode) => member.sharedModes.includes(m);
+  const choices = [
+    ...member.modes.filter(isShared),
+    ...member.modes.filter(m => !isShared(m)),
+  ];
+  const [mode, setMode] = useState<Mode | undefined>(choices[0]);
   const [note, setNote] = useState('');
   const send = useMutation({
     mutationFn: (chosen: Mode) => sendRequest(member.id, chosen, note),
@@ -71,26 +68,39 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
           Say hi to {member.name}
         </Text>
       </View>
-      {member.modes.length > 1 ? (
+      {choices.length > 0 ? (
         <View style={styles.field}>
           <Text variant="bodySmall" style={styles.label}>
             Connect as
           </Text>
           <View style={styles.chips}>
-            {member.modes.map(m => (
+            {choices.map(m => (
               <Chip
                 key={m}
                 label={modeLabels[m]}
-                tint={modeTints[m]}
                 selected={m === mode}
                 onPress={() => setMode(m)}
+                badge={
+                  <>
+                    {isShared(m) ? (
+                      <Tag
+                        label="Shared"
+                        tone={m === mode ? 'onPhoto' : 'match'}
+                      />
+                    ) : null}
+                    {m === 'casual' ? (
+                      <Tag label="18+ · adults only" tone="warn" />
+                    ) : null}
+                  </>
+                }
               />
             ))}
           </View>
-        </View>
-      ) : only ? (
-        <View style={styles.chips}>
-          <Tag label={modeLabels[only]} tone={only} />
+          <Text variant="bodySmall" color={colors.secondary}>
+            {member.sharedModes.length > 0
+              ? `${member.name}'s Modes. Shared ones come first.`
+              : `You don't share a Mode with ${member.name}. Pick one of ${member.name}'s.`}
+          </Text>
         </View>
       ) : (
         <Text color={colors.secondary}>

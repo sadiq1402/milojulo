@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { colors, fontFamily, fonts, radius, sizes } from '../theme';
 import { Icon, type IconName } from './Icon';
@@ -14,6 +14,8 @@ type Props = {
   icon?: IconName;
   opensPicker?: boolean;
   accessibilityLabel?: string;
+  // Shown after the label, such as a Shared tag.
+  badge?: ReactNode;
 };
 
 export function Chip({
@@ -24,6 +26,7 @@ export function Chip({
   icon,
   opensPicker = false,
   accessibilityLabel,
+  badge,
 }: Props) {
   const ink = selected ? colors.white : tint?.fg ?? colors.ink;
   return (
@@ -50,6 +53,7 @@ export function Chip({
       {opensPicker ? (
         <Icon name="chevronDown" size={sizes.icon.tiny} color={ink} />
       ) : null}
+      {badge}
     </Pressable>
   );
 }
