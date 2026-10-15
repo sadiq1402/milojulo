@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(14);
+select plan(13);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000104' || suffix)::uuid $$;
