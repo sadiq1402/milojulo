@@ -23,6 +23,8 @@ type Props = {
   // Casual Connections only: my side of Media Consent.
   mediaConsent?: boolean;
   onMediaConsent?: (on: boolean) => void;
+  // Shown until the Member has answered about this pair; opens the meet questions.
+  onWeMet?: () => void;
 };
 
 export function ChatMenu({
@@ -40,6 +42,7 @@ export function ChatMenu({
   onSafety,
   mediaConsent,
   onMediaConsent,
+  onWeMet,
 }: Props) {
   const [view, setViewState] = useState<'menu' | 'modes' | 'block' | 'close'>(
     'menu',
@@ -138,6 +141,13 @@ export function ChatMenu({
                 accessibilityLabel="Allow photos and video"
               />
             </View>
+          ) : null}
+          {onWeMet ? (
+            <Button
+              label="We met"
+              variant="secondary"
+              onPress={andClose(onWeMet)}
+            />
           ) : null}
           {accepted ? (
             <Button

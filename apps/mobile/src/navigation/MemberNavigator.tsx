@@ -20,6 +20,7 @@ import { EditProfileScreen } from '../screens/me/EditProfileScreen';
 import { MeScreen } from '../screens/me/MeScreen';
 import { SafetyCentreScreen } from '../screens/me/SafetyCentreScreen';
 import { SettingsScreen } from '../screens/me/SettingsScreen';
+import { MeetFeedbackScreen } from '../screens/meetFeedback/MeetFeedbackScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ReportScreen } from '../screens/reports/ReportScreen';
 import type { MemberParams } from './types';
@@ -86,6 +87,7 @@ export function MemberNavigator() {
       <Stack.Screen name="EditActivity" component={EditActivityScreen} />
       <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
       <Stack.Screen name="Report" component={ReportScreen} />
+      <Stack.Screen name="MeetFeedback" component={MeetFeedbackScreen} />
     </Stack.Navigator>
   );
 }

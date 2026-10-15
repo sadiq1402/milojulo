@@ -21,6 +21,14 @@ export type MemberParams = {
   CreateActivity: { circleId: string; circleName: string } | undefined;
   EditActivity: { activityId: string };
   CircleDetail: { circleId: string };
+  // Without an Activity, the answer is about the pair's chat ("We met").
+  MeetFeedback: {
+    otherUserId: string;
+    otherName: string;
+    activityId?: string;
+    activityTitle?: string;
+    endsAt?: string;
+  };
   // memberId is whom "Also block" blocks: the owner, sender or host of what's reported.
   Report: {
     targetType: ReportTarget;
