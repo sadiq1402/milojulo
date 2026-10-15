@@ -13,6 +13,8 @@ type Props = {
   badge?: ReactNode;
   // A radio card is one of a set; pressing it again keeps it chosen.
   role?: 'checkbox' | 'radio';
+  // 56 high, for a long list in a sheet (Discover's distance and Modes pickers).
+  compact?: boolean;
 };
 
 // An option card: 64 min, radius 20, orchid border and tint when chosen.
@@ -23,6 +25,7 @@ export function OptionCard({
   onChange,
   badge,
   role = 'checkbox',
+  compact = false,
 }: Props) {
   return (
     <Pressable
@@ -31,7 +34,11 @@ export function OptionCard({
       accessibilityState={{ checked }}
       accessibilityLabel={title}
       accessibilityHint={description}
-      style={[styles.card, checked && styles.checked]}
+      style={[
+        styles.card,
+        compact && styles.compact,
+        checked && styles.checked,
+      ]}
     >
       <View
         style={[
@@ -72,6 +79,7 @@ const styles = StyleSheet.create({
     borderColor: colors.field,
     backgroundColor: colors.card,
   },
+  compact: { minHeight: sizes.listRowMin, paddingVertical: 10 },
   // As in the mockup: the 1 border turns orchid and an inset 1 ring doubles it, so the
   // content doesn't shift.
   checked: {
