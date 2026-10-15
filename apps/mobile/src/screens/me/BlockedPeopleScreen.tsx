@@ -1,8 +1,3 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import {
@@ -15,24 +10,16 @@ import {
   Text,
   TopBar,
 } from '../../components';
-import { fetchMyBlocks, unblock } from '../../features/me/api';
+import { useMyBlocks, useUnblock } from '../../features/me/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors } from '../../theme';
 import { LoadErrorScreen, LoadingScreen } from '../StatusScreen';
 
 type Props = NativeStackScreenProps<MemberParams, 'BlockedPeople'>;
 
-export const blocksKey = ['my-blocks'];
-
-// Only people I blocked; who blocked me is never shown.
 export function BlockedPeopleScreen({ navigation }: Props) {
-  const blocks = useQuery({ queryKey: blocksKey, queryFn: fetchMyBlocks });
-  const client = useQueryClient();
-  const release = useMutation({
-    mutationFn: (memberId: string) => unblock(memberId),
-    // They may show up again in Discover, chats and the board.
-    onSuccess: () => client.invalidateQueries(),
-  });
+  const blocks = useMyBlocks();
+  const release = useUnblock();
 
   const header = (
     <TopBar title="Blocked people" onBack={() => navigation.goBack()} />

@@ -39,13 +39,3 @@ export async function unblock(memberId: string): Promise<void> {
     throw new Error(fallback);
   }
 }
-
-// Whole years, in India time's calendar day being close enough to UTC's for a birthday.
-export function ageOn(birthDate: string, today: Date): number {
-  const [y, m, d] = birthDate.split('-').map(Number);
-  const age = today.getUTCFullYear() - y;
-  const month = today.getUTCMonth() + 1;
-  const hadBirthday =
-    month > m || (month === m && today.getUTCDate() >= d);
-  return hadBirthday ? age : age - 1;
-}

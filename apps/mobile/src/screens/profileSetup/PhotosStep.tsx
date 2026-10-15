@@ -29,7 +29,13 @@ type Upload = { position: number; localUri: string };
 
 export const waitForUpload = 'Wait for the photo to finish uploading.';
 
-export function PhotosStep({ onDone, onBack, notice, beforeLeave }: StepProps) {
+export function PhotosStep({
+  onDone,
+  onBack,
+  notice,
+  beforeLeave,
+  editing,
+}: StepProps) {
   const client = useQueryClient();
   const photos = useMyPhotos();
   const list = photos.data ?? [];
@@ -210,6 +216,7 @@ export function PhotosStep({ onDone, onBack, notice, beforeLeave }: StepProps) {
   return (
     <SetupStepScreen
       step="photos"
+      editing={editing}
       title="Add 2 to 4 photos"
       intro="Clear photos where your face is visible."
       onBack={uploading ? undefined : onBack}

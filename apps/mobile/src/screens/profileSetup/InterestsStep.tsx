@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
 import { useTagList } from '../../features/catalog/queries';
-import { saveInterests, submitProfile } from '../../features/profileSetup/api';
+import { saveInterests } from '../../features/profileSetup/api';
 import {
   availabilityLabels,
   SetupError,
@@ -11,18 +11,15 @@ import {
 } from '../../features/profileSetup/model';
 import { useUpdateDraft } from '../../features/profileSetup/queries';
 import { ChoiceChips, Field, toggle } from './parts';
-import {
-  SetupStepScreen,
-  useEditing,
-  useNotice,
-  type StepProps,
-} from './SetupStepScreen';
+import { SetupStepScreen, useNotice, type StepProps } from './SetupStepScreen';
 
 const slots = Object.keys(availabilityLabels) as AvailabilitySlot[];
 
 type Props = StepProps & {
+  // Setup submits the profile after saving; an edit only saves.
+  submit?: () => Promise<void>;
   // A submit refusal another step fixes.
-  onRefused: (step: SetupStep, message: string) => void;
+  onRefused?: (step: SetupStep, message: string) => void;
 };
 
 export function InterestsStep({
@@ -30,12 +27,13 @@ export function InterestsStep({
   draft,
   onDone,
   onBack,
+  submit: submitAfter,
   onRefused,
   notice,
   beforeLeave,
+  editing,
 }: Props) {
   const tags = useTagList();
-  const editing = useEditing();
   const updateDraft = useUpdateDraft(userId);
   const [interests, setInterests] = useState<Interests>({
     tagIds: draft.tagIds,
@@ -52,25 +50,23 @@ export function InterestsStep({
   const submit = useMutation({
     mutationFn: async () => {
       await persist();
-      // An edit of a profile already submitted only saves.
-      if (!editing) {
-        await submitProfile();
-      }
+      await submitAfter?.();
     },
     onSuccess: onDone,
     onError: error => {
-      if (!editing && error instanceof SetupError && error.step) {
+      if (onRefused && error instanceof SetupError && error.step) {
         onRefused(error.step, error.message);
       }
     },
   });
   const stayingHere =
     submit.error &&
-    (editing || !(submit.error instanceof SetupError && submit.error.step));
+    (!onRefused || !(submit.error instanceof SetupError && submit.error.step));
 
   return (
     <SetupStepScreen
       step="interests"
+      editing={editing}
       title="What do you enjoy?"
       onBack={onBack}
       error={(stayingHere ? submit.error?.message : undefined) ?? shownNotice}

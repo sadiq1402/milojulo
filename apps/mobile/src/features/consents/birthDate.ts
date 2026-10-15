@@ -22,3 +22,11 @@ export function toBirthDate(
   }
   return date.toISOString().slice(0, 10);
 }
+
+// Age in whole years on the given day (UTC calendar day).
+export function ageOn(birthDate: string, today: Date): number {
+  const [y, m, d] = birthDate.split('-').map(Number);
+  const month = today.getUTCMonth() + 1;
+  const hadBirthday = month > m || (month === m && today.getUTCDate() >= d);
+  return today.getUTCFullYear() - y - (hadBirthday ? 0 : 1);
+}

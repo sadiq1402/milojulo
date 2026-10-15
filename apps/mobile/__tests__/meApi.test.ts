@@ -1,5 +1,5 @@
+import { ageOn } from '../src/features/consents/birthDate';
 import {
-  ageOn,
   fetchMyBlocks,
   setPaused,
   unblock,

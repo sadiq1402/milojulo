@@ -25,8 +25,7 @@ const tips = [
   'Leave if anything feels off. You never owe an explanation.',
 ];
 
-// Reporting needs something to report, so this explains where the Report option lives
-// rather than opening an empty form.
+// A report needs a target, so this explains where Report lives instead of opening an empty form.
 export function SafetyCentreScreen({ navigation }: Props) {
   return (
     <Screen
@@ -50,11 +49,12 @@ export function SafetyCentreScreen({ navigation }: Props) {
       </Section>
 
       <Section title="Get help">
+        <Text>
+          To report someone, open the menu on their profile, chat or Activity,
+          or press and hold a message, and choose Report. Reports are private
+          and we look at each one within 24 hours.
+        </Text>
         <List>
-          <ListRow
-            title="Report a problem"
-            subtitle="Open the menu on a profile, chat or Activity"
-          />
           <ListRow
             title="Block someone"
             subtitle="From their profile or chat; see who you blocked"
@@ -66,11 +66,6 @@ export function SafetyCentreScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Settings')}
           />
         </List>
-        <Text variant="bodySmall" color={colors.secondary}>
-          To report someone, open the menu on their profile, chat or
-          Activity, or press and hold a message, and choose Report. Reports are
-          private and we look at each one within 24 hours.
-        </Text>
       </Section>
 
       <Section title="In an emergency">

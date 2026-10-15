@@ -14,7 +14,6 @@ const thumb = 24;
 const inset = (track.height - thumb) / 2;
 const slop = (sizes.hitArea - track.height) / 2;
 
-// 52 x 32 per the UI standards: orchid track when on, field colour when off.
 export function Switch({
   value,
   onValueChange,

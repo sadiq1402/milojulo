@@ -6,6 +6,7 @@ import * as activities from '../src/features/activities/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
 import * as me from '../src/features/me/api';
+import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import { SetupError } from '../src/features/profileSetup/model';
 import { mockProfileSetup } from '../test/profileSetup';
@@ -123,7 +124,7 @@ describe('the Me tab', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeOnTheScreen();
   });
 
-  test('Back leaves an edit without saving', async () => {
+  test('Back saves the edit, as setup does', async () => {
     await openMe();
     await fireEvent.press(await button(/^Name and Area/));
     await fireEvent.changeText(
@@ -131,8 +132,59 @@ describe('the Me tab', () => {
       'Ashu',
     );
     await fireEvent.press(await button('Back'));
-    expect(await screen.findByText('Asha, 28')).toBeOnTheScreen();
-    expect(profileSetup.saveBasics).not.toHaveBeenCalled();
+    expect(await screen.findByText('Ashu, 28')).toBeOnTheScreen();
+    expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
+      displayName: 'Ashu',
+      areaId: 'baner',
+    });
+  });
+
+  test('Back saves Modes too', async () => {
+    await openMe();
+    await fireEvent.press(await button(/^Modes and preferences/));
+    await screen.findByRole('button', { name: 'Save' });
+    await fireEvent.press(await button('Back'));
+    await screen.findByText('Asha, 28');
+    expect(profileSetup.saveModes).toHaveBeenCalled();
+  });
+
+  test('a save refused on the way back stays with the reason', async () => {
+    jest
+      .mocked(profileSetup.saveBasics)
+      .mockRejectedValue(new SetupError('Add your first name.', 'basics'));
+    await openMe();
+    await fireEvent.press(await button(/^Name and Area/));
+    await fireEvent.changeText(await screen.findByLabelText('First name'), '');
+    await fireEvent.press(await button('Back'));
+    expect(await screen.findByText('Add your first name.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('First name')).toBeOnTheScreen();
+  });
+
+  test('removing a photo below the minimum says why', async () => {
+    jest
+      .mocked(photos.deletePhoto)
+      .mockRejectedValue(
+        new Error(
+          'Your profile needs at least 2 photos. Add another before removing this one.',
+        ),
+      );
+    await openMe();
+    await fireEvent.press(await button(/^Photos/));
+    await fireEvent.press(await button('Photo 2'));
+    await fireEvent.press(await button('Remove photo'));
+    expect(
+      await screen.findByText(
+        'Your profile needs at least 2 photos. Add another before removing this one.',
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test('a Paused Member sees it on Me', async () => {
+    jest
+      .mocked(discover.fetchMyDiscoverState)
+      .mockResolvedValue({ modes: ['friends'], paused: true });
+    await openMe();
+    expect(await screen.findByText('Paused')).toBeOnTheScreen();
   });
 });
 
@@ -219,7 +271,8 @@ describe('the Safety Centre', () => {
     expect(
       screen.getByText('Choose a public place for the first meeting.'),
     ).toBeOnTheScreen();
-    expect(screen.getByText(/menu on a profile, chat or Activity/)).toBeOnTheScreen();
+    expect(screen.getByText(/menu on their profile, chat or Activity/)).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /Report a problem/ })).toBeNull();
   });
 
   test('Call 112 dials the emergency number; Contact support writes an email', async () => {

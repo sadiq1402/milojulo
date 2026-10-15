@@ -8,6 +8,7 @@ import {
   List,
   ListRow,
   Screen,
+  Tag,
   Text,
   TopBar,
 } from '../../components';
@@ -15,13 +16,13 @@ import { signOut } from '../../features/auth/api';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaName, useTagNames } from '../../features/catalog/queries';
 import { useMyDiscoverState } from '../../features/discover/queries';
-import { ageOn } from '../../features/me/api';
+import { ageOn } from '../../features/consents/birthDate';
+import { useOwnProfile } from '../../features/me/queries';
 import { modeLabels } from '../../features/modes';
-import { useMyPhotos, usePhotoUrl } from '../../features/photos/queries';
+import { usePhotoUrl } from '../../features/photos/queries';
 import { availabilityLabels } from '../../features/profileSetup/model';
-import { useProfileDraft } from '../../features/profileSetup/queries';
 import type { MemberParams } from '../../navigation/types';
-import { colors, layout, spacing } from '../../theme';
+import { colors, spacing } from '../../theme';
 import { LoadErrorScreen, LoadingScreen } from '../StatusScreen';
 import { Section } from './Section';
 
@@ -31,28 +32,20 @@ type Navigation = NativeStackNavigationProp<MemberParams>;
 export function MeScreen() {
   const navigation = useNavigation<Navigation>();
   const userId = useSession().session!.user.id;
-  const draft = useProfileDraft(userId);
-  const photos = useMyPhotos();
+  const profile = useOwnProfile(userId);
   const state = useMyDiscoverState(userId);
   const areaName = useAreaName();
   const tagNames = useTagNames();
-  const cover = usePhotoUrl(photos.data?.[0]?.id);
+  const cover = usePhotoUrl(profile.photos?.[0]?.id);
 
-  if (draft.isError || photos.isError) {
-    return (
-      <LoadErrorScreen
-        onRetry={() => {
-          draft.refetch();
-          photos.refetch();
-        }}
-      />
-    );
+  if (profile.isError) {
+    return <LoadErrorScreen onRetry={profile.retry} />;
   }
-  if (!draft.data || !photos.data) {
+  if (!profile.draft || !profile.photos) {
     return <LoadingScreen />;
   }
 
-  const p = draft.data;
+  const p = profile.draft;
   const name = p.displayName ?? '';
   const age = p.birthDate ? ageOn(p.birthDate, new Date()) : undefined;
   const area = areaName(p.areaId);
@@ -67,6 +60,7 @@ export function MeScreen() {
         <View style={styles.grow}>
           <Text variant="h2">{age === undefined ? name : `${name}, ${age}`}</Text>
           {area ? <Text color={colors.secondary}>{area}</Text> : null}
+          {state.data?.paused ? <Tag label="Paused" tone="butter" /> : null}
         </View>
       </View>
 
@@ -79,7 +73,7 @@ export function MeScreen() {
           />
           <ListRow
             title="Photos"
-            subtitle={`${photos.data.length} photos`}
+            subtitle={`${profile.photos.length} photos`}
             onPress={edit('photos')}
           />
           <ListRow
@@ -130,5 +124,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.xs,
   },
-  grow: { flex: 1, gap: layout.blockGap / 4 },
+  grow: { flex: 1, gap: spacing.xxs, alignItems: 'flex-start' },
 });
