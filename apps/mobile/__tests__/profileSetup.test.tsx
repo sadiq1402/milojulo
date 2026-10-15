@@ -410,9 +410,12 @@ describe('interests and submit', () => {
     mockProfileSetup(complete, twoPhotos);
     jest.mocked(chat.fetchConversations).mockResolvedValue([]);
     jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
-    jest
-      .mocked(discover.fetchMyDiscoverState)
-      .mockResolvedValue({ modes: ['friends'], paused: false });
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: false,
+      rangeKm: 10,
+      inServiceRegion: true,
+    });
     jest
       .mocked(discover.fetchFeedPage)
       .mockResolvedValue({ cards: [], nextCursor: null });

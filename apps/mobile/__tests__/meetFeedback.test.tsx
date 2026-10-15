@@ -45,9 +45,12 @@ beforeEach(() => {
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   jest.mocked(activities.fetchBoard).mockResolvedValue([]);
   jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ baner: 'Baner' }));
-  jest
-    .mocked(discover.fetchMyDiscoverState)
-    .mockResolvedValue({ modes: ['friends'], paused: false });
+  jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+    modes: ['friends'],
+    paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
+  });
   jest
     .mocked(discover.fetchFeedPage)
     .mockResolvedValue({ cards: [], nextCursor: null });

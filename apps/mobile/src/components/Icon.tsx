@@ -6,6 +6,7 @@ import { colors, sizes } from '../theme';
 const glyphs = {
   back: <Path d="M15 5l-7 7 7 7" />,
   chevronRight: <Path d="M9 6l6 6-6 6" />,
+  chevronDown: <Path d="M6 9l6 6 6-6" />,
   close: <Path d="M6 6l12 12M18 6L6 18" />,
   trash: <Path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.9 12.5h9.2L17.5 7" />,
   plus: <Path d="M12 5v14M5 12h14" />,

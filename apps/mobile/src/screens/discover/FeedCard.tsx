@@ -14,11 +14,14 @@ type Props = {
 
 export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
   const tags = card.sharedTagIds.map(id => tagNames[id]).filter(Boolean);
+  const place = [areaName, card.distanceBand].filter(Boolean).join(' · ');
+  // With no Mode in common, the card shows what they're here for.
+  const modes = card.modes.length > 0 ? card.modes : card.theirModes;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${card.name}, ${card.age}, ${areaName}. ${card.whyYouMatch}`}
+      accessibilityLabel={`${card.name}, ${card.age}, ${place}. ${card.whyYouMatch}`}
       accessibilityHint="Opens their profile"
     >
       <Card feed padded={false}>
@@ -28,13 +31,13 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
           initialSize={initialSize}
           style={styles.media}
         >
-          {areaName ? (
+          {place ? (
             <View style={styles.area}>
-              <Tag label={areaName} tone="onPhoto" />
+              <Tag label={place} tone="onPhoto" />
             </View>
           ) : null}
           <View style={styles.modes}>
-            {card.modes.map(mode => (
+            {modes.map(mode => (
               <Tag key={mode} label={modeLabels[mode]} tone={mode} />
             ))}
           </View>

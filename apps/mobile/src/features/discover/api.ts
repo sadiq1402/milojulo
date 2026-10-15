@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import type { Mode } from '../modes';
+import type { RangeKm } from './range';
 
 export type FeedCard = {
   id: string;
@@ -8,6 +9,10 @@ export type FeedCard = {
   areaId: string;
   // Eligible Modes: shared, and passing both sides' Dating Preferences.
   modes: Mode[];
+  // Every Mode they chose that I may see, for the "They're here for" case.
+  theirModes: Mode[];
+  // Rounded on the server, such as "<2 km" or "~3 km".
+  distanceBand: string;
   coverPhotoId: string | null;
   sharedTagIds: number[];
   whyYouMatch: string;
@@ -21,13 +26,21 @@ export type Profile = {
   age: number;
   areaId: string;
   modes: Mode[];
+  theirModes: Mode[];
+  distanceBand: string;
   whyYouMatch: string;
   photoIds: string[];
   prompts: { position: number; questionId: number; answer: string }[];
   tagIds: number[];
 };
 
-export type DiscoverState = { modes: Mode[]; paused: boolean };
+// rangeKm null means Anywhere in Pune.
+export type DiscoverState = {
+  modes: Mode[];
+  paused: boolean;
+  rangeKm: RangeKm | null;
+  inServiceRegion: boolean;
+};
 
 export const feedPageSize = 20;
 
@@ -36,32 +49,41 @@ export const feedPageSize = 20;
 export const couldNotLoad =
   "We couldn't load this. Check your connection and try again.";
 export const couldNotUnpause = "We couldn't unpause your profile. Try again.";
+export const couldNotSaveRange = "We couldn't change the distance. Try again.";
 
 // `cursor` is opaque: pass back the previous page's nextCursor. A short page is the last.
+// The feed filters by one Mode; with several, each page is narrowed here, so it can come back
+// short while more pages follow.
 export async function fetchFeedPage({
-  mode,
+  modes,
   pageSize = feedPageSize,
   cursor = null,
 }: {
-  mode: Mode | null;
+  modes: Mode[];
   pageSize?: number;
   cursor?: string | null;
 }): Promise<FeedPage> {
   const { data, error } = await supabase.rpc('discover_feed', {
-    mode_filter: mode ?? undefined,
+    mode_filter: modes.length === 1 ? modes[0] : undefined,
     page_size: pageSize,
     after: cursor ?? undefined,
   });
   if (error) {
     throw new Error(couldNotLoad);
   }
+  const rows =
+    modes.length > 1
+      ? data.filter(row => row.their_modes.some(m => modes.includes(m)))
+      : data;
   return {
-    cards: data.map(row => ({
+    cards: rows.map(row => ({
       id: row.user_id,
       name: row.display_name,
       age: row.age,
       areaId: row.area_id,
       modes: row.modes,
+      theirModes: row.their_modes,
+      distanceBand: row.distance_band,
       coverPhotoId: row.cover_photo_id,
       sharedTagIds: row.shared_tag_ids,
       whyYouMatch: row.why_you_match,
@@ -90,6 +112,8 @@ export async function fetchProfile(memberId: string): Promise<Profile | null> {
     age: row.age,
     areaId: row.area_id,
     modes: row.modes,
+    theirModes: row.their_modes,
+    distanceBand: row.distance_band,
     whyYouMatch: row.why_you_match,
     photoIds: row.photo_ids,
     prompts: ((row.prompts ?? []) as PromptRow[]).map(p => ({
@@ -101,19 +125,41 @@ export async function fetchProfile(memberId: string): Promise<Profile | null> {
   };
 }
 
-// My own Modes (the filter chips) and whether I'm Paused, which empties my feed.
+// My own Modes (Casual in the Modes filter), my distance, whether I'm Paused (an empty feed)
+// and whether I'm inside a service region.
 export async function fetchMyDiscoverState(
   userId: string,
 ): Promise<DiscoverState> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('modes, paused_at')
-    .eq('id', userId)
-    .single();
-  if (error) {
+  const [profile, region] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('modes, paused_at, discover_range_km')
+      .eq('id', userId)
+      .single(),
+    supabase.rpc('in_service_region'),
+  ]);
+  if (profile.error || region.error) {
     throw new Error(couldNotLoad);
   }
-  return { modes: data.modes, paused: data.paused_at !== null };
+  return {
+    modes: profile.data.modes,
+    paused: profile.data.paused_at !== null,
+    rangeKm: profile.data.discover_range_km as RangeKm | null,
+    inServiceRegion: region.data,
+  };
+}
+
+export async function saveRange(
+  userId: string,
+  rangeKm: RangeKm | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ discover_range_km: rangeKm })
+    .eq('id', userId);
+  if (error) {
+    throw new Error(couldNotSaveRange);
+  }
 }
 
 export async function unpause(): Promise<void> {

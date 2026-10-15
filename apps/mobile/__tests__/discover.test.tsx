@@ -50,6 +50,8 @@ const card = (overrides: Partial<FeedCard>): FeedCard => ({
   age: 27,
   areaId: 'baner',
   modes: ['friends'],
+  theirModes: ['friends'],
+  distanceBand: '~3 km',
   coverPhotoId: null,
   sharedTagIds: [1, 2],
   whyYouMatch: 'You both want friends, like badminton and cafes.',
@@ -63,6 +65,8 @@ const rohan = card({
   age: 29,
   areaId: 'wakad',
   modes: ['friends', 'activities'],
+  theirModes: ['friends', 'activities'],
+  distanceBand: '~8 km',
   sharedTagIds: [3],
   whyYouMatch:
     'You both want friends and activity partners, and like trekking.',
@@ -74,6 +78,8 @@ const ishaProfile: Profile = {
   age: 27,
   areaId: 'baner',
   modes: ['friends', 'activities'],
+  theirModes: ['friends', 'activities'],
+  distanceBand: '~3 km',
   whyYouMatch: 'You both want friends, like badminton and cafes.',
   photoIds: ['p1', 'p2'],
   prompts: [
@@ -113,13 +119,17 @@ beforeEach(() => {
       20: "I'm looking for people to…",
     }),
   );
-  jest
-    .mocked(discover.fetchMyDiscoverState)
-    .mockResolvedValue({ modes: ['friends', 'activities'], paused: false });
+  jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+    modes: ['friends', 'activities'],
+    paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
+  });
   jest
     .mocked(discover.fetchFeedPage)
     .mockResolvedValue({ cards: [isha, rohan], nextCursor: null });
   jest.mocked(discover.fetchProfile).mockResolvedValue(ishaProfile);
+  jest.mocked(discover.saveRange).mockResolvedValue();
   jest.mocked(chat.fetchConversations).mockResolvedValue([]);
   jest.mocked(chat.blockMember).mockResolvedValue();
   jest.mocked(reports.reportContent).mockResolvedValue();
@@ -137,15 +147,15 @@ async function openProfile(name = 'Isha') {
 }
 
 describe('the Discover feed', () => {
-  test('shows a card per person with age, Area, shared Mode, why you match and shared tags', async () => {
+  test('shows a card per person with age, Area and distance, shared Mode, why you match and shared tags', async () => {
     await renderApp(me);
     const ishaCard = await cardFor('Isha');
     expect(ishaCard).toHaveAccessibleName(
-      'Isha, 27, Baner. You both want friends, like badminton and cafes.',
+      'Isha, 27, Baner · ~3 km. You both want friends, like badminton and cafes.',
     );
     const inCard = within(ishaCard);
     expect(inCard.getByText('Isha, 27')).toBeOnTheScreen();
-    expect(inCard.getByText('Baner')).toBeOnTheScreen();
+    expect(inCard.getByText('Baner · ~3 km')).toBeOnTheScreen();
     expect(inCard.getByText('Friends')).toBeOnTheScreen();
     expect(
       inCard.getByText('You both want friends, like badminton and cafes.'),
@@ -156,35 +166,86 @@ describe('the Discover feed', () => {
       within(await cardFor('Rohan')).getByText('Activities'),
     ).toBeOnTheScreen();
     expect(discover.fetchFeedPage).toHaveBeenCalledWith({
-      mode: null,
+      modes: [],
       cursor: null,
     });
   });
 
-  test('filter chips are All plus my own Modes, and a chip narrows the feed to that Mode', async () => {
+  test('with no Mode in common, the card shows the Modes they are here for', async () => {
+    jest.mocked(discover.fetchFeedPage).mockResolvedValue({
+      cards: [card({ modes: [], theirModes: ['networking'] })],
+      nextCursor: null,
+    });
+    await renderApp(me);
+    expect(
+      within(await cardFor('Isha')).getByText('Networking'),
+    ).toBeOnTheScreen();
+  });
+
+  test('the Modes chip opens a picker; picking Modes narrows the feed', async () => {
     await renderApp(me);
     await cardFor('Isha');
-    expect(
-      screen.getByRole('button', { name: 'All', selected: true }),
-    ).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Friends' })).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Dating' })).toBeNull();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Modes: All Modes' }),
+    );
+    expect(await screen.findByText('Show people here for')).toBeOnTheScreen();
+    expect(screen.getByRole('checkbox', { name: 'Dating' })).toBeOnTheScreen();
+    // Casual is offered only to Members who chose Casual.
+    expect(screen.queryByRole('checkbox', { name: 'Casual' })).toBeNull();
 
     jest
       .mocked(discover.fetchFeedPage)
       .mockResolvedValue({ cards: [rohan], nextCursor: null });
-    await fireEvent.press(screen.getByRole('button', { name: 'Activities' }));
+    await fireEvent.press(screen.getByRole('checkbox', { name: 'Activities' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Show people' }));
     expect(
-      await screen.findByRole('button', { name: 'Activities', selected: true }),
+      await screen.findByRole('button', {
+        name: 'Modes: Activities',
+        selected: true,
+      }),
     ).toBeOnTheScreen();
     expect(discover.fetchFeedPage).toHaveBeenLastCalledWith({
-      mode: 'activities',
+      modes: ['activities'],
       cursor: null,
     });
-    await screen.findByText(
-      'You both want friends and activity partners, and like trekking.',
+    await waitFor(() => expect(screen.queryByText('Isha, 27')).toBeNull());
+  });
+
+  test('a Member who chose Casual can filter by it', async () => {
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['casual'],
+      paused: false,
+      rangeKm: 10,
+      inServiceRegion: true,
+    });
+    await renderApp(me);
+    await cardFor('Isha');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Modes: All Modes' }),
     );
-    expect(screen.queryByText('Isha, 27')).toBeNull();
+    expect(
+      await screen.findByRole('checkbox', { name: 'Casual' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('the distance chip shows my saved range and saves a new one', async () => {
+    await renderApp(me);
+    await cardFor('Isha');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Distance: Within 10 km' }),
+    );
+    expect(await screen.findByText('How far?')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('radio', { name: '10 km', checked: true }),
+    ).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Anywhere in Pune' }),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Show people' }));
+    expect(discover.saveRange).toHaveBeenCalledWith(me.user.id, null);
+    expect(
+      await screen.findByRole('button', { name: 'Distance: Anywhere in Pune' }),
+    ).toBeOnTheScreen();
   });
 
   test('scrolling to the end loads the next page with the cursor', async () => {
@@ -197,7 +258,7 @@ describe('the Discover feed', () => {
     await fireEvent(screen.getByTestId('discover-feed'), 'endReached');
     expect(await cardFor('Rohan')).toBeOnTheScreen();
     expect(discover.fetchFeedPage).toHaveBeenLastCalledWith({
-      mode: null,
+      modes: [],
       cursor: 'cursor-1',
     });
 
@@ -231,12 +292,51 @@ describe('the Discover feed', () => {
     expect(await cardFor('Rohan')).toBeOnTheScreen();
   });
 
-  test('when nobody matches, says so', async () => {
+  test('when nobody is within range, offers a wider distance', async () => {
     jest
       .mocked(discover.fetchFeedPage)
       .mockResolvedValue({ cards: [], nextCursor: null });
     await renderApp(me);
-    expect(await screen.findByText('Nobody new right now')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Nobody within 10 km yet'),
+    ).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Widen to 25 km' }),
+    );
+    expect(discover.saveRange).toHaveBeenCalledWith(me.user.id, 25);
+  });
+
+  test('with Anywhere in Pune and nobody around, there is nothing to widen', async () => {
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: false,
+      rangeKm: null,
+      inServiceRegion: true,
+    });
+    jest
+      .mocked(discover.fetchFeedPage)
+      .mockResolvedValue({ cards: [], nextCursor: null });
+    await renderApp(me);
+    expect(await screen.findByText('Nobody here yet')).toBeOnTheScreen();
+    expect(screen.getByText('Check back soon.')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: /Widen/ })).toBeNull();
+  });
+
+  test('outside every service region, says MiloJulo is not in their city yet', async () => {
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: false,
+      rangeKm: 10,
+      inServiceRegion: false,
+    });
+    await renderApp(me);
+    expect(
+      await screen.findByText("MiloJulo isn't in your city yet"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText("We're starting in Pune. Your profile is saved."),
+    ).toBeOnTheScreen();
+    expect(discover.fetchFeedPage).not.toHaveBeenCalled();
   });
 
   test('a failed load offers a retry', async () => {
@@ -253,8 +353,18 @@ describe('the Discover feed', () => {
   test('a Paused Member is told why the feed is empty and can unpause', async () => {
     jest
       .mocked(discover.fetchMyDiscoverState)
-      .mockResolvedValueOnce({ modes: ['friends'], paused: true })
-      .mockResolvedValue({ modes: ['friends'], paused: false });
+      .mockResolvedValueOnce({
+        modes: ['friends'],
+        paused: true,
+        rangeKm: 10,
+        inServiceRegion: true,
+      })
+      .mockResolvedValue({
+        modes: ['friends'],
+        paused: false,
+        rangeKm: 10,
+        inServiceRegion: true,
+      });
     jest.mocked(discover.unpause).mockResolvedValue();
     await renderApp(me);
     expect(await screen.findByText('Your profile is paused')).toBeOnTheScreen();
