@@ -45,6 +45,7 @@ Surveys (mostly Western, informal) show women lean toward purple and softer tint
 ## Logo (decided, decision 32)
 - The logo is design/brand/logo.png (1316 x 1195, transparent PNG): two figures forming an M under a heart, gradient orange to pink to violet to blue, with the "MiloJulo" wordmark ("Milo" white, "Julo" gradient) and the line "Connect Beyond Swipes." Founder's choice (2026-10-15): use it as is, heart included.
 - The white "Milo" and tagline only read on dark or photo backgrounds; on light screens place the logo on a dark or gradient surface.
+- In the app (loader, Welcome) the logo drops the "Connect Beyond Swipes." tagline (the source file keeps it): mark and wordmark only, on the dark brand surface (ink to orchid dark); the icon and launch screens use the mark only, on ink (decision 36). scripts/brand-assets.sh makes every image from logo.png.
 - App icon rules: 1024 x 1024 master; Android adaptive icon 108 dp canvas with key artwork inside the 66 dp safe zone; keep shapes bold, no thin lines or small text.
 - Still to do: trademark search (IP India device/logo search, reverse image search, adjacent classes, probably apps, software and social/dating services). The word "Milo" is crowded (Nestlé MILO beverages; a MILO software filing by Zuora; other apps named Milo), so check "MiloJulo" as a whole. Not legal advice.
 

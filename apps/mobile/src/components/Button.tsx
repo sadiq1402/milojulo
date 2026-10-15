@@ -9,7 +9,7 @@ import {
 import { colors, radius, shadow, sizes } from '../theme';
 import { Text } from './Text';
 
-// inverse sits on an orchid screen (Welcome).
+// inverse sits on a dark brand screen (Welcome).
 type Variant = 'primary' | 'secondary' | 'text' | 'danger' | 'inverse';
 
 type Props = {

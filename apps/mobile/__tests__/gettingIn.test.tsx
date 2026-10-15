@@ -33,6 +33,15 @@ describe('welcome', () => {
     expect(screen.queryByText(/reviewed by a person/)).not.toBeOnTheScreen();
   });
 
+  test('shows the MiloJulo logo as its heading', async () => {
+    await renderApp(null);
+    expect(
+      await screen.findByRole('header', { name: 'MiloJulo' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByTestId('welcome-logo')).toBeOnTheScreen();
+    expect(screen.queryByText('Milo')).not.toBeOnTheScreen();
+  });
+
   test('one way in, for new and returning people alike', async () => {
     await renderApp(null);
     expect(

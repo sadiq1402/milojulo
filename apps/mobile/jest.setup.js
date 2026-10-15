@@ -50,6 +50,13 @@ require('react-native').AppState.addEventListener = () => ({
   remove: () => {},
 });
 
+// Same for AccessibilityInfo. Reduce motion is on: every app-level test renders the BrandLoader, and
+// with motion on its native-driven fade-out never finishes under Jest's stub, so it would never
+// leave. With reduce motion it stands still and hands over at once; its own tests turn motion on.
+const { AccessibilityInfo } = require('react-native');
+AccessibilityInfo.isReduceMotionEnabled = () => Promise.resolve(true);
+AccessibilityInfo.addEventListener = () => ({ remove: () => {} });
+
 // FlatList renders rows in timed batches, which land mid-test as unwrapped updates. Unit tests
 // check what is shown, not virtualisation, so render every row at once instead.
 jest.mock('react-native/Libraries/Lists/FlatList', () => {

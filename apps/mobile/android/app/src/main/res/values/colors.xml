@@ -1,0 +1,4 @@
+<resources>
+    <!-- Written by scripts/brand-assets.sh from colors.ink in design/tokens.ts: the dark brand surface. -->
+    <color name="brand_ink">#2B1233</color>
+</resources>
