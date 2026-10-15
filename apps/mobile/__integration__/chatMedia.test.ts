@@ -3,7 +3,8 @@ import { fetchMessages, newMessageId } from '../src/features/chat/api';
 import {
   fetchMediaState,
   fetchMediaUrls,
-  sendMediaMessage,
+  insertMediaMessage,
+  uploadChatMedia,
   setMediaConsent,
 } from '../src/features/chat/media';
 import { supabase } from '../src/lib/supabase';
@@ -33,6 +34,16 @@ async function mediaServed(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// Upload, confirm and send, as the chat does.
+async function sendMediaMessage(message: {
+  id: string;
+  connectionId: string;
+  media: typeof image;
+}) {
+  const mediaKey = await uploadChatMedia(message.connectionId, message.media);
+  await insertMediaMessage({ ...message, mediaKey });
 }
 
 let me: TestMember;

@@ -6,12 +6,19 @@ import Sound, {
   OutputFormatAndroidType,
 } from 'react-native-nitro-sound';
 import { colors } from '../../theme';
-import type { OutgoingMedia } from './media';
+import { fileUri, pickerFailure } from '../media/picker';
+import {
+  tooLargePhoto,
+  tooLargeVideo,
+  tooLongVideo,
+  type OutgoingMedia,
+} from './media';
 
 export type MediaSource = 'library' | 'camera-photo' | 'camera-video';
 
 // Limits match the media function's (#12), checked here first so nothing too big uploads.
 export const videoLimitMs = 30_000;
+const photoLimitBytes = 5 * 1024 * 1024;
 const videoLimitBytes = 20 * 1024 * 1024;
 export const voiceLimitMs = 120_000;
 const shortestVoiceMs = 1_000;
@@ -25,17 +32,6 @@ const pickerOptions = {
   cropping: false,
   cropperActiveWidgetColor: colors.orchid,
 } as const;
-
-const pickerRefusals: Record<string, string> = {
-  E_NO_CAMERA_PERMISSION:
-    "Allow camera access for MiloJulo in your phone's settings, then try again.",
-  E_NO_LIBRARY_PERMISSION:
-    "Allow photo access for MiloJulo in your phone's settings, then try again.",
-  E_CAMERA_IS_NOT_AVAILABLE: "This phone's camera isn't available.",
-};
-
-const fileUri = (path: string) =>
-  path.startsWith('/') ? `file://${path}` : path;
 
 // The picked photo or video, compressed and checked; null when the Member backs out.
 export async function pickMedia(
@@ -51,15 +47,19 @@ export async function pickMedia(
             mediaType: source === 'camera-video' ? 'video' : 'photo',
           });
   } catch (error) {
-    const code = (error as { code?: string }).code ?? '';
-    if (code === 'E_PICKER_CANCELLED') {
-      return null;
-    }
-    throw new Error(
-      pickerRefusals[code] ?? "We couldn't open that. Try another one.",
+    const failure = pickerFailure(
+      error,
+      "We couldn't open that. Try another one.",
     );
+    if (failure) {
+      throw failure;
+    }
+    return null;
   }
   if (!picked.mime.startsWith('video/')) {
+    if (picked.size > photoLimitBytes) {
+      throw new Error(tooLargePhoto);
+    }
     return {
       kind: 'image',
       uri: fileUri(picked.path),
@@ -71,7 +71,7 @@ export async function pickMedia(
   }
   const pickedMs = (picked as { duration?: number | null }).duration ?? null;
   if (pickedMs !== null && pickedMs > videoLimitMs) {
-    throw new Error('Videos can be up to 30 seconds.');
+    throw new Error(tooLongVideo);
   }
   let uri: string;
   let meta;
@@ -86,10 +86,10 @@ export async function pickMedia(
   // The compressor reports seconds.
   const durationMs = pickedMs ?? Math.round(meta.duration * 1000);
   if (durationMs > videoLimitMs) {
-    throw new Error('Videos can be up to 30 seconds.');
+    throw new Error(tooLongVideo);
   }
   if (meta.size > videoLimitBytes) {
-    throw new Error('That video is too large to send. Try a shorter one.');
+    throw new Error(tooLargeVideo);
   }
   return {
     kind: 'video',

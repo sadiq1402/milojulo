@@ -1,7 +1,8 @@
 import {
   fetchMediaState,
   fetchMediaUrls,
-  sendMediaMessage,
+  insertMediaMessage,
+  uploadChatMedia,
   setMediaConsent,
   type OutgoingMedia,
 } from '../src/features/chat/media';
@@ -60,11 +61,15 @@ const confirmed = { data: { mediaKey: 'k/1.jpg' }, error: null };
 // The function answers the upload link, then the confirm.
 const uploads = () =>
   invoke.mockResolvedValueOnce(upload).mockResolvedValueOnce(confirmed);
+const send = async (media: OutgoingMedia, id = 'msg-1'): Promise<void> => {
+  const mediaKey = await uploadChatMedia('c1', media);
+  await insertMediaMessage({ id, connectionId: 'c1', media, mediaKey });
+};
 
-describe('sendMediaMessage', () => {
+describe('uploading and sending chat media', () => {
   test('asks for a link, PUTs with type and length, confirms, then inserts the message with its key, size and duration', async () => {
     uploads();
-    await sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image });
+    await send(image);
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'media', {
       body: {
@@ -98,7 +103,7 @@ describe('sendMediaMessage', () => {
 
   test('a voice note carries its duration', async () => {
     uploads();
-    await sendMediaMessage({ id: 'msg-2', connectionId: 'c1', media: voice });
+    await send(voice, 'msg-2');
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'voice',
@@ -111,9 +116,7 @@ describe('sendMediaMessage', () => {
   test('a repeat of an id already sent counts as sent', async () => {
     uploads();
     insert.mockResolvedValueOnce({ error: { code: '23505', message: 'dup' } });
-    await expect(
-      sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image }),
-    ).resolves.toBeUndefined();
+    await expect(send(image)).resolves.toBeUndefined();
   });
 
   test('a failed PUT is never confirmed or sent', async () => {
@@ -121,9 +124,7 @@ describe('sendMediaMessage', () => {
     fetchMock.mockImplementation(async (url: string) =>
       url.startsWith('file://') ? { blob: async () => file } : { ok: false },
     );
-    await expect(
-      sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image }),
-    ).rejects.toThrow("didn't finish uploading");
+    await expect(send(image)).rejects.toThrow("didn't finish uploading");
     expect(invoke).toHaveBeenCalledTimes(1);
     expect(insert).not.toHaveBeenCalled();
   });
@@ -133,9 +134,7 @@ describe('sendMediaMessage', () => {
     ["the media didn't arrive; try again", "didn't finish uploading"],
   ])('the confirm refusing "%s" reads as friendly copy', async (key, copy) => {
     invoke.mockResolvedValueOnce(upload).mockResolvedValueOnce(refused(key));
-    await expect(
-      sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image }),
-    ).rejects.toThrow(copy);
+    await expect(send(image)).rejects.toThrow(copy);
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -155,9 +154,7 @@ describe('sendMediaMessage', () => {
     ['media is off in this chat', 'Photos and video are off in this chat'],
   ])('the function refusing "%s" reads as friendly copy', async (key, copy) => {
     invoke.mockResolvedValueOnce(refused(key));
-    await expect(
-      sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image }),
-    ).rejects.toThrow(copy);
+    await expect(send(image)).rejects.toThrow(copy);
     expect(insert).not.toHaveBeenCalled();
   });
 
@@ -167,17 +164,15 @@ describe('sendMediaMessage', () => {
   ])('the database refusing "%s" reads as friendly copy', async (key, copy) => {
     uploads();
     insert.mockResolvedValueOnce({ error: { code: 'P0001', message: key } });
-    await expect(
-      sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image }),
-    ).rejects.toThrow(copy);
+    await expect(send(image)).rejects.toThrow(copy);
   });
 
   test('a closed chat or a Block refuses with the usual line', async () => {
     uploads();
     insert.mockResolvedValueOnce({ error: { code: '42501', message: 'rls' } });
-    await expect(
-      sendMediaMessage({ id: 'msg-1', connectionId: 'c1', media: image }),
-    ).rejects.toThrow("You can't send messages in this chat any more.");
+    await expect(send(image)).rejects.toThrow(
+      "You can't send messages in this chat any more.",
+    );
   });
 });
 

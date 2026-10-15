@@ -60,7 +60,7 @@ export function MediaContent({
     );
   }
   if (item.type === 'video') {
-    return <VideoClip uri={uri} />;
+    return <VideoClip uri={uri} durationMs={item.media?.durationMs ?? 0} />;
   }
   return (
     <Image
@@ -72,31 +72,37 @@ export function MediaContent({
   );
 }
 
-function VideoClip({ uri }: { uri: string }) {
+// A placeholder with a play button; the player (and its download) starts only on a tap.
+function VideoClip({ uri, durationMs }: { uri: string; durationMs: number }) {
   const [started, setStarted] = useState(false);
+  if (started) {
+    return (
+      <View style={styles.frame}>
+        <Video
+          testID="video-player"
+          source={{ uri }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          controls
+          accessibilityLabel="Video"
+        />
+      </View>
+    );
+  }
   return (
-    <View style={styles.frame}>
-      <Video
-        source={{ uri }}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-        paused={!started}
-        controls={started}
-        accessibilityLabel="Video"
-      />
-      {started ? null : (
-        <Pressable
-          onPress={() => setStarted(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Play video"
-          style={styles.playOverlay}
-        >
-          <View style={styles.playDisc}>
-            <Icon name="play" color={colors.white} />
-          </View>
-        </Pressable>
-      )}
-    </View>
+    <Pressable
+      onPress={() => setStarted(true)}
+      accessibilityRole="button"
+      accessibilityLabel={`Play video, ${formatDuration(durationMs)}`}
+      style={[styles.frame, styles.empty]}
+    >
+      <View style={styles.playDisc}>
+        <Icon name="play" color={colors.white} />
+      </View>
+      <Text variant="caption" color={colors.secondary} style={styles.length}>
+        {formatDuration(durationMs)}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -183,10 +189,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.field,
   },
   empty: { alignItems: 'center', justifyContent: 'center' },
-  playOverlay: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
+  length: {
+    position: 'absolute',
+    right: spacing.xs,
+    bottom: spacing.xs,
   },
   playDisc: {
     width: sizes.iconButton,
@@ -201,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     minHeight: sizes.hitArea,
-    minWidth: 120,
+    minWidth: sizes.chat.mediaMaxW / 2,
   },
   voiceDisc: {
     width: 32,

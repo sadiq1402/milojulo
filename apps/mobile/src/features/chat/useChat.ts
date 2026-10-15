@@ -11,8 +11,12 @@ import {
   subscribeToChat,
   type Message,
 } from './api';
-import { sendMediaMessage, type OutgoingMedia } from './media';
-import { catchUpFrom, mergeMessages } from './messages';
+import {
+  insertMediaMessage,
+  uploadChatMedia,
+  type OutgoingMedia,
+} from './media';
+import { catchUpFrom, mergeMessages, toMessageMedia } from './messages';
 import { chatKeys } from './queries';
 
 // 'refused': the Connection closed or a Block landed, so retrying can't help.
@@ -31,6 +35,8 @@ type Pending = {
   createdAt: string;
   delivery: Delivery;
   failure?: string;
+  // Set once the upload is confirmed, so a retry only sends the message.
+  mediaKey?: string;
 };
 
 // One chat: messages from the first load, the live channel and catch-ups, plus sends still on
@@ -108,20 +114,29 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
   }, [reading, appActive, newestAt, connectionId, client]);
 
   // A retry reuses the id, so a send that got through earlier isn't doubled.
-  const attempt = async ({ id, body, media }: Pending) => {
+  const attempt = async (message: Pending) => {
+    const { id, body, media } = message;
     setDelivery(id, 'sending');
     try {
       if (media) {
-        await sendMediaMessage({ id, connectionId, media });
+        let mediaKey = message.mediaKey;
+        if (!mediaKey) {
+          mediaKey = await uploadChatMedia(connectionId, media);
+          const uploaded = mediaKey;
+          setPending(list =>
+            list.map(p => (p.id === id ? { ...p, mediaKey: uploaded } : p)),
+          );
+        }
+        await insertMediaMessage({ id, connectionId, media, mediaKey });
       } else {
         await sendMessage({ id, connectionId, body: body ?? '' });
       }
     } catch (e) {
-      const message = (e as Error).message;
-      if (message === cannotSendMessage) {
+      const reason = (e as Error).message;
+      if (reason === cannotSendMessage) {
         setDelivery(id, 'refused');
       } else {
-        setDelivery(id, 'failed', media ? message : undefined);
+        setDelivery(id, 'failed', media ? reason : undefined);
       }
       return;
     }
@@ -164,13 +179,13 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
         activityId: null,
         createdAt: p.createdAt,
         media: p.media
-          ? {
-              mime: p.media.mime,
-              width: p.media.width,
-              height: p.media.height,
-              durationMs: p.media.durationMs,
-              expired: false,
-            }
+          ? toMessageMedia(p.media.kind, {
+              media_mime: p.media.mime,
+              media_width: p.media.width,
+              media_height: p.media.height,
+              media_duration_ms: p.media.durationMs,
+              media_deleted_at: null,
+            })
           : null,
         delivery: p.delivery,
         localUri: p.media?.uri,

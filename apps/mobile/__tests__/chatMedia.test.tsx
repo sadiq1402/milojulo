@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { NativeModules, Platform } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
@@ -24,7 +24,8 @@ jest.mock('../src/features/chat/capture', () => ({
 // Keep the real refusal copy; stand in only the calls.
 jest.mock('../src/features/chat/media', () => ({
   ...jest.requireActual('../src/features/chat/media'),
-  sendMediaMessage: jest.fn(),
+  uploadChatMedia: jest.fn(),
+  insertMediaMessage: jest.fn(),
   fetchMediaUrls: jest.fn(),
   fetchMediaState: jest.fn(),
   setMediaConsent: jest.fn(),
@@ -133,6 +134,8 @@ beforeEach(() => {
   jest
     .mocked(media.fetchMediaState)
     .mockResolvedValue({ isCasual: false, mine: false, theirs: false });
+  jest.mocked(media.uploadChatMedia).mockResolvedValue('key-1');
+  jest.mocked(media.insertMediaMessage).mockResolvedValue();
 });
 
 async function openChat() {
@@ -158,6 +161,57 @@ describe('media in a chat', () => {
     expect(media.fetchMediaUrls).toHaveBeenCalledWith(['img-1', 'voice-1']);
   });
 
+  test('a new media message signs only its own link, not every link again', async () => {
+    let live: Parameters<typeof chat.subscribeToChat>[1] | undefined;
+    jest.mocked(chat.subscribeToChat).mockImplementation((_id, handlers) => {
+      live = handlers;
+      return () => {};
+    });
+    await openChat();
+    await screen.findByLabelText('Photo');
+    jest
+      .mocked(media.fetchMediaUrls)
+      .mockResolvedValue({ 'img-2': 'https://r2/img-2' });
+    await act(async () =>
+      live!.onMessage({
+        ...photoMessage,
+        id: 'img-2',
+        createdAt: '2026-10-12T11:00:00.000Z',
+      }),
+    );
+    await waitFor(() =>
+      expect(media.fetchMediaUrls).toHaveBeenLastCalledWith(['img-2']),
+    );
+    expect(await screen.findAllByLabelText('Photo')).toHaveLength(2);
+  });
+
+  test('a video shows a play button and loads the player only when tapped', async () => {
+    jest.mocked(chat.fetchMessages).mockResolvedValue([
+      message({
+        id: 'vid-1',
+        type: 'video',
+        body: null,
+        media: {
+          mime: 'video/mp4',
+          width: 1280,
+          height: 720,
+          durationMs: 12_000,
+          expired: false,
+        },
+      }),
+    ]);
+    jest
+      .mocked(media.fetchMediaUrls)
+      .mockResolvedValue({ 'vid-1': 'https://r2/vid-1' });
+    await openChat();
+    const play = await screen.findByRole('button', {
+      name: 'Play video, 0:12',
+    });
+    expect(screen.queryByTestId('video-player')).toBeNull();
+    await fireEvent.press(play);
+    expect(screen.getByTestId('video-player')).toBeOnTheScreen();
+  });
+
   test('media the link service leaves out says it is unavailable', async () => {
     jest.mocked(media.fetchMediaUrls).mockResolvedValue({});
     await openChat();
@@ -168,7 +222,7 @@ describe('media in a chat', () => {
     jest.mocked(capture.pickMedia).mockResolvedValue(picked);
     let finish: () => void = () => {};
     jest
-      .mocked(media.sendMediaMessage)
+      .mocked(media.insertMediaMessage)
       .mockReturnValue(new Promise<void>(resolve => (finish = resolve)));
     await openChat();
     await fireEvent.press(
@@ -178,11 +232,15 @@ describe('media in a chat', () => {
       screen.getByRole('button', { name: 'Choose from gallery' }),
     );
     expect(capture.pickMedia).toHaveBeenCalledWith('library');
-    expect(media.sendMediaMessage).toHaveBeenCalledWith({
-      id: 'new-1',
-      connectionId: 'conn-isha',
-      media: picked,
-    });
+    expect(media.uploadChatMedia).toHaveBeenCalledWith('conn-isha', picked);
+    await waitFor(() =>
+      expect(media.insertMediaMessage).toHaveBeenCalledWith({
+        id: 'new-1',
+        connectionId: 'conn-isha',
+        media: picked,
+        mediaKey: 'key-1',
+      }),
+    );
     // The phone's copy shows while it uploads.
     expect(
       screen.getAllByLabelText('Photo').map(photo => photo.props.source.uri),
@@ -194,11 +252,11 @@ describe('media in a chat', () => {
   test('a refused upload says why and can be retried with the same id', async () => {
     jest.mocked(capture.pickMedia).mockResolvedValue(picked);
     jest
-      .mocked(media.sendMediaMessage)
+      .mocked(media.uploadChatMedia)
       .mockRejectedValueOnce(
         new Error('That photo is too large to send. Try another one.'),
       )
-      .mockResolvedValue();
+      .mockResolvedValue('key-1');
     await openChat();
     await fireEvent.press(
       screen.getByRole('button', { name: 'Attach photo or video' }),
@@ -213,10 +271,37 @@ describe('media in a chat', () => {
     await fireEvent.press(
       screen.getByRole('button', { name: /Not sent\. Tap to retry/ }),
     );
-    expect(media.sendMediaMessage).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ id: 'new-1' }),
+    await waitFor(() =>
+      expect(media.insertMediaMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'new-1', mediaKey: 'key-1' }),
+      ),
     );
+    expect(media.uploadChatMedia).toHaveBeenCalledTimes(2);
+  });
+
+  test('when the upload went through but the message did not, a retry sends it without uploading again', async () => {
+    jest.mocked(capture.pickMedia).mockResolvedValue(picked);
+    jest
+      .mocked(media.insertMediaMessage)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue();
+    await openChat();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Attach photo or video' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose from gallery' }),
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /Not sent\. Tap to retry/ }),
+    );
+    expect(media.insertMediaMessage).toHaveBeenNthCalledWith(2, {
+      id: 'new-1',
+      connectionId: 'conn-isha',
+      media: picked,
+      mediaKey: 'key-1',
+    });
+    expect(media.uploadChatMedia).toHaveBeenCalledTimes(1);
   });
 
   test('a picker problem shows its reason and sends nothing', async () => {
@@ -233,7 +318,7 @@ describe('media in a chat', () => {
     expect(
       await screen.findByText('Videos can be up to 30 seconds.'),
     ).toBeOnTheScreen();
-    expect(media.sendMediaMessage).not.toHaveBeenCalled();
+    expect(media.uploadChatMedia).not.toHaveBeenCalled();
   });
 
   test('holding the mic records a voice note and letting go sends it', async () => {
@@ -247,22 +332,24 @@ describe('media in a chat', () => {
     };
     const stop = jest.fn().mockResolvedValue(note);
     jest.mocked(capture.startVoiceNote).mockResolvedValue({ stop });
-    jest.mocked(media.sendMediaMessage).mockResolvedValue();
     await openChat();
     const mic = screen.getByRole('button', {
       name: 'Hold to record a voice note',
     });
     await fireEvent(mic, 'pressIn');
     expect(
-      await screen.findByText(/Recording.*release to send/),
+      await screen.findByText('0:00 / 2:00 · release to send'),
     ).toBeOnTheScreen();
     await fireEvent(mic, 'pressOut');
     expect(stop).toHaveBeenCalled();
-    expect(media.sendMediaMessage).toHaveBeenCalledWith({
-      id: 'new-1',
-      connectionId: 'conn-isha',
-      media: note,
-    });
+    await waitFor(() =>
+      expect(media.insertMediaMessage).toHaveBeenCalledWith({
+        id: 'new-1',
+        connectionId: 'conn-isha',
+        media: note,
+        mediaKey: 'key-1',
+      }),
+    );
   });
 
   test('a voice note too short to keep sends nothing', async () => {
@@ -275,7 +362,7 @@ describe('media in a chat', () => {
     });
     await fireEvent(mic, 'pressIn');
     await fireEvent(mic, 'pressOut');
-    expect(media.sendMediaMessage).not.toHaveBeenCalled();
+    expect(media.uploadChatMedia).not.toHaveBeenCalled();
   });
 });
 
@@ -332,6 +419,33 @@ describe('Media Consent in a Casual Connection', () => {
     expect(toggle).not.toBeChecked();
     await fireEvent.press(toggle);
     expect(media.setMediaConsent).toHaveBeenCalledWith('conn-isha', true);
+    // The state is read again once the switch is set.
+    await waitFor(() => expect(media.fetchMediaState).toHaveBeenCalledTimes(2));
+  });
+
+  test('once both are on, withheld photos appear without waiting for the link refresh', async () => {
+    jest
+      .mocked(media.fetchMediaState)
+      .mockResolvedValueOnce({ isCasual: true, mine: false, theirs: true })
+      .mockResolvedValue({ isCasual: true, mine: true, theirs: true });
+    jest
+      .mocked(media.fetchMediaUrls)
+      .mockResolvedValueOnce({ 'voice-1': 'https://r2/voice-1' })
+      .mockResolvedValue({
+        'img-1': 'https://r2/img-1',
+        'voice-1': 'https://r2/voice-1',
+      });
+    jest.mocked(media.setMediaConsent).mockResolvedValue();
+    await openChat();
+    expect(
+      await screen.findByText('Media is off in this chat'),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Chat menu'));
+    await fireEvent.press(
+      screen.getByRole('switch', { name: 'Allow photos and video' }),
+    );
+    const photo = await screen.findByLabelText('Photo');
+    expect(photo.props.source).toEqual({ uri: 'https://r2/img-1' });
   });
 
   test('with both on, photo and video can be sent', async () => {

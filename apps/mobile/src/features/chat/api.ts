@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
 import type { Mode } from '../modes';
+import { toMessageMedia } from './messages';
 
 type Enums = Database['public']['Enums'];
 
@@ -98,16 +99,7 @@ export function toMessage(row: MessageRow): Message {
     body: row.body,
     activityId: row.activity_id,
     createdAt: row.created_at,
-    media:
-      row.type === 'image' || row.type === 'video' || row.type === 'voice'
-        ? {
-            mime: row.media_mime,
-            width: row.media_width,
-            height: row.media_height,
-            durationMs: row.media_duration_ms,
-            expired: row.media_deleted_at !== null,
-          }
-        : null,
+    media: toMessageMedia(row.type, row),
   };
 }
 

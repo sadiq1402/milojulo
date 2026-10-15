@@ -43,6 +43,15 @@ describe('pickMedia', () => {
     );
   });
 
+  test('a photo over 5 MB after compressing is refused before upload', async () => {
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue({ ...pickedImage, size: 5_300_000 } as never);
+    await expect(pickMedia('library')).rejects.toThrow(
+      'That photo is too large to send.',
+    );
+  });
+
   test('a video is compressed to MP4 and keeps its duration', async () => {
     jest.mocked(ImagePicker.openPicker).mockResolvedValue(pickedVideo as never);
     jest.mocked(Video.compress).mockResolvedValue('file:///cache/small.mp4');

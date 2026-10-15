@@ -1,4 +1,10 @@
 import { supabase } from '../../lib/supabase';
+import {
+  fallback,
+  fetchSignedUrls,
+  invokeMedia,
+  refusalFrom,
+} from '../media/mediaFunction';
 import { cannotSendMessage } from './api';
 
 export type MediaKind = 'image' | 'video' | 'voice';
@@ -13,10 +19,6 @@ export type OutgoingMedia = {
   durationMs: number | null;
 };
 
-// The media function signs at most this many links per call.
-const urlBatchSize = 60;
-
-const fallback = "That didn't work. Check your connection and try again.";
 const notArrived = "It didn't finish uploading. Try again.";
 export const mediaOffCopy =
   'Photos and video are off in this chat until you both allow them.';
@@ -39,50 +41,28 @@ const refusals: Record<string, string> = {
   'media is off in this chat': mediaOffCopy,
 };
 
-const refusal = (message?: string) =>
-  new Error((message && refusals[message]) || fallback);
+// The phone checks these before uploading too, with the same copy.
+export const tooLargePhoto = refusals['image must be a JPEG of at most 5 MB'];
+export const tooLargeVideo = refusals['video must be an MP4 of at most 20 MB'];
+export const tooLongVideo = refusals['video can be at most 30 seconds'];
 
-async function refusalMessage(error: unknown): Promise<string | undefined> {
-  const context = (error as { context?: { json?: () => Promise<unknown> } })
-    .context;
-  if (typeof context?.json !== 'function') {
-    return undefined;
-  }
-  try {
-    const body = (await context.json()) as { error?: unknown };
-    return typeof body?.error === 'string' ? body.error : undefined;
-  } catch {
-    return undefined;
-  }
-}
+const refusal = refusalFrom(refusals);
+const invoke = <T>(body: Record<string, unknown>) =>
+  invokeMedia<T>(body, refusals);
 
-async function invokeMedia<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('media', { body });
-  if (error) {
-    throw refusal(await refusalMessage(error));
-  }
-  return data as T;
-}
-
-// Upload link (a staging key), PUT to R2, confirm (the function copies it to its final key), then
-// the message itself. A retry reuses `id`, so a send that got
-// through earlier isn't doubled (the repeat insert is a unique violation).
-export async function sendMediaMessage({
-  id,
-  connectionId,
-  media,
-}: {
-  id: string;
-  connectionId: string;
-  media: OutgoingMedia;
-}): Promise<void> {
+// Upload link (a staging key), PUT to R2, then confirm (the function copies it to its final
+// key). The key it returns is what the message carries.
+export async function uploadChatMedia(
+  connectionId: string,
+  media: OutgoingMedia,
+): Promise<string> {
   let file: Blob;
   try {
     file = await (await fetch(media.uri)).blob();
   } catch {
     throw new Error("We couldn't read that file. Try another one.");
   }
-  const { uploadId, uploadUrl } = await invokeMedia<{
+  const { uploadId, uploadUrl } = await invoke<{
     uploadId: string;
     uploadUrl: string;
     expiresIn: number;
@@ -109,10 +89,26 @@ export async function sendMediaMessage({
   if (!put.ok) {
     throw new Error(notArrived);
   }
-  const { mediaKey } = await invokeMedia<{ mediaKey: string }>({
+  const { mediaKey } = await invoke<{ mediaKey: string }>({
     action: 'chat-confirm',
     uploadId,
   });
+  return mediaKey;
+}
+
+// The message for a confirmed upload. A retry reuses `id` and the key, so nothing uploads again;
+// a send that got through earlier is a unique violation and counts as sent.
+export async function insertMediaMessage({
+  id,
+  connectionId,
+  media,
+  mediaKey,
+}: {
+  id: string;
+  connectionId: string;
+  media: OutgoingMedia;
+  mediaKey: string;
+}): Promise<void> {
   const { error } = await supabase.from('messages').insert({
     id,
     connection_id: connectionId,
@@ -132,24 +128,12 @@ export async function sendMediaMessage({
   throw refusal(error.message);
 }
 
-// Signed links by message id; ids I may not see (or whose media expired) are simply missing.
+// Signed links by message id; ids I may not see (expired, or withheld by Media Consent) are
+// simply missing.
 export async function fetchMediaUrls(
   messageIds: string[],
 ): Promise<Record<string, string>> {
-  const ids = [...new Set(messageIds)];
-  const batches: string[][] = [];
-  for (let i = 0; i < ids.length; i += urlBatchSize) {
-    batches.push(ids.slice(i, i + urlBatchSize));
-  }
-  const results = await Promise.all(
-    batches.map(batch =>
-      invokeMedia<{ urls: Record<string, string> }>({
-        action: 'chat-urls',
-        messageIds: batch,
-      }),
-    ),
-  );
-  return Object.assign({}, ...results.map(result => result.urls));
+  return fetchSignedUrls('chat-urls', 'messageIds', messageIds, refusals);
 }
 
 export type MediaState = { isCasual: boolean; mine: boolean; theirs: boolean };
