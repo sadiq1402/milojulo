@@ -323,20 +323,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"data_requests": {
-                  Row: {
-                    "completed_at": string | null,"created_at": string,"id": string,"kind": Database["public"]['Enums']["data_request_kind"],"status": Database["public"]['Enums']["data_request_status"],"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["data_request_kind"],"status"?: Database["public"]['Enums']["data_request_status"],"user_id": string
-                  }
-                  Update: {
-                    "completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["data_request_kind"],"status"?: Database["public"]['Enums']["data_request_status"],"user_id"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
                 },"consent_documents": {
                   Row: {
                     "created_at": string,"effective_at": string,"id": string,"kind": Database["public"]['Enums']["consent_kind"],"url": string | null,"version": string
@@ -371,6 +357,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "consents_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"data_requests": {
+                  Row: {
+                    "completed_at": string | null,"created_at": string,"id": string,"kind": Database["public"]['Enums']["data_request_kind"],"status": Database["public"]['Enums']["data_request_status"],"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["data_request_kind"],"status"?: Database["public"]['Enums']["data_request_status"],"user_id": string
+                  }
+                  Update: {
+                    "completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["data_request_kind"],"status"?: Database["public"]['Enums']["data_request_status"],"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "data_requests_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
@@ -739,6 +745,9 @@ isOneToOne: false
 "confirm_photo_upload":
 { Args: { "member_id": string,"upload_id": string }; Returns: string
                            },
+"consent_withdrawn":
+{ Args: { "member_id": string }; Returns: boolean
+                           },
 "cover_photo_id":
 { Args: { "member_id": string }; Returns: string
                            },
@@ -877,6 +886,9 @@ isOneToOne: false
 "report":
 { Args: { "details"?: string,"reason": Database["public"]['Enums']["report_reason"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
                            },
+"request_data_copy":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "respond_activity_request":
 { Args: { "accept": boolean,"request_id": string }; Returns: string
                            },
@@ -892,17 +904,11 @@ isOneToOne: false
 "send_request":
 { Args: { "mode": Database["public"]['Enums']["mode"],"note"?: string,"to_member": string }; Returns: string
                            },
-"request_data_copy":
-{ Args: Record<PropertyKey, never>; Returns: string
-                           },
 "set_media_consent":
 { Args: { "connection_id": string,"consent": boolean }; Returns: undefined
                            },
 "set_paused":
 { Args: { "paused": boolean }; Returns: undefined
-                           },
-"withdraw_consent":
-{ Args: { "document_id": string }; Returns: undefined
                            },
 "shared_tags":
 { Args: { "a": string,"b": string }; Returns: {
@@ -944,6 +950,9 @@ isOneToOne: false
                            },
 "withdraw_activity_request":
 { Args: { "request_id": string }; Returns: undefined
+                           },
+"withdraw_consent":
+{ Args: { "document_id": string }; Returns: undefined
                            }
           }
           Enums: {
