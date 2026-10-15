@@ -42,12 +42,11 @@ Floating cards with soft orchid shadows instead of borders, pill buttons and inp
 ## Why this direction (research summary)
 Surveys (mostly Western, informal) show women lean toward purple and softer tints and dislike orange, brown and gray; pink alone is not the favourite. Gen Z trend reports favour digital lavender, butter yellow and pastel-plus-bright combinations. Competitors: Tinder pink-orange, Bumble yellow, Hinge black-and-white with plum. Validate with 5 to 8 women in Pune before locking it.
 
-## Logo (undecided)
-- Current mockups use a wordmark only: "Milo" in orchid, "Julo" in violet. Do not use the overlapping-circles mark: it resembles Mastercard's logo.
-- Leading candidate: **Mingle** symbol (two streams, orchid and violet, merging into one that lands on a butter dot) with a custom monoline **Tail** wordmark (the j's tail reaches back under "milo"). Alternative: People ring (five raised-arm figures in five mode colours with a gap for one more).
-- Reference boards: design/reference-html/brand (LogoOrchid, LogoSystem).
+## Logo (decided, decision 32)
+- The logo is design/brand/logo.png (1316 x 1195, transparent PNG): two figures forming an M under a heart, gradient orange to pink to violet to blue, with the "MiloJulo" wordmark ("Milo" white, "Julo" gradient) and the line "Connect Beyond Swipes." Founder's choice (2026-10-15): use it as is, heart included.
+- The white "Milo" and tagline only read on dark or photo backgrounds; on light screens place the logo on a dark or gradient surface.
 - App icon rules: 1024 x 1024 master; Android adaptive icon 108 dp canvas with key artwork inside the 66 dp safe zone; keep shapes bold, no thin lines or small text.
-- Before committing: trademark search (IP India device/logo search, reverse image search, adjacent classes, probably apps, software and social/dating services). The word "Milo" is crowded (Nestlé MILO beverages; a MILO software filing by Zuora; other apps named Milo), so check "MiloJulo" as a whole. Not legal advice.
+- Still to do: trademark search (IP India device/logo search, reverse image search, adjacent classes, probably apps, software and social/dating services). The word "Milo" is crowded (Nestlé MILO beverages; a MILO software filing by Zuora; other apps named Milo), so check "MiloJulo" as a whole. Not legal advice.
 
 ## Fonts
 Bricolage Grotesque (display) and Figtree (text), both Google Fonts.
