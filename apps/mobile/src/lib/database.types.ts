@@ -501,6 +501,32 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"reports": {
+                  Row: {
+                    "created_at": string,"details": string | null,"evidence": Json | null,"evidence_media_key": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"internal_note": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string | null,"status": Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"details"?: string | null,"evidence"?: Json | null,"evidence_media_key"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"internal_note"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"details"?: string | null,"evidence"?: Json | null,"evidence_media_key"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"internal_note"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_id"?: string,"target_type"?: Database["public"]['Enums']["report_target"],"target_user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "reports_reporter_id_fkey"
+      columns: ["reporter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "reports_target_user_id_fkey"
+      columns: ["target_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"tags": {
                   Row: {
                     "created_at": string,"id": number,"is_active": boolean,"kind": Database["public"]['Enums']["tag_kind"],"label": string,"slug": string,"sort_order": number
@@ -566,9 +592,6 @@ isOneToOne: false
                            },
 "block_user":
 { Args: { "member_id": string }; Returns: undefined
-                           },
-"report":
-{ Args: { "target_type": Database["public"]["Enums"]["report_target"]; "target_id": string; "reason": Database["public"]["Enums"]["report_reason"]; "details"?: string }; Returns: undefined
                            },
 "browse_circles":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -713,6 +736,9 @@ isOneToOne: false
                            },
 "propose_mode_change":
 { Args: { "connection_id": string,"to_mode": Database["public"]['Enums']["mode"] }; Returns: string
+                           },
+"report":
+{ Args: { "details"?: string,"reason": Database["public"]['Enums']["report_reason"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
                            },
 "respond_activity_request":
 { Args: { "accept": boolean,"request_id": string }; Returns: string
