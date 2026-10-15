@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(33);
+select plan(36);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000000' || suffix)::uuid $$;
@@ -31,13 +31,15 @@ reset role;
 
 select pg_temp.act_as_admin(pg_temp.m('ad'));
 select lives_ok(
-  $$ insert into public.banned_terms (term) values ('rascal'), ('dirty word'), ('xtest') $$,
+  $$ insert into public.banned_terms (term) values ('rascal'), ('dirty word'), ('राम'), ('xtest') $$,
   'an admin adds banned terms');
-select is((select count(*)::int from public.banned_terms), 3, 'an admin reads banned terms');
+select is((select count(*)::int from public.banned_terms), 4, 'an admin reads banned terms');
 select lives_ok($$ delete from public.banned_terms where term = 'xtest' $$, 'an admin deletes a banned term');
-select is((select count(*)::int from public.banned_terms), 2, 'the deleted term is gone');
+select is((select count(*)::int from public.banned_terms), 3, 'the deleted term is gone');
 select throws_ok($$ insert into public.banned_terms (term) values ('Rascal2') $$, '23514', null,
   'terms are stored lowercase');
+select throws_ok($$ insert into public.banned_terms (term) values (' padded ') $$, '23514', null,
+  'terms are stored trimmed');
 
 select pg_temp.as_member('a1');
 select is((select count(*)::int from public.banned_terms), 0, 'a Member cannot read banned terms');
@@ -45,7 +47,7 @@ select throws_ok($$ insert into public.banned_terms (term) values ('nice') $$, '
   'a Member cannot add banned terms');
 delete from public.banned_terms;
 reset role;
-select is((select count(*)::int from public.banned_terms), 2, 'a Member cannot delete banned terms');
+select is((select count(*)::int from public.banned_terms), 3, 'a Member cannot delete banned terms');
 select pg_temp.as_member('a1');
 select throws_ok($$ select public.matches_banned_term('rascal') $$, '42501', null,
   'a Member cannot probe the catalog through the helper');
@@ -66,6 +68,10 @@ select lives_ok($$ update public.profiles set display_name = 'Rascally' where id
   'a term inside a longer word is accepted');
 select lives_ok($$ update public.profiles set display_name = 'Asha' where id = auth.uid() $$,
   'a clean display name is accepted');
+select throws_ok($$ update public.profiles set display_name = 'मैं राम हूँ' where id = auth.uid() $$,
+  'that wording isn''t allowed; please change it', 'a standalone Devanagari term is rejected');
+select lives_ok($$ update public.profiles set display_name = 'रामा' where id = auth.uid() $$,
+  'a Devanagari term inside a longer word (matra included) is accepted');
 
 select throws_ok($$ update public.profile_prompts set answer = 'I say dirty   word a lot' where user_id = auth.uid() and position = 1 $$,
   'that wording isn''t allowed; please change it', 'a matching prompt answer is rejected on update');
@@ -85,7 +91,8 @@ select lives_ok(
   'a clean prompt answer is accepted on insert');
 reset role;
 
--- A new profile row carrying a name is checked too (run as postgres, as the function would).
+-- accept_consents() creates the profile without a name, so no Member path inserts one; insert as
+-- postgres to prove the insert half of the trigger.
 select pg_temp.create_account(pg_temp.m('e0'));
 select throws_ok(
   format($$ insert into public.profiles (id, display_name) values (%L, 'Rascal') $$, pg_temp.m('e0')),
@@ -105,16 +112,17 @@ select lives_ok(
   $$ select pg_temp.keep('act', public.post_activity('Evening run', 'sports', 'baner',
        now() + interval '2 days', null, 4::smallint, 'Easy pace')) $$,
   'a clean Activity is accepted');
-reset role;
 select throws_ok(
-  format($$ update public.activities set title = 'RASCAL run' where id = %L $$, pg_temp.id('act')),
-  'that wording isn''t allowed; please change it', 'a matching Activity title is rejected on update');
+  format($$ select public.update_activity(%L, title => 'RASCAL run') $$, pg_temp.id('act')),
+  'that wording isn''t allowed; please change it', 'a host cannot rename an Activity to matching text');
 select throws_ok(
-  format($$ update public.activities set description = 'a rascal' where id = %L $$, pg_temp.id('act')),
-  'that wording isn''t allowed; please change it', 'a matching Activity description is rejected on update');
+  format($$ select public.update_activity(%L, description => 'a rascal') $$, pg_temp.id('act')),
+  'that wording isn''t allowed; please change it', 'a host cannot change the description to matching text');
 select lives_ok(
-  format($$ update public.activities set description = 'Bring water' where id = %L $$, pg_temp.id('act')),
-  'a clean Activity edit is accepted');
+  format($$ select public.update_activity(%L, title => 'Morning run', description => 'Bring water') $$,
+         pg_temp.id('act')),
+  'a host can make a clean Activity edit');
+reset role;
 
 -- ============ Messages are delivered and flagged ============
 
@@ -148,7 +156,8 @@ reset role;
 
 -- ============ Word-filter flags never count toward Auto-hide ============
 
--- Two Member reports plus three word-filter flags on b1's profile: still visible.
+-- Two Member reports plus three word-filter flags on b1's profile: still visible. Only messages file
+-- word-filter reports, so profile-targeted ones are inserted as postgres to prove report() skips them.
 insert into public.reports (reporter_id, target_type, target_id, target_user_id, reason)
 select null, 'profile', pg_temp.m('b1'), pg_temp.m('b1'), 'word_filter' from generate_series(1, 3);
 select pg_temp.as_member('c1');

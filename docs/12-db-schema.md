@@ -46,7 +46,7 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 | `industries` | `id smallint identity pk`, `slug unique`, `label`, `sort_order`, `is_active` |
 | `prompt_questions` | `id smallint identity pk`, `text`, `sort_order`, `is_active` |
 | `consent_documents` | `id`, `kind consent_kind`, `version text`, `url`, `effective_at`; unique (kind, version) |
-| `banned_terms` | `term text pk` (lowercase, checked). Admins select, insert and delete; Members get nothing. Seeded empty; the founder fills it from the dashboard |
+| `banned_terms` | `term text pk` (lowercase and trimmed, checked). Admins select, insert and delete; Members get nothing. Seeded empty; the founder fills it from the dashboard |
 | `blocked_email_domains` | `domain text pk`. Admin only; read by the signup hook |
 
 ### People
@@ -128,7 +128,7 @@ Moderation:
 - **Auto-hide**: `report()` sets `hidden_at` on the target profile, photo or Activity once 3 distinct reporters (word-filter flags excluded) have reported it within 7 days. An admin then clears `hidden_at` or takes it down.
 - **Takedown**: photo/message `removed_at`, Activity `status = removed`, profile `status = banned`. Every one writes `admin_actions`.
 - **Ban**: closes all the Member's Connections (chats read-only for the other side), withdraws their Join Requests, cancels their open Activities, removes their Circle memberships.
-- **Word filter** (triggers on display names, prompt answers, Activity titles and descriptions, messages): a term matches case-insensitively as a whole word (a multi-word term as a phrase), via `matches_banned_term(text)` (security definer, not executable by app roles). Profile text and Activities that match are refused with `that wording isn't allowed; please change it` on insert or update; messages are delivered unchanged and filed as a `word_filter` report (`reporter_id` null, `target_user_id` the sender, evidence the same message snapshot `report()` takes), which never counts toward Auto-hide.
+- **Word filter** (triggers on display names, prompt answers, Activity titles and descriptions, messages): a term matches case-insensitively as a whole word (a multi-word term as a phrase; letters, digits, underscore and all of Devanagari U+0900 to U+097F count as word characters, so a matra or virama is never a boundary), via `matches_banned_term(text)`, which builds one combined pattern from all terms per call (security definer, not executable by app roles). Profile text and Activities that match are refused with `that wording isn't allowed; please change it` on insert or update; messages are delivered unchanged and filed as a `word_filter` report (`reporter_id` null, `target_user_id` the sender, evidence from `message_evidence(message)`, the snapshot `report()` also uses), which never counts toward Auto-hide.
 - **Reported media**: an Edge Function on `reports` insert copies the media into an evidence prefix (`evidence_media_key`), kept for the safety-retention period instead of the 90-day Media Expiry.
 - Admin queue: open reports (24 h target), Auto-hidden items, and a recently-joined list for spot checks (no approval).
 
