@@ -12,6 +12,8 @@ const friendly: Record<string, string> = {
     "Your profile isn't visible right now, so you can't send requests.",
   'you cannot send a request to this member':
     "This Member isn't available for requests right now.",
+  'that member is not in your Discover':
+    "This Member is outside your Discover range, so you can't send them a request.",
   'that mode is not open between you': "That Mode isn't open between you two.",
   'you already have a connection or request with this member':
     "You're already connected with this Member, or a request between you is waiting.",

@@ -65,6 +65,14 @@ test('a Mode the pair do not share is refused', async () => {
   );
 });
 
+test('a Member beyond my Discover range is refused, with friendly copy', async () => {
+  const far = await createMember('Neha');
+  await admin.from('profiles').update({ area_id: 'kharadi' }).eq('id', far.id);
+  await expect(sendRequest(far.id, 'friends')).rejects.toThrow(
+    "This Member is outside your Discover range, so you can't send them a request.",
+  );
+});
+
 test('accepting an incoming request opens the Connection', async () => {
   const { data: connectionId } = await isha.client.rpc('send_request', {
     to_member: me.id,

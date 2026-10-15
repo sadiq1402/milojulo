@@ -442,7 +442,7 @@ insert into public.connections (requester_id, addressee_id, mode, activity_id, s
 select pg_temp.m('e8'), pg_temp.m('e1'), 'activities', pg_temp.id('cap 1'), 'closed', now()
 from generate_series(1, 10);
 select pg_temp.as_member('e8');
-select lives_ok($$ select public.send_request(pg_temp.m('e4'), 'friends') $$,
+select lives_ok($$ select public.send_request(pg_temp.m('e5'), 'friends') $$,
   'Activity Connections do not count towards the Request Cap');
 
 -- The host's list of Join Requests: e3 waits, e4 is accepted, the rest are left out.

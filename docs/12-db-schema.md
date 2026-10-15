@@ -102,7 +102,7 @@ Reviewer Account: seeded per environment by `supabase/seed/reviewer.sql` (servic
 
 Connection rules (docs/adr/0001):
 - One Requested or Accepted Connection per pair; older rows stay as history.
-- `send_request()`: mode must be an Eligible Mode from sender to recipient (one the recipient chose that the sender may see in Discover, decision 39); accepting keeps that Mode on the Connection; sender and recipient both visible (so neither paused); Request Cap of 10 per rolling 24 h; no re-request by the same sender within 30 days of a decline; never while a Block stands.
+- `send_request()`: mode must be an Eligible Mode from sender to recipient (one the recipient chose that the sender may see in Discover, decision 39); accepting keeps that Mode on the Connection; sender and recipient both visible (so neither paused); recipient inside the sender's Discover Range (null range: the sender's Service Region), else `that member is not in your Discover` (decision 43; accepting and Mode Changes are not re-checked); Request Cap of 10 per rolling 24 h; no re-request by the same sender within 30 days of a decline; never while a Block stands.
 - Mode Change: one open proposal per Connection; `to_mode` must be an Eligible Mode from the proposer to the other side, checked again when they accept; an open proposal older than 7 days counts as lapsed; a declined proposer cannot propose again for 7 days. Accepting updates `connections.mode`.
 - Dropping a Mode from a profile leaves existing Connections and their Mode untouched.
 
