@@ -93,3 +93,12 @@ jest.mock('react-native/Libraries/Lists/FlatList', () => {
   }
   return { __esModule: true, default: FlatList };
 });
+
+// Location (#105): permission already granted, so the prompt stays out of other tests' way;
+// location tests set their own answers. The fix never arrives, so nothing is sent.
+jest.mock('./src/features/location/device', () => ({
+  __esModule: true,
+  hasPermission: () => Promise.resolve(true),
+  requestPermission: () => Promise.resolve(true),
+  currentPosition: () => new Promise(() => {}),
+}));

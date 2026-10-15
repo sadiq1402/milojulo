@@ -41,6 +41,7 @@ describe('account stage', () => {
       { withdrawn_at: null },
       { withdrawn_at: '2026-10-16T10:00:00Z' },
     ]);
+    rpc.mockResolvedValue({ data: true, error: null });
     await expect(fetchAccountStage('u1')).resolves.toBe('reconsent');
   });
 
@@ -48,7 +49,17 @@ describe('account stage', () => {
     tables({ date_of_birth: '1998-03-21', submitted_at: '2026-10-01' }, [
       { withdrawn_at: null },
     ]);
+    rpc.mockResolvedValue({ data: false, error: null });
     await expect(fetchAccountStage('u1')).resolves.toBe('member');
+    expect(rpc).toHaveBeenCalledWith('needs_reconsent');
+  });
+
+  test('a Member who accepted an older notice version accepts the new one', async () => {
+    tables({ date_of_birth: '1998-03-21', submitted_at: '2026-10-01' }, [
+      { withdrawn_at: null },
+    ]);
+    rpc.mockResolvedValue({ data: true, error: null });
+    await expect(fetchAccountStage('u1')).resolves.toBe('updatedNotice');
   });
 
   test('an account with no profile row yet gives age and consent first', async () => {
