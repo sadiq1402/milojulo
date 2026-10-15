@@ -55,7 +55,7 @@ A proposal by one side of an accepted Connection to move it to another Eligible 
 For a pair of Members, a Mode both hold that, if it is a Dating Mode, also passes both Members' Dating Preferences. Discover, Connection Requests, Mode Changes and "Why you match" only use Eligible Modes.
 
 **Media Consent**:
-In a Casual Connection, the per-side switch that must be on for both Members before either can send images or video.
+In a Casual Connection, the per-side switch that must be on for both Members before either can send or open images or video (including ones sent earlier). Changing a Connection's Mode into Casual switches it off on both sides.
 
 **Media Expiry**:
 Chat images, video and voice notes are deleted 90 days after sending; the message remains and shows that its media expired. Media copied into a Report's evidence is kept for the safety-retention period instead.

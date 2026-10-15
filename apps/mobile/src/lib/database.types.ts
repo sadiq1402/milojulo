@@ -155,6 +155,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"chat_uploads": {
+                  Row: {
+                    "confirmed_at": string | null,"connection_id": string,"created_at": string,"id": string,"kind": Database["public"]['Enums']["message_type"],"media_key": string,"mime": string,"sender_id": string,"size": number,"used_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confirmed_at"?: string | null,"connection_id": string,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["message_type"],"media_key": string,"mime": string,"sender_id": string,"size": number,"used_at"?: string | null
+                  }
+                  Update: {
+                    "confirmed_at"?: string | null,"connection_id"?: string,"created_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["message_type"],"media_key"?: string,"mime"?: string,"sender_id"?: string,"size"?: number,"used_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chat_uploads_connection_id_fkey"
+      columns: ["connection_id"]
+isOneToOne: false
+      referencedRelation: "connections"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chat_uploads_sender_id_fkey"
+      columns: ["sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"circle_members": {
                   Row: {
                     "circle_id": string,"joined_at": string,"user_id": string
@@ -209,14 +235,14 @@ isOneToOne: false
                   ]
                 },"connection_members": {
                   Row: {
-                    "connection_id": string,"created_at": string,"last_read_at": string | null,"muted": boolean,"user_id": string
+                    "connection_id": string,"created_at": string,"last_read_at": string | null,"media_consent": boolean,"muted": boolean,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "connection_id": string,"created_at"?: string,"last_read_at"?: string | null,"muted"?: boolean,"user_id": string
+                    "connection_id": string,"created_at"?: string,"last_read_at"?: string | null,"media_consent"?: boolean,"muted"?: boolean,"user_id": string
                   }
                   Update: {
-                    "connection_id"?: string,"created_at"?: string,"last_read_at"?: string | null,"muted"?: boolean,"user_id"?: string
+                    "connection_id"?: string,"created_at"?: string,"last_read_at"?: string | null,"media_consent"?: boolean,"muted"?: boolean,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -621,6 +647,19 @@ isOneToOne: false
 "cancel_activity":
 { Args: { "activity_id": string }; Returns: undefined
                            },
+"chat_media_format":
+{ Args: { "kind": Database["public"]['Enums']["message_type"] }; Returns: Record<string, unknown>
+                           },
+"chat_media_links":
+{ Args: { "message_ids": (string)[],"viewer": string }; Returns: {
+              "media_key": string,"message_id": string
+            }[]
+                           },
+"chat_media_state":
+{ Args: { "connection_id": string }; Returns: {
+              "is_casual": boolean,"mine": boolean,"theirs": boolean
+            }[]
+                           },
 "check_activity":
 { Args: { "capacity": number,"ends_at": string,"start_changed": boolean,"starts_at": string,"title": string }; Returns: undefined
                            },
@@ -639,6 +678,9 @@ isOneToOne: false
                            },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined
+                           },
+"confirm_chat_upload":
+{ Args: { "member_id": string,"upload_id": string }; Returns: string
                            },
 "confirm_photo_upload":
 { Args: { "member_id": string,"upload_id": string }; Returns: string
@@ -717,6 +759,9 @@ isOneToOne: false
 "matches_banned_term":
 { Args: { "content": string }; Returns: boolean
                            },
+"media_allowed":
+{ Args: { "connection_id": string }; Returns: boolean
+                           },
 "message_evidence":
 { Args: { "m": Omit<Database["public"]['Tables']["messages"]['Row'], Database["public"]['Tables']["messages"]['ComputedFields']> }; Returns: Json
                            },
@@ -736,6 +781,11 @@ isOneToOne: false
 "my_join_requests":
 { Args: Record<PropertyKey, never>; Returns: {
               "activity_id": string,"activity_starts_at": string,"activity_title": string,"created_at": string,"direction": Database["public"]['Enums']["connection_direction"],"other_id": string,"other_name": string,"other_photo_id": string,"request_id": string
+            }[]
+                           },
+"pending_chat_upload":
+{ Args: { "member_id": string,"upload_id": string }; Returns: {
+              "media_key": string,"mime": string,"size": number,"upload_key": string
             }[]
                            },
 "pending_photo_upload":
@@ -775,16 +825,11 @@ isOneToOne: false
 "send_request":
 { Args: { "mode": Database["public"]['Enums']["mode"],"note"?: string,"to_member": string }; Returns: string
                            },
-"set_paused":
-{ Args: { "paused": boolean }; Returns: undefined
-                           },
 "set_media_consent":
 { Args: { "connection_id": string,"consent": boolean }; Returns: undefined
                            },
-"chat_media_state":
-{ Args: { "connection_id": string }; Returns: {
-              "is_casual": boolean,"mine": boolean,"theirs": boolean
-            }[]
+"set_paused":
+{ Args: { "paused": boolean }; Returns: undefined
                            },
 "shared_tags":
 { Args: { "a": string,"b": string }; Returns: {
@@ -804,6 +849,11 @@ isOneToOne: false
       } },
 "shares_photos_with":
 { Args: { "member_id": string,"viewer": string }; Returns: boolean
+                           },
+"start_chat_upload":
+{ Args: { "connection_id": string,"kind": Database["public"]['Enums']["message_type"],"member_id": string,"size": number }; Returns: {
+              "upload_id": string,"upload_key": string
+            }[]
                            },
 "start_photo_upload":
 { Args: { "member_id": string,"photo_position": number }; Returns: {
