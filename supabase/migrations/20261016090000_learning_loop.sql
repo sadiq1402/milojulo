@@ -19,7 +19,18 @@ create policy "owner reads own answers" on public.meetup_feedback for select to 
 create policy "admins read every answer" on public.meetup_feedback for select to authenticated
   using (public.is_admin());
 
--- The member's ended-Activity pairs: host with each accepted, non-withdrawn joiner, either way round.
+-- Internal: whether the member may answer about the other at all (reachable, no Block either way); shared by
+-- submit_meetup_feedback() and the pending list.
+create function public.can_give_feedback_about(member_id uuid, other_id uuid) returns boolean
+language sql stable
+set search_path = ''
+as $$
+  select public.is_reachable(other_id) and not public.is_blocked(member_id, other_id);
+$$;
+revoke execute on function public.can_give_feedback_about(uuid, uuid) from public, anon, authenticated;
+
+-- Internal (no app role may call it): the member's pairs from Activities that ran (open past their end,
+-- or expired; never cancelled or removed): host with each accepted, non-withdrawn joiner, either way round.
 create function public.activity_feedback_pairs(member_id uuid)
 returns table (other_user_id uuid, activity_id uuid, activity_title varchar, ends_at timestamptz)
 language sql stable
@@ -30,19 +41,22 @@ as $$
   from public.activities a
   join public.activity_requests r on r.activity_id = a.id and r.status = 'accepted'
   where (a.host_id = member_id or r.requester_id = member_id)
+    and a.status in ('open', 'expired')
+    and public.can_give_feedback_about(member_id,
+          case when a.host_id = member_id then r.requester_id else a.host_id end)
     and public.activity_ends_at(a) <= now();
 $$;
 revoke execute on function public.activity_feedback_pairs(uuid) from public, anon, authenticated;
 
-create function public.submit_meetup_feedback(other_user uuid, activity uuid default null,
-  did_meet boolean default null, keep boolean default null) returns void
+create function public.submit_meetup_feedback(other_user uuid, did_meet boolean, keep boolean,
+  activity uuid default null) returns void
 language plpgsql security definer
 set search_path = ''
 as $$
 declare
   me uuid := auth.uid();
 begin
-  if public.is_blocked(me, other_user)
+  if not public.can_give_feedback_about(me, other_user)
      or activity is not null and not exists (select 1 from public.activity_feedback_pairs(me) p
                                           where p.other_user_id = other_user and p.activity_id = activity)
      -- Accepted at some point: still accepted, or closed after it was (a waiting request closed by a Block never was).
@@ -61,7 +75,7 @@ begin
   end if;
 end;
 $$;
-revoke execute on function public.submit_meetup_feedback(uuid, uuid, boolean, boolean) from public, anon;
+revoke execute on function public.submit_meetup_feedback(uuid, boolean, boolean, uuid) from public, anon;
 
 -- The caller's Activity pairs waiting for an answer: ended 2 hours to 14 days ago, newest first.
 create function public.pending_meetup_feedback()
@@ -76,8 +90,6 @@ as $$
   join public.profiles pr on pr.id = p.other_user_id
   where p.ends_at <= now() - interval '2 hours'
     and p.ends_at >= now() - interval '14 days'
-    and public.is_reachable(p.other_user_id)
-    and not public.is_blocked(auth.uid(), p.other_user_id)
     and not exists (select 1 from public.meetup_feedback f
                     where f.user_id = auth.uid() and f.other_user_id = p.other_user_id
                       and f.activity_id = p.activity_id)
@@ -85,13 +97,14 @@ as $$
 $$;
 revoke execute on function public.pending_meetup_feedback() from public, anon;
 
--- Kept Connections for the North Star metric: both answers say met and keep. Admins only.
+-- Kept Connections for the North Star metric, admins only: each pair of people once, by any route (an Activity
+-- or chat) on which both answered met and keep; kept_at is the earliest time that held on a route.
 create function public.kept_connections(since timestamptz)
-returns table (user_a uuid, user_b uuid, activity_id uuid, kept_at timestamptz)
+returns table (user_a uuid, user_b uuid, kept_at timestamptz)
 language sql stable security definer
 set search_path = ''
 as $$
-  select a.user_id, a.other_user_id, a.activity_id, greatest(a.created_at, b.created_at)
+  select a.user_id, a.other_user_id, min(greatest(a.created_at, b.created_at)) as kept_at
   from public.meetup_feedback a
   join public.meetup_feedback b
     on b.user_id = a.other_user_id and b.other_user_id = a.user_id
@@ -99,7 +112,8 @@ as $$
   where public.is_admin()
     and a.user_id < a.other_user_id
     and a.did_meet and a.keep and b.did_meet and b.keep
-    and greatest(a.created_at, b.created_at) >= since
-  order by 4 desc;
+  group by a.user_id, a.other_user_id
+  having min(greatest(a.created_at, b.created_at)) >= since
+  order by kept_at desc;
 $$;
 revoke execute on function public.kept_connections(timestamptz) from public, anon;

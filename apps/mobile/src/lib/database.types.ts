@@ -675,6 +675,9 @@ isOneToOne: false
               "area_id": string,"circle_id": string,"description": string,"i_am_member": boolean,"member_count": number,"name": string,"tag_id": number
             }[]
                            },
+"can_give_feedback_about":
+{ Args: { "member_id": string,"other_id": string }; Returns: boolean
+                           },
 "can_see_activity":
 { Args: { "activity": Omit<Database["public"]['Tables']["activities"]['Row'], Database["public"]['Tables']["activities"]['ComputedFields']>,"viewer": string }; Returns: boolean
                            },
@@ -789,7 +792,7 @@ isOneToOne: false
                            },
 "kept_connections":
 { Args: { "since": string }; Returns: {
-              "activity_id": string,"kept_at": string,"user_a": string,"user_b": string
+              "kept_at": string,"user_a": string,"user_b": string
             }[]
                            },
 "leave_circle":
@@ -908,7 +911,7 @@ isOneToOne: false
             }[]
                            },
 "submit_meetup_feedback":
-{ Args: { "activity"?: string,"did_meet"?: boolean,"keep"?: boolean,"other_user": string }; Returns: undefined
+{ Args: { "activity"?: string,"did_meet": boolean,"keep": boolean,"other_user": string }; Returns: undefined
                            },
 "submit_profile":
 { Args: Record<PropertyKey, never>; Returns: undefined
