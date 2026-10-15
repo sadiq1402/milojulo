@@ -9,6 +9,10 @@ const KEY = `${ASHA}/${PHOTO}.jpg`;
 const STAGED = `uploads/${KEY}`;
 const NOW = new Date('2026-10-14T06:30:00Z');
 const MB = 1024 * 1024;
+const CONN = '00000000-0000-0000-0000-0000000000c1';
+const MEDIA = '00000000-0000-0000-0000-0000000000e1';
+const MSG = '00000000-0000-0000-0000-0000000000d1';
+const OTHER_MSG = '00000000-0000-0000-0000-0000000000d2';
 
 // An in-memory stand-in for the database functions, plus a fake R2 behind the real signer.
 function setup(opts: {
@@ -22,6 +26,7 @@ function setup(opts: {
   discarded?: string[];
   visible?: Record<string, string>;
   failDelete?: boolean;
+  chatVisible?: Record<string, string>;
 } = {}) {
   const objects = { ...opts.objects };
   const r2Calls: { method: string; url: string; headers: Headers }[] = [];
@@ -54,6 +59,20 @@ function setup(opts: {
       await refuse('photoLinks');
       dbCalls.push(`photoLinks:${ids.length}`);
       return ids.filter((id) => opts.visible?.[id]).map((id) => ({ photoId: id, objectKey: opts.visible![id] }));
+    },
+    async startChatUpload(memberId, connectionId, kind, mime, size) {
+      await refuse('startChatUpload');
+      dbCalls.push(`startChatUpload:${memberId}:${connectionId}:${kind}:${mime}:${size}`);
+      const ext = kind === 'image' ? 'jpg' : kind === 'video' ? 'mp4' : 'm4a';
+      return `chat/${connectionId}/${MEDIA}.${ext}`;
+    },
+    async chatMediaLinks(_viewer, ids) {
+      await refuse('chatMediaLinks');
+      dbCalls.push(`chatMediaLinks:${ids.length}`);
+      return ids.filter((id) => opts.chatVisible?.[id]).map((id) => ({
+        messageId: id,
+        mediaKey: opts.chatVisible![id],
+      }));
     },
   };
   const storage = createR2({
@@ -447,5 +466,115 @@ Deno.test('photo-urls takes at most 60 ids', async () => {
   assertEquals(await call({ action: 'photo-urls', photoIds: PHOTO }), {
     status: 400,
     body: { error: 'photoIds must be a list of photo ids' },
+  });
+});
+
+// chat-upload
+
+const chatUpload = {
+  action: 'chat-upload',
+  connectionId: CONN,
+  kind: 'image',
+  contentType: 'image/jpeg',
+  size: 2 * MB,
+};
+
+Deno.test('chat-upload makes a slot and gives a PUT link to chat/<connection>/<uuid>.<ext>, valid 300 s', async () => {
+  const { call, dbCalls, r2Calls } = setup();
+  const res = await call(chatUpload);
+  assertEquals(res.status, 200);
+  assertEquals(res.body.mediaKey, `chat/${CONN}/${MEDIA}.jpg`);
+  assertEquals(res.body.expiresIn, 300);
+  const url = new URL(res.body.uploadUrl);
+  assertEquals(url.pathname, `/milojulo-media/chat/${CONN}/${MEDIA}.jpg`);
+  assertEquals(url.searchParams.get('X-Amz-Expires'), '300');
+  assertEquals(url.searchParams.get('X-Amz-SignedHeaders'), 'content-length;content-type;host');
+  assertEquals(dbCalls, ['startChatUpload', `startChatUpload:${ASHA}:${CONN}:image:image/jpeg:${2 * MB}`]);
+  assertEquals(r2Calls, []);
+});
+
+Deno.test('chat-upload takes video as MP4 up to 20 MB and voice as M4A up to 5 MB', async () => {
+  const { call } = setup();
+  const video = await call({ ...chatUpload, kind: 'video', contentType: 'video/mp4', size: 20 * MB });
+  assertEquals(video.status, 200);
+  assertEquals(video.body.mediaKey, `chat/${CONN}/${MEDIA}.mp4`);
+  const voice = await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mp4', size: 5 * MB });
+  assertEquals(voice.status, 200);
+  assertEquals(voice.body.mediaKey, `chat/${CONN}/${MEDIA}.m4a`);
+});
+
+Deno.test('chat-upload refuses the wrong type or size per kind, without asking the database', async () => {
+  const { call, dbCalls } = setup();
+  const image = { status: 400, body: { error: 'image must be a JPEG of at most 5 MB' } };
+  const video = { status: 400, body: { error: 'video must be an MP4 of at most 20 MB' } };
+  const voice = { status: 400, body: { error: 'voice note must be an M4A of at most 5 MB' } };
+  assertEquals(await call({ ...chatUpload, contentType: 'image/png' }), image);
+  assertEquals(await call({ ...chatUpload, size: 5 * MB + 1 }), image);
+  assertEquals(await call({ ...chatUpload, size: 0 }), image);
+  assertEquals(await call({ ...chatUpload, size: 1.5 }), image);
+  assertEquals(await call({ ...chatUpload, kind: 'video', contentType: 'video/mp4', size: 20 * MB + 1 }), video);
+  assertEquals(await call({ ...chatUpload, kind: 'video', contentType: 'image/jpeg' }), video);
+  assertEquals(await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mp4', size: 5 * MB + 1 }), voice);
+  assertEquals(await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mpeg' }), voice);
+  assertEquals(await call({ ...chatUpload, kind: 'text' }), {
+    status: 400,
+    body: { error: 'choose image, video or voice' },
+  });
+  assertEquals(await call({ ...chatUpload, connectionId: 'nope' }), { status: 404, body: { error: 'no connection' } });
+  assertEquals(dbCalls, []);
+});
+
+Deno.test('chat-upload passes on the database refusals', async () => {
+  assertEquals(await setup({ refuse: { startChatUpload: 'no connection' } }).call(chatUpload), {
+    status: 404,
+    body: { error: 'no connection' },
+  });
+  assertEquals(await setup({ refuse: { startChatUpload: 'media is off in this chat' } }).call(chatUpload), {
+    status: 403,
+    body: { error: 'media is off in this chat' },
+  });
+});
+
+// chat-urls
+
+Deno.test('chat-urls signs GET links, valid 600 s, only for the media messages the caller may open', async () => {
+  const key = `chat/${CONN}/${MEDIA}.jpg`;
+  const { call, r2Calls } = setup({ chatVisible: { [MSG]: key } });
+  const res = await call({ action: 'chat-urls', messageIds: [MSG, OTHER_MSG] });
+  assertEquals(res.status, 200);
+  assertEquals(Object.keys(res.body).sort(), ['expiresIn', 'urls']);
+  assertEquals(res.body.expiresIn, 600);
+  assertEquals(Object.keys(res.body.urls), [MSG]);
+  const url = new URL(res.body.urls[MSG]);
+  assertEquals(url.pathname, `/milojulo-media/${key}`);
+  assertEquals(url.searchParams.get('X-Amz-Expires'), '600');
+  assertEquals(r2Calls, []);
+});
+
+Deno.test('chat-urls leaves out non-ids, asks once for duplicates, and skips the database for none', async () => {
+  const { call, dbCalls } = setup({ chatVisible: { [MSG]: 'chat/x/y.jpg' } });
+  const res = await call({ action: 'chat-urls', messageIds: [MSG, MSG, 'nope', 7] });
+  assertEquals(Object.keys(res.body.urls), [MSG]);
+  assertEquals(dbCalls, ['chatMediaLinks', 'chatMediaLinks:1']);
+  const empty = setup();
+  assertEquals(await empty.call({ action: 'chat-urls', messageIds: [] }), {
+    status: 200,
+    body: { urls: {}, expiresIn: 600 },
+  });
+  assertEquals(empty.dbCalls, []);
+});
+
+Deno.test('chat-urls takes at most 60 ids', async () => {
+  const ids = (n: number) =>
+    Array.from({ length: n }, (_, i) => `00000000-0000-0000-0000-${String(i).padStart(12, '0')}`);
+  const { call } = setup();
+  assertEquals((await call({ action: 'chat-urls', messageIds: ids(60) })).status, 200);
+  assertEquals(await call({ action: 'chat-urls', messageIds: ids(61) }), {
+    status: 400,
+    body: { error: 'ask for at most 60 messages at a time' },
+  });
+  assertEquals(await call({ action: 'chat-urls', messageIds: MSG }), {
+    status: 400,
+    body: { error: 'messageIds must be a list of message ids' },
   });
 });

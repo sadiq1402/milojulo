@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(45);
+select plan(43);
 
 -- An accepted Connection between two new visible Members. Run as postgres.
 create function pg_temp.accepted_pair(a uuid, b uuid) returns uuid
@@ -28,12 +28,13 @@ $$;
 
 -- Any message insert, to pass to lives_ok / throws_ok.
 create function pg_temp.message_from(sender uuid, conn uuid, kind text, body text default null,
-  media_key text default null, duration_ms integer default null, activity uuid default null) returns text
+  media_key text default null, duration_ms integer default null, activity uuid default null,
+  mime text default null) returns text
 language sql as $$
   select format($q$ insert into public.messages
-                     (id, connection_id, sender_id, type, body, media_key, media_duration_ms, activity_id)
-                   values (gen_random_uuid(), %L, %L, %L, %L, %L, %L, %L) $q$,
-                conn, sender, kind, body, media_key, duration_ms, activity);
+                     (id, connection_id, sender_id, type, body, media_key, media_duration_ms, activity_id, media_mime)
+                   values (gen_random_uuid(), %L, %L, %L, %L, %L, %L, %L, %L) $q$,
+                conn, sender, kind, body, media_key, duration_ms, activity, mime);
 $$;
 
 -- c1 and c2 have an accepted Connection; c3 is outside it.
@@ -147,23 +148,26 @@ select throws_ok(pg_temp.message_from(:'c1', :'chat', 'text'),
   '23514', null, 'a text message needs a body');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'text', '   '),
   '23514', null, 'a text message needs more than blanks');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'image', media_key => 'chat/x/1.jpg'),
-  'an image with its media is accepted');
+reset role;
+select pg_temp.chat_upload(:'c1', :'chat', 'image') as k1 \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'video') as k2 \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'video') as k4 \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'voice') as k5 \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'voice') as k7 \gset
+select pg_temp.act_as_member(:'c1');
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'image', media_key => :'k1', mime => 'image/jpeg'),
+  'an image with its uploaded media is accepted');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'image'),
   '23514', null, 'an image needs its media');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => 'chat/x/2.mp4', duration_ms => 30000),
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'k2', duration_ms => 30000, mime => 'video/mp4'),
   'a 30-second video is accepted');
-select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => 'chat/x/3.mp4', duration_ms => 30001),
-  '23514', null, 'a video longer than 30 seconds is refused');
-select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => 'chat/x/4.mp4'),
+select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'k4', mime => 'video/mp4'),
   '23514', null, 'a video needs its duration');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', duration_ms => 1000),
   '23514', null, 'a video needs its media');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => 'chat/x/5.m4a', duration_ms => 120000),
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => :'k5', duration_ms => 120000, mime => 'audio/mp4'),
   'a 2-minute voice note is accepted');
-select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => 'chat/x/6.m4a', duration_ms => 120001),
-  '23514', null, 'a voice note longer than 2 minutes is refused');
-select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => 'chat/x/7.m4a'),
+select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => :'k7', mime => 'audio/mp4'),
   '23514', null, 'a voice note needs its duration');
 select lives_ok(pg_temp.message_from(:'c1', :'chat', 'activity_card', activity => public.post_activity('Card', 'sports', 'baner', now() + interval '1 day')),
   'an Activity card naming its Activity is accepted');

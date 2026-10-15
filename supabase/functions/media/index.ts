@@ -1,4 +1,4 @@
-// Media links (#35): signs R2 upload and download URLs for profile photos. The rules live in the
+// Media links (#35, #12): signs R2 upload and download URLs for profile photos and chat media. The rules live in the
 // database functions and handler.ts; this file only wires in Supabase, R2 and the clock.
 import { createClient } from '@supabase/supabase-js';
 import { createHandler, type Db, Refusal } from './handler.ts';
@@ -45,6 +45,15 @@ const db: Db = {
       { viewer: viewerId, photo_ids: photoIds },
     );
     return rows.map((r) => ({ photoId: r.photo_id, objectKey: r.object_key }));
+  },
+  startChatUpload: (memberId, connectionId, kind, mime, size) =>
+    rpc<string>('start_chat_upload', { member_id: memberId, connection_id: connectionId, kind, mime, size }),
+  async chatMediaLinks(viewerId, messageIds) {
+    const rows = await rpc<{ message_id: string; media_key: string }[]>(
+      'chat_media_links',
+      { viewer: viewerId, message_ids: messageIds },
+    );
+    return rows.map((r) => ({ messageId: r.message_id, mediaKey: r.media_key }));
   },
 };
 

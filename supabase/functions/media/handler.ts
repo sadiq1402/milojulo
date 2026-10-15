@@ -13,7 +13,12 @@ export interface Db {
   confirmPhotoUpload(memberId: string, uploadId: string): Promise<string | null>;
   deletePhoto(memberId: string, photoId: string): Promise<string | null>;
   photoLinks(viewerId: string, photoIds: string[]): Promise<{ photoId: string; objectKey: string }[]>;
+  // A chat upload slot; the media key is where the file goes and what the message carries.
+  startChatUpload(memberId: string, connectionId: string, kind: ChatKind, mime: string, size: number): Promise<string>;
+  chatMediaLinks(viewerId: string, messageIds: string[]): Promise<{ messageId: string; mediaKey: string }[]>;
 }
+
+export type ChatKind = 'image' | 'video' | 'voice';
 
 export interface Deps {
   // The signed-in Member's id for a user JWT, or null.
@@ -27,6 +32,14 @@ export const UPLOAD_EXPIRES_IN = 300;
 export const DOWNLOAD_EXPIRES_IN = 600;
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const MAX_PHOTO_IDS = 60;
+export const MAX_MESSAGE_IDS = 60;
+
+// What each chat media kind accepts.
+const CHAT_MEDIA: Record<ChatKind, { mime: string; maxBytes: number; refusal: string }> = {
+  image: { mime: 'image/jpeg', maxBytes: 5 * 1024 * 1024, refusal: 'image must be a JPEG of at most 5 MB' },
+  video: { mime: 'video/mp4', maxBytes: 20 * 1024 * 1024, refusal: 'video must be an MP4 of at most 20 MB' },
+  voice: { mime: 'audio/mp4', maxBytes: 5 * 1024 * 1024, refusal: 'voice note must be an M4A of at most 5 MB' },
+};
 const JPEG = 'image/jpeg';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,6 +52,9 @@ const REFUSAL_STATUS: Record<string, number> = {
   'no photo upload to confirm': 404,
   'no photo to delete': 404,
   'add at least 2 photos': 400,
+  'no connection': 404,
+  'media is off in this chat': 403,
+  'choose image, video or voice': 400,
 };
 
 class HttpError extends Error {
@@ -130,11 +146,46 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     return { urls, expiresIn: DOWNLOAD_EXPIRES_IN };
   }
 
+  async function chatUpload(me: string, body: Record<string, unknown>) {
+    const { connectionId, kind, contentType, size } = body;
+    if (typeof kind !== 'string' || !Object.hasOwn(CHAT_MEDIA, kind)) {
+      throw new HttpError(400, 'choose image, video or voice');
+    }
+    const rule = CHAT_MEDIA[kind as ChatKind];
+    if (
+      contentType !== rule.mime || !Number.isInteger(size) || (size as number) < 1 || (size as number) > rule.maxBytes
+    ) {
+      throw new HttpError(400, rule.refusal);
+    }
+    if (typeof connectionId !== 'string' || !UUID.test(connectionId)) throw new HttpError(404, 'no connection');
+    const mediaKey = await db(deps.db.startChatUpload(me, connectionId, kind as ChatKind, rule.mime, size as number));
+    const uploadUrl = await deps.storage.uploadUrl(mediaKey, rule.mime, size as number, UPLOAD_EXPIRES_IN);
+    return { mediaKey, uploadUrl, expiresIn: UPLOAD_EXPIRES_IN };
+  }
+
+  async function chatUrls(me: string, body: Record<string, unknown>) {
+    const { messageIds } = body;
+    if (!Array.isArray(messageIds)) throw new HttpError(400, 'messageIds must be a list of message ids');
+    if (messageIds.length > MAX_MESSAGE_IDS) {
+      throw new HttpError(400, `ask for at most ${MAX_MESSAGE_IDS} messages at a time`);
+    }
+    const ids = [...new Set(messageIds.filter((id): id is string => typeof id === 'string' && UUID.test(id)))];
+    const urls: Record<string, string> = {};
+    if (ids.length > 0) {
+      const links = await db(deps.db.chatMediaLinks(me, ids));
+      const signed = await Promise.all(links.map((l) => deps.storage.downloadUrl(l.mediaKey, DOWNLOAD_EXPIRES_IN)));
+      links.forEach((l, i) => (urls[l.messageId] = signed[i]));
+    }
+    return { urls, expiresIn: DOWNLOAD_EXPIRES_IN };
+  }
+
   const actions: Record<string, (me: string, body: Record<string, unknown>) => Promise<unknown>> = {
     'photo-upload': photoUpload,
     'photo-confirm': photoConfirm,
     'photo-urls': photoUrls,
     'photo-delete': photoDelete,
+    'chat-upload': chatUpload,
+    'chat-urls': chatUrls,
   };
 
   return async (req) => {

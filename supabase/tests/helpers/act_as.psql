@@ -81,3 +81,19 @@ begin
   reset role;
 end;
 $$;
+
+-- A chat upload slot made the way the media function makes one; returns its media key. Run as
+-- postgres; leaves the role reset.
+create function pg_temp.chat_upload(sender uuid, conn uuid, kind public.message_type,
+  mime text default null, size integer default 1000) returns text
+language plpgsql as $$
+declare
+  key text;
+begin
+  perform pg_temp.act_as_service();
+  key := public.start_chat_upload(sender, conn, kind,
+    coalesce(mime, case kind when 'image' then 'image/jpeg' when 'video' then 'video/mp4' else 'audio/mp4' end), size);
+  reset role;
+  return key;
+end;
+$$;
