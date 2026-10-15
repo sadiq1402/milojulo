@@ -115,6 +115,20 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"banned_terms": {
+                  Row: {
+                    "term": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "term": string
+                  }
+                  Update: {
+                    "term"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"blocks": {
                   Row: {
                     "blocked_id": string,"blocker_id": string,"created_at": string
@@ -699,6 +713,9 @@ isOneToOne: false
                            },
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
+                           },
+"matches_banned_term":
+{ Args: { "content": string }; Returns: boolean
                            },
 "move_photo":
 { Args: { "new_position": number,"photo_id": string }; Returns: undefined
