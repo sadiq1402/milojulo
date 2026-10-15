@@ -65,7 +65,9 @@ afterAll(() => signOut());
 test('the feed shows visible Members nearby, with why we match and shared tags', async () => {
   const feed = await wholeFeed();
   // No shared Mode needed (decision 42): Kabir appears too.
-  expect(ids(feed)).toEqual(expect.arrayContaining([ravi.id, neha.id, kabir.id]));
+  expect(ids(feed)).toEqual(
+    expect.arrayContaining([ravi.id, neha.id, kabir.id]),
+  );
   expect(ids(feed)).not.toContain(me.id);
   expect(feed.find(card => card.id === ravi.id)).toMatchObject({
     name: 'Ravi',
