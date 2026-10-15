@@ -46,8 +46,24 @@ const db: Db = {
     );
     return rows.map((r) => ({ photoId: r.photo_id, objectKey: r.object_key }));
   },
-  startChatUpload: (memberId, connectionId, kind, mime, size) =>
-    rpc<string>('start_chat_upload', { member_id: memberId, connection_id: connectionId, kind, mime, size }),
+  async startChatUpload(memberId, connectionId, kind, size) {
+    const rows = await rpc<{ upload_id: string; upload_key: string }[]>(
+      'start_chat_upload',
+      { member_id: memberId, connection_id: connectionId, kind, size },
+    );
+    return { uploadId: rows[0].upload_id, uploadKey: rows[0].upload_key };
+  },
+  async pendingChatUpload(memberId, uploadId) {
+    const rows = await rpc<{ upload_key: string; media_key: string; mime: string; size: number }[]>(
+      'pending_chat_upload',
+      { member_id: memberId, upload_id: uploadId },
+    );
+    return rows[0]
+      ? { uploadKey: rows[0].upload_key, mediaKey: rows[0].media_key, mime: rows[0].mime, size: rows[0].size }
+      : null;
+  },
+  confirmChatUpload: (memberId, uploadId) =>
+    rpc<string>('confirm_chat_upload', { member_id: memberId, upload_id: uploadId }),
   async chatMediaLinks(viewerId, messageIds) {
     const rows = await rpc<{ message_id: string; media_key: string }[]>(
       'chat_media_links',

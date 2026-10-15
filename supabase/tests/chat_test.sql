@@ -1,23 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(43);
-
--- An accepted Connection between two new visible Members. Run as postgres.
-create function pg_temp.accepted_pair(a uuid, b uuid) returns uuid
-language plpgsql as $$
-declare
-  conn uuid;
-begin
-  perform pg_temp.create_visible_member(a);
-  perform pg_temp.create_visible_member(b);
-  perform pg_temp.act_as_member(a);
-  conn := public.send_request(b, 'friends');
-  perform pg_temp.act_as_member(b);
-  perform public.respond_request(conn, true);
-  reset role;
-  return conn;
-end;
-$$;
+select plan(45);
 
 -- The sender's text insert, to pass to lives_ok / throws_ok.
 create function pg_temp.text_from(sender uuid, conn uuid) returns text
@@ -149,26 +132,35 @@ select throws_ok(pg_temp.message_from(:'c1', :'chat', 'text'),
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'text', '   '),
   '23514', null, 'a text message needs more than blanks');
 reset role;
-select pg_temp.chat_upload(:'c1', :'chat', 'image') as k1 \gset
-select pg_temp.chat_upload(:'c1', :'chat', 'video') as k2 \gset
-select pg_temp.chat_upload(:'c1', :'chat', 'video') as k4 \gset
-select pg_temp.chat_upload(:'c1', :'chat', 'voice') as k5 \gset
-select pg_temp.chat_upload(:'c1', :'chat', 'voice') as k7 \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'image') as image_key \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'video') as video_key \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'video') as untimed_video_key \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'voice') as voice_key \gset
+select pg_temp.chat_upload(:'c1', :'chat', 'voice') as untimed_voice_key \gset
 select pg_temp.act_as_member(:'c1');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'image', media_key => :'k1', mime => 'image/jpeg'),
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'image', media_key => :'image_key', mime => 'image/jpeg'),
   'an image with its uploaded media is accepted');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'image'),
   '23514', null, 'an image needs its media');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'k2', duration_ms => 30000, mime => 'video/mp4'),
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'video_key', duration_ms => 30000, mime => 'video/mp4'),
   'a 30-second video is accepted');
-select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'k4', mime => 'video/mp4'),
+select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'untimed_video_key', mime => 'video/mp4'),
   '23514', null, 'a video needs its duration');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', duration_ms => 1000),
   '23514', null, 'a video needs its media');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => :'k5', duration_ms => 120000, mime => 'audio/mp4'),
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => :'voice_key', duration_ms => 120000, mime => 'audio/mp4'),
   'a 2-minute voice note is accepted');
-select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => :'k7', mime => 'audio/mp4'),
+select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => :'untimed_voice_key', mime => 'audio/mp4'),
   '23514', null, 'a voice note needs its duration');
+-- The table's own limits hold even where the media trigger steps aside (a write with no
+-- signed-in sender, which only the database owner can make; no Member path does this).
+reset role;
+select set_config('request.jwt.claims', '', true);
+select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => 'chat/x/3.mp4', duration_ms => 30001),
+  '23514', null, 'the table refuses a video longer than 30 seconds');
+select throws_ok(pg_temp.message_from(:'c1', :'chat', 'voice', media_key => 'chat/x/6.m4a', duration_ms => 120001),
+  '23514', null, 'the table refuses a voice note longer than 2 minutes');
+select pg_temp.act_as_member(:'c1');
 select lives_ok(pg_temp.message_from(:'c1', :'chat', 'activity_card', activity => public.post_activity('Card', 'sports', 'baner', now() + interval '1 day')),
   'an Activity card naming its Activity is accepted');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'activity_card'),

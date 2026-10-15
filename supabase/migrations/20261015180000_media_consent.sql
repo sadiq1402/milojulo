@@ -1,9 +1,20 @@
 -- Casual Media Consent (#12) and chat media links. In a Casual Connection nobody receives images or
--- video until both Members switch Media Consent on. Every image, video and voice message points at
--- an upload slot the media Edge Function made for that sender and Connection, so a message can only
--- carry a file the sender uploaded there.
+-- video until both Members switch Media Consent on (and, decision 33, no links to images or video
+-- already sent while either side has it off). Every image, video and voice message points at a
+-- confirmed upload slot: the media Edge Function signs an upload to a staging key, checks the file,
+-- copies it to the live key and confirms the slot, so an upload link never points at a live key.
 
 alter table public.connection_members add column media_consent boolean not null default false;
+
+-- The one place each chat media kind's type and file extension are set.
+create function public.chat_media_format(kind public.message_type, out mime text, out ext text)
+language sql immutable
+set search_path = ''
+as $$
+  select f.mime, f.ext from (values ('image', 'image/jpeg', 'jpg'), ('video', 'video/mp4', 'mp4'),
+                                    ('voice', 'audio/mp4', 'm4a')) f (kind, mime, ext)
+  where f.kind = chat_media_format.kind::text;
+$$;
 
 -- Images and video may flow in this Connection: it is not Casual, or both sides consent.
 create function public.media_allowed(connection_id uuid) returns boolean
@@ -16,7 +27,8 @@ as $$
   from public.connections c where c.id = media_allowed.connection_id;
 $$;
 
-revoke execute on function public.media_allowed(uuid) from public, anon, authenticated;
+revoke execute on function public.media_allowed(uuid), public.chat_media_format(public.message_type)
+  from public, anon, authenticated;
 
 -- Either side switches their own Media Consent, on or off, at any time.
 create function public.set_media_consent(connection_id uuid, consent boolean) returns void
@@ -47,32 +59,54 @@ $$;
 
 revoke execute on function public.set_media_consent(uuid, boolean), public.chat_media_state(uuid) from public, anon;
 
--- An upload the media function signed for a sender in a Connection; used by at most one message.
+-- Decision 33: a Connection that becomes Casual starts with Media Consent off on both sides.
+create function public.reset_media_consent() returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  update public.connection_members m set media_consent = false where m.connection_id = new.id;
+  return null;
+end;
+$$;
+
+revoke execute on function public.reset_media_consent() from public, anon, authenticated;
+
+create trigger reset_media_consent_into_casual after update of mode on public.connections
+  for each row when (new.mode = 'casual' and old.mode <> 'casual') execute function public.reset_media_consent();
+
+-- An upload the media function signed for a sender in a Connection. The file is staged at
+-- 'uploads/' || media_key until confirmed; a confirmed slot is used by at most one message.
 create table public.chat_uploads (
-  media_key text primary key,
+  id uuid primary key default gen_random_uuid(),
+  media_key text not null unique,
   sender_id uuid not null references public.profiles (id) on delete cascade,
   connection_id uuid not null references public.connections (id) on delete cascade,
   kind public.message_type not null check (kind in ('image', 'video', 'voice')),
   mime text not null,
-  size integer not null check (size > 0),
+  size integer not null check (size > 0), -- the signed Content-Length; confirm checks the file against it
   created_at timestamptz not null default now(),
+  confirmed_at timestamptz,
   used_at timestamptz
 );
 create index on public.chat_uploads (connection_id);
 alter table public.chat_uploads enable row level security;
 revoke all on public.chat_uploads from anon, authenticated;
 
--- A slot for the Member's file; the same rules as sending (accepted, a side, Active, no Block) plus
--- Media Consent for images and video. Service role only: the media function signs its upload link.
+-- A slot for the Member's file, with the same rules as sending (accepted, a side, Active, no
+-- Block) plus Media Consent for images and video. Service role only.
 create function public.start_chat_upload(member_id uuid, connection_id uuid, kind public.message_type,
-  mime text, size integer) returns text
+  size integer)
+returns table (upload_id uuid, upload_key text)
 language plpgsql security definer
 set search_path = ''
 as $$
 declare
-  key text;
+  new_id uuid := gen_random_uuid();
+  format record;
 begin
-  if kind is null or kind not in ('image', 'video', 'voice') then
+  select * into format from public.chat_media_format(kind) f where f.mime is not null;
+  if not found then
     raise exception 'choose image, video or voice';
   end if;
   if not exists (
@@ -90,16 +124,46 @@ begin
     raise exception 'media is off in this chat';
   end if;
 
-  key := 'chat/' || connection_id || '/' || gen_random_uuid()
-         || case kind when 'image' then '.jpg' when 'video' then '.mp4' else '.m4a' end;
-  insert into public.chat_uploads (media_key, sender_id, connection_id, kind, mime, size)
-  values (key, member_id, connection_id, kind, mime, size);
+  insert into public.chat_uploads (id, media_key, sender_id, connection_id, kind, mime, size)
+  values (new_id, 'chat/' || connection_id || '/' || new_id || '.' || format.ext, member_id, connection_id,
+          kind, format.mime, size);
+  return query select new_id, 'uploads/chat/' || connection_id || '/' || new_id || '.' || format.ext;
+end;
+$$;
+
+-- The Member's own unconfirmed slot under an hour old, for the function to check its file.
+create function public.pending_chat_upload(member_id uuid, upload_id uuid)
+returns table (upload_key text, media_key text, mime text, size integer)
+language sql stable security definer
+set search_path = ''
+as $$
+  select 'uploads/' || u.media_key, u.media_key, u.mime, u.size from public.chat_uploads u
+  where u.id = upload_id and u.sender_id = member_id and u.confirmed_at is null
+    and u.created_at > now() - interval '1 hour';
+$$;
+
+-- Once the file is at its live key the slot is confirmed and a message may use its media key.
+create function public.confirm_chat_upload(member_id uuid, upload_id uuid) returns text
+language plpgsql security definer
+set search_path = ''
+as $$
+declare
+  key text;
+begin
+  update public.chat_uploads u set confirmed_at = now()
+  where u.id = upload_id and u.sender_id = member_id and u.confirmed_at is null
+    and u.created_at > now() - interval '1 hour'
+  returning u.media_key into key;
+  if not found then
+    raise exception 'no upload to confirm';
+  end if;
   return key;
 end;
 $$;
 
 -- The media messages the viewer may open: in their Connections, no Block either way, not removed
--- by moderation and not expired. Service role only: the media function signs the links.
+-- by moderation, not expired, and (decision 33) images and video only while media is allowed.
+-- Service role only.
 create function public.chat_media_links(viewer uuid, message_ids uuid[])
 returns table (message_id uuid, media_key text)
 language sql stable security definer
@@ -113,20 +177,26 @@ as $$
     and m.removed_at is null
     and m.media_deleted_at is null
     and viewer in (c.requester_id, c.addressee_id)
-    and not public.is_blocked(c.requester_id, c.addressee_id);
+    and not public.is_blocked(c.requester_id, c.addressee_id)
+    and (m.type = 'voice' or public.media_allowed(c.id));
 $$;
 
-revoke execute on function public.start_chat_upload(uuid, uuid, public.message_type, text, integer),
+revoke execute on function public.start_chat_upload(uuid, uuid, public.message_type, integer),
+  public.pending_chat_upload(uuid, uuid), public.confirm_chat_upload(uuid, uuid),
   public.chat_media_links(uuid, uuid[]) from public, anon, authenticated;
 
--- Before a media message goes in: durations, Media Consent, and the sender's unused slot, which it
--- then marks used. Definer, since Members cannot see slots. Anyone who may not send here is left to
--- the insert policy, and a retried send (same id) to its on conflict.
+-- Before a media message goes in: durations (friendly texts ahead of the table's checks), Media
+-- Consent, and the sender's confirmed, unused slot, which it then marks used. Definer, since
+-- Members cannot see slots.
 create function public.check_message_media() returns trigger
 language plpgsql security definer
 set search_path = ''
 as $$
 begin
+  -- Left to other guards: not media, or no key (the table's check refuses it); a caller who may
+  -- not send here or sends as someone else (the insert policy refuses it, 42501); a retried id
+  -- (on conflict makes it a no-op, so it must not need a fresh slot). Inserts by the database
+  -- owner or service role have no auth.uid() and so skip this too; no Member path does that.
   if new.type not in ('image', 'video', 'voice') or new.media_key is null
      or not public.can_send_in(new.connection_id) or new.sender_id is distinct from auth.uid()
      or exists (select 1 from public.messages m where m.id = new.id) then
@@ -143,7 +213,7 @@ begin
   end if;
   update public.chat_uploads u set used_at = now()
   where u.media_key = new.media_key and u.sender_id = new.sender_id and u.connection_id = new.connection_id
-    and u.kind = new.type and u.mime = new.media_mime and u.used_at is null;
+    and u.kind = new.type and u.mime = new.media_mime and u.confirmed_at is not null and u.used_at is null;
   if not found then
     raise exception 'upload the media first';
   end if;
