@@ -37,7 +37,7 @@ create function pg_temp.hours_ago_all() returns void
 language sql as $$ update public.member_locations set updated_at = now() - interval '2 hours' where updated_at > now() - interval '1 hour' $$;
 
 create function pg_temp.in_feed(member uuid, filter public.mode default null) returns boolean
-language sql as $$ select exists (select 1 from public.discover_feed(filter, 50) where user_id = member) $$;
+language sql as $$ select exists (select 1 from public.discover_feed(array_remove(array[filter], null), 50) where user_id = member) $$;
 
 create function pg_temp.card(member uuid) returns record
 language sql as $$
@@ -85,10 +85,10 @@ select ok(pg_temp.in_feed(pg_temp.m('05')), 'a Member who chose Casual appears t
 
 -- Modes filter
 select pg_temp.act_as_member(pg_temp.m('01'));
-select set_eq($$ select user_id from public.discover_feed('networking', 50) $$, array[pg_temp.m('04')],
+select set_eq($$ select user_id from public.discover_feed('{networking}', 50) $$, array[pg_temp.m('04')],
   'the Modes filter keeps only Members who chose that Mode');
 select ok(not pg_temp.in_feed(pg_temp.m('04'), 'friends'), 'the Modes filter leaves out Members without it');
-select is_empty($$ select 1 from public.discover_feed('casual', 50) $$,
+select is_empty($$ select 1 from public.discover_feed('{casual}', 50) $$,
   'a Member who did not choose Casual finds nobody under the Casual filter');
 
 -- What the card says

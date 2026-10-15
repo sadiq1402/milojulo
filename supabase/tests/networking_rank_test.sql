@@ -33,13 +33,13 @@ select pg_temp.create_networker('00000000-0000-0000-0000-0000000000b5', 'finance
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000b1');
 select results_eq(
-  $$ select user_id from public.discover_feed('networking') $$,
+  $$ select user_id from public.discover_feed('{networking}') $$,
   $$ values ('00000000-0000-0000-0000-0000000000b2'::uuid), ('00000000-0000-0000-0000-0000000000b4'),
             ('00000000-0000-0000-0000-0000000000b3'), ('00000000-0000-0000-0000-0000000000b5') $$,
   'the Networking feed ranks by how many of Industry and Career Stage are shared, then the usual score');
 select results_eq(
-  $$ select user_id from public.discover_feed('networking', 2,
-       (select cursor from public.discover_feed('networking', 2) offset 1 limit 1)) $$,
+  $$ select user_id from public.discover_feed('{networking}', 2,
+       (select cursor from public.discover_feed('{networking}', 2) offset 1 limit 1)) $$,
   $$ values ('00000000-0000-0000-0000-0000000000b3'::uuid), ('00000000-0000-0000-0000-0000000000b5') $$,
   'the next Networking page continues after the cursor with no gaps or repeats');
 select results_eq(
@@ -54,7 +54,7 @@ select pg_temp.create_networker('00000000-0000-0000-0000-0000000000b6', null, nu
 select pg_temp.create_networker('00000000-0000-0000-0000-0000000000b7', null, null);
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000b6');
 select is(
-  (select user_id from public.discover_feed('networking') limit 1),
+  (select user_id from public.discover_feed('{networking}') limit 1),
   '00000000-0000-0000-0000-0000000000b5'::uuid,
   'a blank Industry or Career Stage does not count as shared');
 reset role;

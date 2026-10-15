@@ -80,7 +80,7 @@ select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000c2'), '{friends}
 select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000c3'), '{friends,casual}'::public.mode[],
   'a Member who fits shows under both the shared non-dating and Dating Modes');
 select is_empty(
-  $$ select 1 from public.discover_feed('casual') where user_id = '00000000-0000-0000-0000-0000000000c2' $$,
+  $$ select 1 from public.discover_feed('{casual}') where user_id = '00000000-0000-0000-0000-0000000000c2' $$,
   'the Casual feed leaves out Members outside the Dating Preferences');
 select is(
   (select row(modes, why_you_match)::text from public.get_profile('00000000-0000-0000-0000-0000000000c2')),

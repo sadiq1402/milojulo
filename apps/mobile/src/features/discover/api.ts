@@ -52,8 +52,7 @@ export const couldNotUnpause = "We couldn't unpause your profile. Try again.";
 export const couldNotSaveRange = "We couldn't change the distance. Try again.";
 
 // `cursor` is opaque: pass back the previous page's nextCursor. A short page is the last.
-// The feed filters by one Mode; with several, each page is narrowed here, so it can come back
-// short while more pages follow.
+// An empty `modes` means every Mode.
 export async function fetchFeedPage({
   modes,
   pageSize = feedPageSize,
@@ -64,19 +63,15 @@ export async function fetchFeedPage({
   cursor?: string | null;
 }): Promise<FeedPage> {
   const { data, error } = await supabase.rpc('discover_feed', {
-    mode_filter: modes.length === 1 ? modes[0] : undefined,
+    mode_filter: modes,
     page_size: pageSize,
     after: cursor ?? undefined,
   });
   if (error) {
     throw new Error(couldNotLoad);
   }
-  const rows =
-    modes.length > 1
-      ? data.filter(row => row.their_modes.some(m => modes.includes(m)))
-      : data;
   return {
-    cards: rows.map(row => ({
+    cards: data.map(row => ({
       id: row.user_id,
       name: row.display_name,
       age: row.age,
