@@ -1,4 +1,9 @@
-import { useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -10,20 +15,32 @@ import {
   Text,
 } from '../../components';
 import { useDeleteAccount } from '../../features/account/queries';
+import { fetchConsentDocuments } from '../../features/consents/api';
 import { useSetPaused } from '../../features/me/queries';
+import type { DeleteAccountParams } from '../../navigation/types';
+import { DocLink } from '../gettingIn/AgeConsentScreen';
 import { colors, sizes, spacing } from '../../theme';
 
 const consequences = [
   'Your profile, photos and chat media are permanently deleted.',
-  'Your Connections and chats are closed.',
+  'Your Connections are closed and your messages are removed for both sides.',
   'This cannot be undone.',
 ];
 
-// Also reached from the consent step after a withdrawal, where pausing makes no sense.
+// Until the data notice has its lawyer-reviewed URL.
+const dataNoticeFallback = 'https://example.com/milojulo/data-notice';
+
 export function DeleteAccountScreen() {
   const navigation = useNavigation();
-  const params = useRoute().params as { pauseInstead?: boolean } | undefined;
-  const offerPause = params?.pauseInstead !== false;
+  const route =
+    useRoute<
+      RouteProp<{ DeleteAccount: DeleteAccountParams }, 'DeleteAccount'>
+    >();
+  const offerPause = route.params?.offerPause ?? true;
+  const documents = useQuery({
+    queryKey: ['consent-documents'],
+    queryFn: fetchConsentDocuments,
+  });
   const [confirm, setConfirm] = useState('');
   const remove = useDeleteAccount();
   const pause = useSetPaused();
@@ -72,7 +89,12 @@ export function DeleteAccountScreen() {
       </View>
       <Text variant="bodySmall" color={colors.secondary}>
         Safety records, such as reports, may be kept for a limited time where
-        the law requires.
+        the law requires.{' '}
+        <DocLink
+          label="Read how we handle your data"
+          doc={documents.data?.data_notice}
+          fallback={dataNoticeFallback}
+        />
       </Text>
       <Input
         label="Type DELETE to confirm"

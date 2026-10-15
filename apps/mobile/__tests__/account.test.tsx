@@ -1,4 +1,5 @@
 import { notifyManager } from '@tanstack/react-query';
+import { Linking } from 'react-native';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
@@ -7,6 +8,7 @@ import * as chat from '../src/features/chat/api';
 import * as consents from '../src/features/consents/api';
 import * as discover from '../src/features/discover/api';
 import * as me from '../src/features/me/api';
+import * as profileSetup from '../src/features/profileSetup/api';
 import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -28,7 +30,7 @@ jest.mock('../src/features/me/api', () => ({
 const documents = {
   terms: { id: 't1', url: null },
   guidelines: { id: 'g1', url: null },
-  data_notice: { id: 'd1', url: null },
+  data_notice: { id: 'd1', url: 'https://milojulo.in/data-notice' },
 };
 
 const accepted = (documentId: string, kind: consents.ConsentKind) => ({
@@ -78,6 +80,7 @@ async function openSettings() {
   await fireEvent.press(await screen.findByRole('tab', { name: 'Me' }));
   await fireEvent.press(await button(/^Settings/));
   await header('Settings');
+  return app;
 }
 
 test('Settings has rows for consent settings, a copy of my data and deleting the account', async () => {
@@ -141,13 +144,13 @@ describe('consent settings', () => {
 });
 
 describe('accepting again after withdrawing', () => {
-  async function openReconsent() {
+  async function openReconsent(heading = 'Accept to carry on') {
     jest.mocked(account.fetchAccountStage).mockResolvedValue('reconsent');
     const app = await renderApp(sessionFor('asha@example.com'));
     jest
       .mocked(auth.signOut)
       .mockImplementation(async () => app.setSession(null));
-    await header('Accept to carry on');
+    await header(heading);
   }
 
   test('accepting again keeps my date of birth and brings me back as a Member', async () => {
@@ -169,6 +172,41 @@ describe('accepting again after withdrawing', () => {
     expect(consents.acceptConsents).toHaveBeenCalledWith(
       '1998-03-21',
       documents,
+    );
+  });
+
+  test('without a stored date of birth it asks for one', async () => {
+    mockProfileSetup({ displayName: 'Asha', birthDate: null });
+    jest.mocked(consents.acceptConsents).mockResolvedValue();
+    await openReconsent('Before we start');
+    expect(await screen.findByLabelText('Day')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText('Day'), '21');
+    await fireEvent.changeText(screen.getByLabelText('Month'), '3');
+    await fireEvent.changeText(screen.getByLabelText('Year'), '1998');
+    await fireEvent.press(
+      screen.getByRole('checkbox', { name: 'I agree to this use of my data' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('checkbox', {
+        name: 'I accept the Terms and the Community Guidelines',
+      }),
+    );
+    await fireEvent.press(await button('Continue'));
+    await waitFor(() =>
+      expect(consents.acceptConsents).toHaveBeenCalledWith(
+        '1998-03-21',
+        documents,
+      ),
+    );
+  });
+
+  test('if my profile cannot load it offers a retry', async () => {
+    jest.mocked(profileSetup.fetchDraft).mockRejectedValue(new Error('x'));
+    jest.mocked(account.fetchAccountStage).mockResolvedValue('reconsent');
+    await renderApp(sessionFor('asha@example.com'));
+    await fireEvent.press(await button('Try again'));
+    await waitFor(() =>
+      expect(profileSetup.fetchDraft).toHaveBeenCalledTimes(2),
     );
   });
 
@@ -217,7 +255,7 @@ describe('a copy of my data', () => {
     await openDataCopy();
     await fireEvent.press(await button('Request a copy'));
     expect(
-      await screen.findByText(/We'll email it to you within 30 days/),
+      await screen.findByText(/We'll email it to you when it's ready/),
     ).toBeOnTheScreen();
     expect(account.requestDataCopy).toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Request a copy' })).toBeNull();
@@ -234,7 +272,9 @@ describe('a copy of my data', () => {
       },
     ]);
     await openDataCopy();
-    expect(await screen.findByText(/sent to your email/)).toBeOnTheScreen();
+    expect(
+      await screen.findByText(/sent to your email on 10 Sep 2026/),
+    ).toBeOnTheScreen();
     expect(await button('Request a copy')).toBeOnTheScreen();
   });
 
@@ -274,6 +314,49 @@ describe('deleting the account', () => {
     ).toBeOnTheScreen();
     expect(account.deleteAccount).toHaveBeenCalled();
     expect(auth.signOut).toHaveBeenCalled();
+  });
+
+  test('signing out forgets everything the account loaded', async () => {
+    jest.mocked(account.deleteAccount).mockResolvedValue();
+    const app = await openSettings();
+    await fireEvent.press(await button('Delete account'));
+    await header('Delete your account?');
+    expect(app.client.getQueryCache().getAll().length).toBeGreaterThan(0);
+    await fireEvent.changeText(
+      screen.getByLabelText('Type DELETE to confirm'),
+      'DELETE',
+    );
+    await fireEvent.press(await button('Delete my account'));
+    await screen.findByText(
+      'Meet people in Pune who want the same kind of hangout.',
+    );
+    expect(app.client.getQueryData(['my-consents'])).toBeUndefined();
+    expect(
+      app.client
+        .getQueryCache()
+        .getAll()
+        .filter(query => query.state.data !== undefined),
+    ).toEqual([]);
+  });
+
+  test('links to how we handle my data', async () => {
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await openSettings();
+    await fireEvent.press(await button('Delete account'));
+    await fireEvent.press(
+      await screen.findByRole('link', { name: 'Read how we handle your data' }),
+    );
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      'https://milojulo.in/data-notice',
+    );
+  });
+
+  test('says messages go for both sides', async () => {
+    await openSettings();
+    await fireEvent.press(await button('Delete account'));
+    expect(
+      await screen.findByText(/messages are removed for both sides/),
+    ).toBeOnTheScreen();
   });
 
   test('a failed delete says so and keeps me signed in', async () => {

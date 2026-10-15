@@ -55,7 +55,7 @@ const fallback = "That didn't work. Check your connection and try again.";
 const friendly: Record<string, string> = {
   'no consent to withdraw': "You've already withdrawn this consent.",
   'you already have a data copy request in progress':
-    "You've already asked for a copy. We'll email it to you within 30 days.",
+    "You've already asked for a copy. We'll email it to you when it's ready.",
 };
 
 const refusal = (message: string) => new Error(friendly[message] ?? fallback);

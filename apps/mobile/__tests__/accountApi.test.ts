@@ -136,7 +136,7 @@ describe('a copy of my data', () => {
       error: { message: 'you already have a data copy request in progress' },
     });
     await expect(requestDataCopy()).rejects.toThrow(
-      "You've already asked for a copy. We'll email it to you within 30 days.",
+      "You've already asked for a copy. We'll email it to you when it's ready.",
     );
   });
 

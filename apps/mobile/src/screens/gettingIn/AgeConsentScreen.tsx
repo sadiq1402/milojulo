@@ -1,4 +1,3 @@
-import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
@@ -11,23 +10,21 @@ import {
   Text,
 } from '../../components';
 import { useRefreshAccountStage } from '../../features/account/useAccountStage';
-import { useSession } from '../../features/auth/SessionProvider';
 import {
   acceptConsents,
   fetchConsentDocuments,
   type ConsentDocument,
 } from '../../features/consents/api';
 import { toBirthDate } from '../../features/consents/birthDate';
-import { useProfileDraft } from '../../features/profileSetup/queries';
 import { colors, fontFamily, fonts, spacing } from '../../theme';
 
 // Until the lawyer-reviewed documents have URLs.
-const placeholderUrls = {
+export const placeholderUrls = {
   terms: 'https://example.com/milojulo/terms',
   guidelines: 'https://example.com/milojulo/community-guidelines',
 };
 
-const collected = [
+export const collected = [
   ['Email', 'to sign you in'],
   ['Date of birth', 'to confirm you are 18 or older'],
   [
@@ -38,7 +35,7 @@ const collected = [
   ['Messages and media', 'to deliver your chats'],
 ];
 
-function DocLink({
+export function DocLink({
   label,
   doc,
   fallback,
@@ -59,17 +56,7 @@ function DocLink({
   );
 }
 
-// After withdrawing a consent: accept the current documents again (keeping the date of birth
-// already given), or delete the account.
-export function ReconsentScreen() {
-  return <AgeConsentScreen again />;
-}
-
-export function AgeConsentScreen({ again = false }: { again?: boolean }) {
-  const navigation = useNavigation();
-  const userId = useSession().session!.user.id;
-  const draft = useProfileDraft(userId);
-  const knownBirthDate = again ? draft.data?.birthDate : undefined;
+export function AgeConsentScreen() {
   const refreshStage = useRefreshAccountStage();
   const documents = useQuery({
     queryKey: ['consent-documents'],
@@ -88,13 +75,13 @@ export function AgeConsentScreen({ again = false }: { again?: boolean }) {
   });
 
   const ready =
-    (again
-      ? !!knownBirthDate
-      : day.trim() && month.trim() && year.trim().length === 4) &&
+    day.trim() &&
+    month.trim() &&
+    year.trim().length === 4 &&
     dataConsent &&
     termsConsent;
   const submit = () => {
-    const birthDate = knownBirthDate ?? toBirthDate(day, month, year);
+    const birthDate = toBirthDate(day, month, year);
     setDateError(birthDate ? undefined : 'Enter a real date of birth.');
     if (birthDate) {
       accept.mutate(birthDate);
@@ -107,12 +94,7 @@ export function AgeConsentScreen({ again = false }: { again?: boolean }) {
 
   return (
     <FlowScreen
-      title={again ? 'Accept to carry on' : 'Before we start'}
-      intro={
-        again
-          ? 'You withdrew a consent, so your profile is hidden from everyone. Accept the current Terms, Community Guidelines and data notice to show it again, or delete your account.'
-          : undefined
-      }
+      title="Before we start"
       footer={
         <>
           {error ? (
@@ -130,58 +112,49 @@ export function AgeConsentScreen({ again = false }: { again?: boolean }) {
             loading={accept.isPending}
             disabled={!ready || !documents.data}
           />
-          {again ? (
-            <Button
-              label="Delete my account instead"
-              variant="text"
-              onPress={() => navigation.navigate('DeleteAccount' as never)}
-            />
-          ) : null}
         </>
       }
     >
-      {again ? null : (
-        <View style={styles.field}>
-          <Text variant="bodySmall" style={styles.label}>
-            Date of birth
-          </Text>
-          <View style={styles.dateRow}>
-            <View style={styles.part}>
-              <Input
-                accessibilityLabel="Day"
-                placeholder="DD"
-                value={day}
-                onChangeText={setDay}
-                keyboardType="number-pad"
-                maxLength={2}
-              />
-            </View>
-            <View style={styles.part}>
-              <Input
-                accessibilityLabel="Month"
-                placeholder="MM"
-                value={month}
-                onChangeText={setMonth}
-                keyboardType="number-pad"
-                maxLength={2}
-              />
-            </View>
-            <View style={styles.yearPart}>
-              <Input
-                accessibilityLabel="Year"
-                placeholder="YYYY"
-                value={year}
-                onChangeText={setYear}
-                keyboardType="number-pad"
-                maxLength={4}
-              />
-            </View>
+      <View style={styles.field}>
+        <Text variant="bodySmall" style={styles.label}>
+          Date of birth
+        </Text>
+        <View style={styles.dateRow}>
+          <View style={styles.part}>
+            <Input
+              accessibilityLabel="Day"
+              placeholder="DD"
+              value={day}
+              onChangeText={setDay}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
           </View>
-          <Text variant="bodySmall" color={colors.secondary}>
-            You must be 18 or older to use MiloJulo.
-          </Text>
+          <View style={styles.part}>
+            <Input
+              accessibilityLabel="Month"
+              placeholder="MM"
+              value={month}
+              onChangeText={setMonth}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
+          </View>
+          <View style={styles.yearPart}>
+            <Input
+              accessibilityLabel="Year"
+              placeholder="YYYY"
+              value={year}
+              onChangeText={setYear}
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+          </View>
         </View>
-      )}
+        <Text variant="bodySmall" color={colors.secondary}>
+          You must be 18 or older to use MiloJulo.
+        </Text>
+      </View>
       <Card>
         <Text variant="bodySmall" style={styles.label}>
           What we collect and why

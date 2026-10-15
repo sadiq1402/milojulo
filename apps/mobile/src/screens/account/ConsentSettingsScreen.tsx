@@ -16,18 +16,12 @@ import {
   useMyConsents,
   useWithdrawConsent,
 } from '../../features/account/queries';
-import type { ConsentKind } from '../../features/consents/api';
+import { consentNames as names } from '../../features/consents/api';
 import type { MemberParams } from '../../navigation/types';
 import { colors, spacing } from '../../theme';
 import { LoadErrorScreen, LoadingScreen } from '../StatusScreen';
 
 type Props = NativeStackScreenProps<MemberParams, 'ConsentSettings'>;
-
-const names: Record<ConsentKind, string> = {
-  terms: 'Terms',
-  guidelines: 'Community Guidelines',
-  data_notice: 'Data notice',
-};
 
 export function ConsentSettingsScreen({ navigation }: Props) {
   const consents = useMyConsents();

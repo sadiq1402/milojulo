@@ -19,7 +19,7 @@ type Props = {
   // Profile setup: the top bar's title and the step progress under it.
   barTitle?: string;
   progress?: { step: number; of: number };
-  // A feature icon above the heading (DeleteAccount).
+  // A feature icon above the heading.
   icon?: ReactNode;
   children?: ReactNode;
   footer: ReactNode;

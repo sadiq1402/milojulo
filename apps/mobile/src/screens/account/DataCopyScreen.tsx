@@ -12,6 +12,7 @@ import {
   useDataRequests,
   useRequestDataCopy,
 } from '../../features/account/queries';
+import { dayMonthYear } from '../../features/activities/time';
 import type { MemberParams } from '../../navigation/types';
 import { colors } from '../../theme';
 import { LoadErrorScreen, LoadingScreen } from '../StatusScreen';
@@ -43,8 +44,10 @@ export function DataCopyScreen({ navigation }: Props) {
         <Card>
           <Text accessibilityLiveRegion="polite">
             {latest.status === 'pending'
-              ? "You've asked for a copy. We'll email it to you within 30 days."
-              : 'Your last copy was sent to your email.'}
+              ? "You've asked for a copy. We'll email it to you when it's ready."
+              : `Your last copy was sent to your email on ${dayMonthYear(
+                  latest.completedAt ?? latest.createdAt,
+                )}.`}
           </Text>
         </Card>
       ) : null}
