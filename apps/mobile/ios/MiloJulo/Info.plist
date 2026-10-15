@@ -34,6 +34,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>MiloJulo uses the camera for profile photos and to send photos and videos in chat.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MiloJulo lets you choose photos and videos to add to your profile or send in chat.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MiloJulo uses the microphone to record voice notes and video in chat.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>UILaunchStoryboardName</key>

@@ -778,6 +778,14 @@ isOneToOne: false
 "set_paused":
 { Args: { "paused": boolean }; Returns: undefined
                            },
+"set_media_consent":
+{ Args: { "connection_id": string,"consent": boolean }; Returns: undefined
+                           },
+"chat_media_state":
+{ Args: { "connection_id": string }; Returns: {
+              "is_casual": boolean,"mine": boolean,"theirs": boolean
+            }[]
+                           },
 "shared_tags":
 { Args: { "a": string,"b": string }; Returns: {
               "created_at": string,

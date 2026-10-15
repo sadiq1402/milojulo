@@ -11,17 +11,26 @@ import {
   subscribeToChat,
   type Message,
 } from './api';
+import { sendMediaMessage, type OutgoingMedia } from './media';
 import { catchUpFrom, mergeMessages } from './messages';
 import { chatKeys } from './queries';
 
 // 'refused': the Connection closed or a Block landed, so retrying can't help.
 type Delivery = 'sent' | 'sending' | 'failed' | 'refused';
-export type ChatItem = Message & { delivery: Delivery };
+// A media send still on its way shows the file from the phone (`localUri`); `failure` says why
+// one didn't go (too large, media off, ...).
+export type ChatItem = Message & {
+  delivery: Delivery;
+  localUri?: string;
+  failure?: string;
+};
 type Pending = {
   id: string;
-  body: string;
+  body: string | null;
+  media: OutgoingMedia | null;
   createdAt: string;
   delivery: Delivery;
+  failure?: string;
 };
 
 // One chat: messages from the first load, the live channel and catch-ups, plus sends still on
@@ -40,8 +49,10 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     refetchInterval: 15_000,
   });
   const [pending, setPending] = useState<Pending[]>([]);
-  const setDelivery = (id: string, delivery: Delivery) =>
-    setPending(list => list.map(p => (p.id === id ? { ...p, delivery } : p)));
+  const setDelivery = (id: string, delivery: Delivery, failure?: string) =>
+    setPending(list =>
+      list.map(p => (p.id === id ? { ...p, delivery, failure } : p)),
+    );
 
   const merge = useCallback(
     (incoming: Message[]) =>
@@ -96,33 +107,45 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     }
   }, [reading, appActive, newestAt, connectionId, client]);
 
-  const attempt = async (id: string, body: string) => {
+  // A retry reuses the id, so a send that got through earlier isn't doubled.
+  const attempt = async ({ id, body, media }: Pending) => {
     setDelivery(id, 'sending');
     try {
-      await sendMessage({ id, connectionId, body });
+      if (media) {
+        await sendMediaMessage({ id, connectionId, media });
+      } else {
+        await sendMessage({ id, connectionId, body: body ?? '' });
+      }
     } catch (e) {
-      setDelivery(
-        id,
-        (e as Error).message === cannotSendMessage ? 'refused' : 'failed',
-      );
+      const message = (e as Error).message;
+      if (message === cannotSendMessage) {
+        setDelivery(id, 'refused');
+      } else {
+        setDelivery(id, 'failed', media ? message : undefined);
+      }
       return;
     }
     setDelivery(id, 'sent');
     catchUp().catch(() => {});
   };
 
-  const send = (body: string) => {
-    const id = newMessageId();
-    setPending(list => [
-      ...list,
-      { id, body, createdAt: new Date().toISOString(), delivery: 'sending' },
-    ]);
-    attempt(id, body);
+  const queue = (body: string | null, media: OutgoingMedia | null) => {
+    const message: Pending = {
+      id: newMessageId(),
+      body,
+      media,
+      createdAt: new Date().toISOString(),
+      delivery: 'sending',
+    };
+    setPending(list => [...list, message]);
+    attempt(message);
   };
+  const send = (body: string) => queue(body, null);
+  const sendMedia = (media: OutgoingMedia) => queue(null, media);
   const retry = (id: string) => {
     const message = pending.find(p => p.id === id);
     if (message) {
-      attempt(id, message.body);
+      attempt(message);
     }
   };
 
@@ -136,11 +159,22 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
         id: p.id,
         connectionId,
         senderId: myId,
-        type: 'text' as const,
+        type: p.media?.kind ?? ('text' as const),
         body: p.body,
         activityId: null,
         createdAt: p.createdAt,
+        media: p.media
+          ? {
+              mime: p.media.mime,
+              width: p.media.width,
+              height: p.media.height,
+              durationMs: p.media.durationMs,
+              expired: false,
+            }
+          : null,
         delivery: p.delivery,
+        localUri: p.media?.uri,
+        failure: p.failure,
       })),
   ];
 
@@ -158,6 +192,7 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     seenId,
     muted: state.data?.muted ?? false,
     send,
+    sendMedia,
     retry,
   };
 }

@@ -51,6 +51,7 @@ const message = (overrides: Partial<Message>): Message => ({
   body: 'Hey!',
   activityId: null,
   createdAt: '2026-10-12T10:00:00.000Z',
+  media: null,
   ...overrides,
 });
 

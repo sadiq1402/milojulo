@@ -1,17 +1,26 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Icon, IconButton, Tag, Text } from '../../components';
+import {
+  Avatar,
+  BottomSheet,
+  Button,
+  Icon,
+  IconButton,
+  Tag,
+  Text,
+} from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaNames } from '../../features/catalog/queries';
 import {
@@ -19,10 +28,23 @@ import {
   closeConnection,
   setMuted,
 } from '../../features/chat/api';
-import { chatKeys, useConversations } from '../../features/chat/queries';
+import {
+  pickMedia,
+  startVoiceNote,
+  type MediaSource,
+  type VoiceRecording,
+} from '../../features/chat/capture';
+import { setMediaConsent } from '../../features/chat/media';
+import {
+  chatKeys,
+  useConversations,
+  useMediaState,
+  useMediaUrls,
+} from '../../features/chat/queries';
 import { useChat, type ChatItem } from '../../features/chat/useChat';
 import { useModeChange } from '../../features/chat/useModeChange';
 import { modeLabels } from '../../features/modes';
+import { useSecureScreen } from '../../lib/secureScreen';
 import type { MemberParams } from '../../navigation/types';
 import {
   colors,
@@ -33,6 +55,7 @@ import {
   textStyles,
 } from '../../theme';
 import { ChatMenu } from './ChatMenu';
+import { formatDuration } from './MediaContent';
 import { MessageBubble } from './MessageBubble';
 import { ModeChangeCard } from './ModeChangeCard';
 
@@ -74,6 +97,70 @@ export function ChatScreen({
       chat.send(body);
       setDraft('');
     }
+  };
+
+  // Android blocks screenshots and screen recording here; iOS can't (docs/09).
+  useSecureScreen();
+
+  const mediaUrls = useMediaUrls(chat.items.filter(m => m.delivery === 'sent'));
+  const mediaState = useMediaState(connectionId, conversation?.mode, accepted);
+  const consent = useMutation({
+    mutationFn: (on: boolean) => setMediaConsent(connectionId, on),
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: chatKeys.mediaState(connectionId) }),
+  });
+  const casual = mediaState.data?.isCasual ?? false;
+  // Media Consent: in Casual, photos and video wait for both switches.
+  const visualsOff =
+    casual && !(mediaState.data?.mine && mediaState.data?.theirs);
+  const consentNote = !casual
+    ? null
+    : !mediaState.data?.mine
+    ? 'Photos and video are off in this chat. Switch on photos and video in the menu; they work once you both have.'
+    : !mediaState.data?.theirs
+    ? `Waiting for ${name} to allow photos and video too.`
+    : null;
+
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [mediaError, setMediaError] = useState<string>();
+  const attach = async (source: MediaSource) => {
+    setAttachOpen(false);
+    setMediaError(undefined);
+    try {
+      const picked = await pickMedia(source);
+      if (picked) {
+        chat.sendMedia(picked);
+      }
+    } catch (e) {
+      setMediaError((e as Error).message);
+    }
+  };
+
+  // Hold to record; letting go (or reaching 2 minutes) sends.
+  const [recordingMs, setRecordingMs] = useState<number | null>(null);
+  const recording = useRef<Promise<VoiceRecording | null>>(null);
+  const stopRecording = async () => {
+    const started = recording.current;
+    recording.current = null;
+    setRecordingMs(null);
+    const note = await (await started)?.stop().catch(() => null);
+    if (note) {
+      chat.sendMedia(note);
+    }
+  };
+  const startRecording = () => {
+    setMediaError(undefined);
+    setRecordingMs(0);
+    recording.current = startVoiceNote({
+      onTick: setRecordingMs,
+      onLimit: () => {
+        stopRecording();
+      },
+    }).catch((e: Error) => {
+      setMediaError(e.message);
+      setRecordingMs(null);
+      return null;
+    });
   };
 
   return (
@@ -125,6 +212,9 @@ export function ChatScreen({
               item={item}
               mine={item.senderId === myId}
               seen={item.id === chat.seenId}
+              mediaUrl={mediaUrls.data?.[item.id]}
+              mediaUrlsLoading={mediaUrls.isPending}
+              mediaOff={visualsOff}
               onRetry={() => chat.retry(item.id)}
               onReport={
                 item.senderId !== myId && conversation
@@ -140,6 +230,25 @@ export function ChatScreen({
             />
           )}
         />
+        {mediaError ? (
+          <Text
+            variant="bodySmall"
+            color={colors.danger}
+            style={styles.actionError}
+            accessibilityLiveRegion="polite"
+          >
+            {mediaError}
+          </Text>
+        ) : null}
+        {accepted && consentNote ? (
+          <Text
+            variant="bodySmall"
+            color={colors.secondary}
+            style={styles.actionError}
+          >
+            {consentNote}
+          </Text>
+        ) : null}
         {menuAction.isError ? (
           <Text
             variant="bodySmall"
@@ -164,21 +273,54 @@ export function ChatScreen({
         ) : null}
         {accepted ? (
           <View style={styles.composer}>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder="Message"
-              placeholderTextColor={colors.secondary}
-              accessibilityLabel="Message"
-              multiline
-              style={styles.input}
-            />
             <IconButton
-              icon="send"
-              accessibilityLabel="Send"
-              color={draft.trim() ? colors.orchid : colors.secondary}
-              onPress={send}
+              icon="image"
+              accessibilityLabel="Attach photo or video"
+              disabled={visualsOff}
+              onPress={() => setAttachOpen(true)}
             />
+            {recordingMs !== null ? (
+              <View style={styles.recording} accessibilityLiveRegion="polite">
+                <Text color={colors.danger}>
+                  Recording {formatDuration(recordingMs)} of 2:00, release to
+                  send
+                </Text>
+              </View>
+            ) : (
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="Message"
+                placeholderTextColor={colors.secondary}
+                accessibilityLabel="Message"
+                multiline
+                style={styles.input}
+              />
+            )}
+            {draft.trim() ? (
+              <IconButton
+                icon="send"
+                accessibilityLabel="Send"
+                color={colors.orchid}
+                onPress={send}
+              />
+            ) : (
+              <Pressable
+                onPressIn={startRecording}
+                onPressOut={stopRecording}
+                accessibilityRole="button"
+                accessibilityLabel="Hold to record a voice note"
+                style={[
+                  styles.mic,
+                  recordingMs !== null && styles.micRecording,
+                ]}
+              >
+                <Icon
+                  name="mic"
+                  color={recordingMs !== null ? colors.white : colors.ink}
+                />
+              </Pressable>
+            )}
           </View>
         ) : conversation ? (
           <View style={styles.closed}>
@@ -208,7 +350,37 @@ export function ChatScreen({
           menuAction.mutate(() => closeConnection(connectionId))
         }
         onSafety={() => navigation.navigate('SafetyCentre')}
+        mediaConsent={casual ? mediaState.data?.mine ?? false : undefined}
+        onMediaConsent={on => consent.mutate(on)}
       />
+      <BottomSheet visible={attachOpen} onClose={() => setAttachOpen(false)}>
+        <View style={styles.sheet}>
+          <Button
+            label="Choose from gallery"
+            variant="secondary"
+            onPress={() => attach('library')}
+          />
+          <Button
+            label="Take a photo"
+            variant="secondary"
+            onPress={() => attach('camera-photo')}
+          />
+          <Button
+            label="Record a video"
+            variant="secondary"
+            onPress={() => attach('camera-video')}
+          />
+          <Text variant="caption" color={colors.secondary}>
+            Videos up to 30 seconds. Photos, videos and voice notes are deleted
+            after 90 days.
+          </Text>
+          <Button
+            label="Cancel"
+            variant="text"
+            onPress={() => setAttachOpen(false)}
+          />
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -277,6 +449,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.field,
   },
+  recording: {
+    flex: 1,
+    minHeight: sizes.chat.composerInput,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  mic: {
+    width: sizes.iconButton,
+    height: sizes.iconButton,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  micRecording: { backgroundColor: colors.orchid },
+  sheet: { gap: spacing.xs },
   closed: {
     padding: sizes.chat.composerPaddingY,
     alignItems: 'center',

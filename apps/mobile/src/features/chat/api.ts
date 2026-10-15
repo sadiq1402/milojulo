@@ -57,10 +57,21 @@ export type Message = {
   body: string | null;
   activityId: string | null;
   createdAt: string;
+  // Images, video and voice notes; the file itself comes by signed link (fetchMediaUrls).
+  media: MessageMedia | null;
+};
+
+export type MessageMedia = {
+  mime: string | null;
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
+  // Media Expiry: the file was deleted (90 days); the message stays.
+  expired: boolean;
 };
 
 const messageColumns =
-  'id, connection_id, sender_id, type, body, activity_id, created_at';
+  'id, connection_id, sender_id, type, body, activity_id, created_at, media_mime, media_width, media_height, media_duration_ms, media_deleted_at';
 
 type MessageRow = Pick<
   Database['public']['Tables']['messages']['Row'],
@@ -71,6 +82,11 @@ type MessageRow = Pick<
   | 'body'
   | 'activity_id'
   | 'created_at'
+  | 'media_mime'
+  | 'media_width'
+  | 'media_height'
+  | 'media_duration_ms'
+  | 'media_deleted_at'
 >;
 
 export function toMessage(row: MessageRow): Message {
@@ -82,6 +98,16 @@ export function toMessage(row: MessageRow): Message {
     body: row.body,
     activityId: row.activity_id,
     createdAt: row.created_at,
+    media:
+      row.type === 'image' || row.type === 'video' || row.type === 'voice'
+        ? {
+            mime: row.media_mime,
+            width: row.media_width,
+            height: row.media_height,
+            durationMs: row.media_duration_ms,
+            expired: row.media_deleted_at !== null,
+          }
+        : null,
   };
 }
 
