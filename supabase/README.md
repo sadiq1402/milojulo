@@ -56,6 +56,8 @@ select vault.create_secret('<service role key>', 'service_role_key');
 
 To change one later: `select vault.update_secret((select id from vault.secrets where name = 'service_role_key'), '<new key>');`. Without them the job's URL is null and the request fails without doing anything.
 
+If the nightly purge seems not to run, check `select * from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'purge-chat-media') order by start_time desc limit 5;` (did the job run and queue the request), then `net._http_response` (the HTTP status) and the `purge-chat-media` function logs in the dashboard.
+
 ## Continuous deployment
 
 `.github/workflows/deploy.yml` deploys to the hosted project automatically on every push to `main` that touches `supabase/migrations/**` or `supabase/functions/**`: it links the project, runs `supabase db push` (applies only new migrations), and redeploys the `media` function when a function file changed. PRs are gated by `db-tests` / `function-tests` before merge, so only tested changes reach it.

@@ -46,6 +46,32 @@ as $$
     and not public.consent_withdrawn(activity.host_id);
 $$;
 
+-- Not banned, deleted, Auto-hidden or consent-withdrawn: Join Requests and the learning loop.
+create or replace function public.is_reachable(member_id uuid) returns boolean
+language sql stable
+set search_path = ''
+as $$
+  select exists (select 1 from public.profiles p
+                 where p.id = member_id and p.status <> 'banned' and p.deleted_at is null and p.hidden_at is null)
+    and not public.consent_withdrawn(member_id);
+$$;
+
+-- A Member who withdrew consent can't send until they accept again; the other side still can.
+create or replace function public.can_send_in(connection_id uuid) returns boolean
+language sql stable security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.connections c
+    join public.profiles me on me.id = auth.uid()
+    where c.id = can_send_in.connection_id
+      and c.status = 'accepted'
+      and auth.uid() in (c.requester_id, c.addressee_id)
+      and me.status = 'active' and me.deleted_at is null
+      and not public.is_blocked(c.requester_id, c.addressee_id)
+  ) and not public.consent_withdrawn(auth.uid());
+$$;
+
 -- The caller's own accepted, not yet withdrawn consent to that document.
 create function public.withdraw_consent(document_id uuid) returns void
 language plpgsql security definer
@@ -123,14 +149,17 @@ revoke execute on function public.delete_account() from public, anon;
 -- Media Expiry: daily at 03:00 India time (21:30 UTC), the purge-chat-media Edge Function deletes chat media
 -- older than 90 days. The founder stores the project URL and service role key in Vault (supabase/README.md).
 select cron.schedule('purge-chat-media', '30 21 * * *', $job$
+  with secrets as (
+    select max(decrypted_secret) filter (where name = 'project_url') as project_url,
+           max(decrypted_secret) filter (where name = 'service_role_key') as service_role_key
+    from vault.decrypted_secrets where name in ('project_url', 'service_role_key')
+  )
   select net.http_post(
-    url := (select decrypted_secret from vault.decrypted_secrets where name = 'project_url')
-           || '/functions/v1/purge-chat-media',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key')),
+    url := project_url || '/functions/v1/purge-chat-media',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || service_role_key),
     body := '{}'::jsonb,
     timeout_milliseconds := 60000)
+  from secrets
 $job$);
 
 -- A deleted Member's Connections leave the other side's chat list at once.

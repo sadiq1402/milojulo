@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(46);
+select plan(57);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000020' || suffix)::uuid $$;
@@ -55,6 +55,19 @@ begin
     seen := seen || 'photos'::text; end if;
   reset role;
   return seen;
+end;
+$$;
+
+-- Rows of the subject's photos the viewer gets links for. Run as postgres.
+create function pg_temp.media_photo_count(viewer text, subject text) returns setof int
+language plpgsql as $$
+begin
+  perform pg_temp.act_as_service();
+  if exists (select 1 from public.photo_links(pg_temp.m(viewer),
+               (select array_agg(id) from public.photos where user_id = pg_temp.m(subject)))) then
+    return next 1;
+  end if;
+  reset role;
 end;
 $$;
 
@@ -151,8 +164,9 @@ reset role;
 -- Deleting an account
 
 -- c1 deletes their account; d1 shares a Connection, a Circle and Join Requests both ways with them.
-select pg_temp.accepted_pair(pg_temp.m('c1'), pg_temp.m('d1'));
+insert into ids select 'cd', pg_temp.accepted_pair(pg_temp.m('c1'), pg_temp.m('d1'));
 select pg_temp.as_member('c1');
+insert into public.messages (id, connection_id, type, body) values (gen_random_uuid(), pg_temp.id('cd'), 'text', 'Before I go');
 select public.join_circle(pg_temp.id('circle'));
 insert into ids select 'c1act', public.post_activity('Chess', 'games', 'baner', now() + interval '1 day');
 select pg_temp.as_member('d1');
@@ -187,6 +201,48 @@ select is(pg_temp.seen_by('d1', 'b1') || pg_temp.reached_by('d1', 'b1'), '{disco
 
 select pg_temp.act_as_anon();
 select throws_ok($$ select public.delete_account() $$, '42501', null, 'signed-out visitors cannot delete an account');
+reset role;
+
+-- Until the purge, the other side still reads the history directly, though the chat list drops it.
+select pg_temp.as_member('d1');
+select is((select count(*) from public.messages where connection_id = pg_temp.id('cd')), 1::bigint,
+  'the other side can still read the chat history with a deleted Member until the purge');
+reset role;
+
+-- A Member who withdrew consent, as a Paused one: c2 shares a Connection with c3 and asked to join c3's Activity.
+insert into ids select 'hk', pg_temp.accepted_pair(pg_temp.m('c3'), pg_temp.m('c2'));
+select pg_temp.as_member('c3');
+insert into ids select 'h1act', public.post_activity('Swim', 'sports', 'baner', now() + interval '1 day');
+select pg_temp.as_member('c2');
+select public.join_activity_request(pg_temp.id('h1act'));
+select public.withdraw_consent(pg_temp.doc('data_notice'));
+select throws_ok($$ insert into public.messages (id, connection_id, type, body)
+                    values (gen_random_uuid(), (select v from ids where k = 'hk'), 'text', 'Still here') $$,
+  '42501', null, 'a Member who withdrew consent cannot send messages');
+select pg_temp.as_member('c3');
+select is((select count(*) from public.my_connections() where other_id = pg_temp.m('c2')), 1::bigint,
+  'the other side keeps the Connection in their chat list, as for a Paused Member');
+select lives_ok($$ insert into public.messages (id, connection_id, type, body)
+                   values (gen_random_uuid(), (select v from ids where k = 'hk'), 'text', 'Hello?') $$,
+  'and can still send into it');
+select is_empty(format($$ select 1 from public.activity_join_requests(%L) $$, pg_temp.id('h1act')),
+  'their Join Request leaves the host''s list');
+select throws_ok($$ select public.submit_meetup_feedback('00000000-0000-0000-0000-0000000020c2', true, true) $$,
+  'no one to give feedback about', 'and no feedback can be given about them');
+reset role;
+select is((select count(*) from pg_temp.media_photo_count('c3', 'c2')), 1::bigint,
+  'a Connection still gets their photo links, as for a Paused Member');
+select is((select count(*) from pg_temp.media_photo_count('b1', 'c2')), 0::bigint,
+  'a stranger gets none');
+
+select pg_temp.as_member('c2');
+select public.accept_consents('1995-06-15', (select array_agg(id) from public.consent_documents where version = 'v1'));
+select lives_ok($$ insert into public.messages (id, connection_id, type, body)
+                   values (gen_random_uuid(), (select v from ids where k = 'hk'), 'text', 'Back') $$,
+  'after accepting again they can send');
+select pg_temp.as_member('c3');
+select isnt_empty(format($$ select 1 from public.activity_join_requests(%L) $$, pg_temp.id('h1act')),
+  'and their Join Request is back on the host''s list');
 reset role;
 
 -- Erasure: removing the auth user
@@ -253,6 +309,8 @@ select results_eq($$ select schedule, active from cron.job where jobname = 'purg
 select matches((select command from cron.job where jobname = 'purge-chat-media'),
   'net\.http_post.*project_url.*/functions/v1/purge-chat-media.*service_role_key',
   'it calls the purge-chat-media function with the project URL and service role key from Vault');
+select is((select array_length(regexp_split_to_array(command, 'vault\.decrypted_secrets'), 1) - 1
+           from cron.job where jobname = 'purge-chat-media'), 1, 'it reads Vault once per run');
 
 select * from finish();
 rollback;
