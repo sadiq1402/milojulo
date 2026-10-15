@@ -8,10 +8,16 @@ type Props = {
   onClose: () => void;
   name: string;
   onBlock: () => Promise<void>;
+  onReport: () => void;
 };
 
-// Report joins this menu with the Reports ticket (#49).
-export function ProfileMenu({ visible, onClose, name, onBlock }: Props) {
+export function ProfileMenu({
+  visible,
+  onClose,
+  name,
+  onBlock,
+  onReport,
+}: Props) {
   const [confirming, setConfirming] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [error, setError] = useState<string>();
@@ -61,6 +67,14 @@ export function ProfileMenu({ visible, onClose, name, onBlock }: Props) {
         </View>
       ) : (
         <View style={styles.stack}>
+          <Button
+            label={`Report ${name}`}
+            variant="secondary"
+            onPress={() => {
+              dismiss();
+              onReport();
+            }}
+          />
           <Button
             label={`Block ${name}`}
             variant="secondary"

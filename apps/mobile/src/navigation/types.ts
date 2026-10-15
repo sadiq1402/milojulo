@@ -1,3 +1,5 @@
+import type { ReportTarget } from '../features/reports/api';
+
 export type SignedOutParams = {
   Welcome: undefined;
   Email: undefined;
@@ -14,4 +16,11 @@ export type MemberParams = {
   CreateActivity: { circleId: string; circleName: string } | undefined;
   EditActivity: { activityId: string };
   CircleDetail: { circleId: string };
+  // memberId is whom "Also block" blocks: the owner, sender or host of what's reported.
+  Report: {
+    targetType: ReportTarget;
+    targetId: string;
+    memberId: string;
+    memberName?: string;
+  };
 };

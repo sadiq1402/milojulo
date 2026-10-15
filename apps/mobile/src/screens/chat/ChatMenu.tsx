@@ -22,7 +22,6 @@ type Props = {
   onSafety: () => void;
 };
 
-// Report joins this menu with the Reports ticket (#49).
 export function ChatMenu({
   visible,
   onClose,

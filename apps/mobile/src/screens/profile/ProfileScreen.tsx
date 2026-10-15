@@ -5,7 +5,13 @@ import type {
 } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Button,
@@ -36,6 +42,7 @@ export function ProfileScreen({ navigation, route }: Props) {
   const { memberId } = route.params;
   const client = useQueryClient();
   const profile = useProfile(memberId);
+  const member = profile.data;
   const [menuOpen, setMenuOpen] = useState(false);
 
   const block = async () => {
@@ -76,15 +83,23 @@ export function ProfileScreen({ navigation, route }: Props) {
             This profile isn't available any more.
           </Text>
         </View>
-      ) : profile.data ? (
+      ) : member ? (
         <>
-          <ProfileBody profile={profile.data} />
-          <ProfileAction profile={profile.data} />
+          <ProfileBody profile={member} />
+          <ProfileAction profile={member} />
           <ProfileMenu
             visible={menuOpen}
             onClose={() => setMenuOpen(false)}
-            name={profile.data.name}
+            name={member.name}
             onBlock={block}
+            onReport={() =>
+              navigation.navigate('Report', {
+                targetType: 'profile',
+                targetId: memberId,
+                memberId,
+                memberName: member.name,
+              })
+            }
           />
         </>
       ) : (
@@ -95,6 +110,15 @@ export function ProfileScreen({ navigation, route }: Props) {
 }
 
 function ProfileBody({ profile }: { profile: Profile }) {
+  const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
+  const heroPhotoId = profile.photoIds[0];
+  const reportPhoto = () =>
+    navigation.navigate('Report', {
+      targetType: 'photo',
+      targetId: heroPhotoId,
+      memberId: profile.id,
+      memberName: profile.name,
+    });
   const areas = useAreaNames();
   const tags = useTagNames();
   const questions = usePromptQuestions();
@@ -105,23 +129,36 @@ function ProfileBody({ profile }: { profile: Profile }) {
 
   return (
     <ScrollView contentContainerStyle={styles.body}>
-      <PhotoPlaceholder
-        name={profile.name}
-        seed={profile.id}
-        initialSize={heroInitialSize}
-        style={styles.hero}
+      <Pressable
+        disabled={!heroPhotoId}
+        onLongPress={reportPhoto}
+        accessibilityActions={
+          heroPhotoId ? [{ name: 'report', label: 'Report photo' }] : undefined
+        }
+        onAccessibilityAction={e =>
+          e.nativeEvent.actionName === 'report' && reportPhoto()
+        }
+        accessibilityLabel={`${profile.name}'s photo`}
+        accessibilityHint={heroPhotoId ? 'Long-press to report' : undefined}
       >
-        {areaName ? (
-          <View style={styles.area}>
-            <Tag label={areaName} tone="onPhoto" />
+        <PhotoPlaceholder
+          name={profile.name}
+          seed={profile.id}
+          initialSize={heroInitialSize}
+          style={styles.hero}
+        >
+          {areaName ? (
+            <View style={styles.area}>
+              <Tag label={areaName} tone="onPhoto" />
+            </View>
+          ) : null}
+          <View style={styles.modes}>
+            {profile.modes.map(mode => (
+              <Tag key={mode} label={modeLabels[mode]} tone={mode} />
+            ))}
           </View>
-        ) : null}
-        <View style={styles.modes}>
-          {profile.modes.map(mode => (
-            <Tag key={mode} label={modeLabels[mode]} tone={mode} />
-          ))}
-        </View>
-      </PhotoPlaceholder>
+        </PhotoPlaceholder>
+      </Pressable>
       <Text variant="h1" accessibilityRole="header">
         {profile.name}, {profile.age}
       </Text>

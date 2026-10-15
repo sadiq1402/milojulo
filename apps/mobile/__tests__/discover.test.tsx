@@ -12,6 +12,7 @@ import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
 import type { FeedCard, Profile } from '../src/features/discover/api';
+import * as reports from '../src/features/reports/api';
 import { areas, numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -21,6 +22,11 @@ jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/activities/api');
 jest.mock('../src/features/discover/api');
+// Keep the real reason list; only the call to the database is stood in.
+jest.mock('../src/features/reports/api', () => ({
+  ...jest.requireActual('../src/features/reports/api'),
+  reportContent: jest.fn(),
+}));
 // The request sheet belongs to Connection Requests (#41); this checks what Discover hands it.
 jest.mock('../src/screens/requests/SendRequestSheet', () => ({
   SendRequestSheet: (props: {
@@ -116,6 +122,7 @@ beforeEach(() => {
   jest.mocked(discover.fetchProfile).mockResolvedValue(ishaProfile);
   jest.mocked(chat.fetchConversations).mockResolvedValue([]);
   jest.mocked(chat.blockMember).mockResolvedValue();
+  jest.mocked(reports.reportContent).mockResolvedValue();
 });
 
 const cardFor = (name: string) =>
@@ -343,5 +350,176 @@ describe('a profile', () => {
     expect(
       await screen.findByText("This profile isn't available any more."),
     ).toBeOnTheScreen();
+  });
+});
+
+describe('reporting', () => {
+  async function openReport() {
+    await openProfile();
+    await fireEvent.press(screen.getByRole('button', { name: 'Profile menu' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Report Isha' }));
+    await screen.findByRole('header', { name: 'Report Isha' });
+  }
+
+  test('the profile menu opens Report with the reasons from the mockup', async () => {
+    await openReport();
+    expect(
+      screen.getAllByRole('radio').map(r => r.props.accessibilityLabel),
+    ).toEqual([
+      'Fake profile or spam',
+      'Harassment or unwanted contact',
+      'Inappropriate photos or messages',
+      'Seems under 18',
+      'I felt unsafe in person',
+      'Something else',
+    ]);
+    expect(
+      screen.getByText(/We aim to respond within 24 hours/),
+    ).toBeOnTheScreen();
+  });
+
+  test('a reason is needed before anything is sent', async () => {
+    await openReport();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(
+      screen.getByText('Choose a reason for your report.'),
+    ).toBeOnTheScreen();
+    expect(reports.reportContent).not.toHaveBeenCalled();
+  });
+
+  test('sends the profile, reason and details, then confirms the 24-hour response target', async () => {
+    await openReport();
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Harassment or unwanted contact' }),
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Details (optional)'),
+      'Kept messaging after I said no.',
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(reports.reportContent).toHaveBeenCalledWith({
+      targetType: 'profile',
+      targetId: 'isha',
+      reason: 'harassment',
+      details: 'Kept messaging after I said no.',
+    });
+    expect(chat.blockMember).not.toHaveBeenCalled();
+    expect(await screen.findByText('Thanks for telling us')).toBeOnTheScreen();
+    expect(screen.getByText(/respond within 24 hours/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    expect(
+      await screen.findByRole('header', { name: 'Isha, 27' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('details stop at 500 characters', async () => {
+    await openReport();
+    expect(screen.getByLabelText('Details (optional)').props.maxLength).toBe(
+      500,
+    );
+  });
+
+  test('Also block blocks after the report is sent, and Done leaves the profile', async () => {
+    await openReport();
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Seems under 18' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('checkbox', {
+        name: 'Also block Isha, so you never see each other',
+      }),
+    );
+    jest
+      .mocked(discover.fetchFeedPage)
+      .mockResolvedValue({ cards: [rohan], nextCursor: null });
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(reports.reportContent).toHaveBeenCalledWith({
+      targetType: 'profile',
+      targetId: 'isha',
+      reason: 'underage',
+      details: '',
+    });
+    await waitFor(() => expect(chat.blockMember).toHaveBeenCalledWith('isha'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Done' }));
+    expect(await cardFor('Rohan')).toBeOnTheScreen();
+    expect(screen.queryByText('Isha, 27')).toBeNull();
+  });
+
+  test('a refused report says why, keeps the form and does not block', async () => {
+    jest
+      .mocked(reports.reportContent)
+      .mockRejectedValue(new Error("This isn't available to report any more."));
+    await openReport();
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Something else' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('checkbox', {
+        name: 'Also block Isha, so you never see each other',
+      }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(
+      await screen.findByText("This isn't available to report any more."),
+    ).toBeOnTheScreen();
+    expect(chat.blockMember).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Submit report' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('when the block fails after the report, the report still counts and says so', async () => {
+    jest.mocked(chat.blockMember).mockRejectedValue(new Error('nope'));
+    await openReport();
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Something else' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('checkbox', {
+        name: 'Also block Isha, so you never see each other',
+      }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(await screen.findByText('Thanks for telling us')).toBeOnTheScreen();
+    expect(screen.getByText(/Blocking didn't work/)).toBeOnTheScreen();
+  });
+
+  test('a screen reader can report the photo through its actions', async () => {
+    await openProfile();
+    await fireEvent(
+      screen.getByLabelText("Isha's photo"),
+      'accessibilityAction',
+      {
+        nativeEvent: { actionName: 'report' },
+      },
+    );
+    expect(
+      await screen.findByRole('header', { name: "Report Isha's photo" }),
+    ).toBeOnTheScreen();
+  });
+
+  test('a long-press on the profile photo reports that photo', async () => {
+    await openProfile();
+    await fireEvent(screen.getByLabelText("Isha's photo"), 'longPress');
+    await screen.findByRole('header', { name: "Report Isha's photo" });
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Inappropriate photos or messages' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(reports.reportContent).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: 'photo', targetId: 'p1' }),
+    );
   });
 });

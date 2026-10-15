@@ -16,6 +16,7 @@ import {
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import * as reports from '../src/features/reports/api';
 import { areas, numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -25,6 +26,11 @@ jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
+// Keep the real reason list; only the call to the database is stood in.
+jest.mock('../src/features/reports/api', () => ({
+  ...jest.requireActual('../src/features/reports/api'),
+  reportContent: jest.fn(),
+}));
 
 // Only the clock is frozen (a Wednesday, 10:00 in India), so "today at 23:00" is always still ahead;
 // real timers keep React Query and the screens running as usual.
@@ -929,5 +935,43 @@ describe('editing an Activity', () => {
       description: 'Meet at 5:45.',
       capacity: 5,
     });
+  });
+});
+
+describe('reporting an Activity', () => {
+  test('the Activity menu opens Report for this Activity and its host', async () => {
+    jest.mocked(reports.reportContent).mockResolvedValue();
+    jest.mocked(activities.fetchActivity).mockResolvedValue(detail());
+    await openDetail('Badminton doubles');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Activity menu' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Report this Activity' }),
+    );
+    await screen.findByRole('header', { name: 'Report this Activity' });
+    await fireEvent.press(
+      screen.getByRole('radio', { name: 'Fake profile or spam' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('checkbox', {
+        name: 'Also block Isha, so you never see each other',
+      }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Submit report' }),
+    );
+    expect(reports.reportContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'activity',
+        targetId: 'badminton',
+      }),
+    );
+    expect(chat.blockMember).toHaveBeenCalledWith('isha');
+  });
+
+  test('the host has nothing to report on their own Activity', async () => {
+    await openDetail('Sinhagad trek');
+    expect(screen.queryByRole('button', { name: 'Activity menu' })).toBeNull();
   });
 });

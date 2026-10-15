@@ -126,6 +126,17 @@ export function ChatScreen({
               mine={item.senderId === myId}
               seen={item.id === chat.seenId}
               onRetry={() => chat.retry(item.id)}
+              onReport={
+                item.senderId !== myId && conversation
+                  ? () =>
+                      navigation.navigate('Report', {
+                        targetType: 'message',
+                        targetId: item.id,
+                        memberId: conversation.otherId,
+                        memberName: name,
+                      })
+                  : undefined
+              }
             />
           )}
         />
