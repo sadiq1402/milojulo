@@ -21,7 +21,7 @@ Vision: the most trusted way to discover people, communities and real-world expe
 
 ## Brand personality
 Modern, playful, inclusive, safe, social, non-judgmental, Indian but not traditional, premium but approachable. Energetic but not childish.
-Avoid: hearts and cupid imagery, matrimony-style visuals, childish characters.
+Avoid: hearts and cupid imagery beyond the logo's heart (decision 32), matrimony-style visuals, childish characters.
 
 ## Audience and place
 Pune first, with open sign-up (decision 27). Young adults (18+) in the IT corridors and student areas: Hinjewadi, Wakad, Baner, Balewadi, Kharadi. Beta starts in two neighbourhood clusters, a few hundred approved users.
