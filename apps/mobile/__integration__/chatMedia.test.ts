@@ -14,6 +14,9 @@ import { connect, createMember, type TestMember } from './support/members';
 // Written against the #12 contract before it merged; run once #12's migration and the media
 // function's chat actions are on the shared database.
 
+// Uploads go to the real R2 bucket through the local media function, so a test takes seconds.
+jest.setTimeout(30000);
+
 const tinyJpeg =
   'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
 const image = {
