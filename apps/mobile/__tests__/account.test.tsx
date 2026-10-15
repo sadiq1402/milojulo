@@ -153,6 +153,17 @@ describe('accepting again after withdrawing', () => {
     await header(heading);
   }
 
+  test('an updated privacy notice explains the change on the same screen', async () => {
+    jest.mocked(account.fetchAccountStage).mockResolvedValue('updatedNotice');
+    await renderApp(sessionFor('asha@example.com'));
+    expect(await header('Accept to carry on')).toBeOnTheScreen();
+    expect(
+      screen.getByText(/Our privacy notice has changed: we now use your phone/),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText(/You withdrew a consent/)).toBeNull();
+    expect(await button('Delete my account instead')).toBeOnTheScreen();
+  });
+
   test('accepting again keeps my date of birth and brings me back as a Member', async () => {
     jest.mocked(consents.acceptConsents).mockImplementation(async () => {
       jest.mocked(account.fetchAccountStage).mockResolvedValue('member');

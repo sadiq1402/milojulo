@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { BrandLoader } from '../components/BrandLoader';
 import { useAccountStage } from '../features/account/useAccountStage';
 import { useSession } from '../features/auth/SessionProvider';
+import { LocationGate } from '../features/location/LocationGate';
 import { DeleteAccountScreen } from '../screens/account/DeleteAccountScreen';
 import { AgeConsentScreen } from '../screens/gettingIn/AgeConsentScreen';
 import { ReconsentScreen } from '../screens/gettingIn/ReconsentScreen';
@@ -60,9 +61,13 @@ function Screens({
     return <LoadErrorScreen onRetry={() => stage.refetch()} />;
   }
   if (stage.data === 'member') {
-    return <MemberNavigator />;
+    return (
+      <LocationGate>
+        <MemberNavigator />
+      </LocationGate>
+    );
   }
-  if (stage.data === 'reconsent') {
+  if (stage.data === 'reconsent' || stage.data === 'updatedNotice') {
     return (
       <Reconsent.Navigator screenOptions={{ headerShown: false }}>
         <Reconsent.Screen name="Reconsent" component={ReconsentScreen} />

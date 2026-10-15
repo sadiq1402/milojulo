@@ -4,7 +4,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Checkbox, FlowScreen, Text } from '../../components';
-import { useRefreshAccountStage } from '../../features/account/useAccountStage';
+import {
+  useAccountStage,
+  useRefreshAccountStage,
+} from '../../features/account/useAccountStage';
 import { useSession } from '../../features/auth/SessionProvider';
 import {
   acceptConsents,
@@ -21,7 +24,14 @@ import {
   placeholderUrls,
 } from './AgeConsentScreen';
 
-// After withdrawing a consent: accept the current documents again, keeping the date of birth
+const intros = {
+  withdrawn:
+    'You withdrew a consent, so your profile is hidden from everyone. Accept the current Terms, Community Guidelines and data notice to show it again, or delete your account.',
+  updatedNotice:
+    "Our privacy notice has changed: we now use your phone's location to show distance. Accept the updated notice to carry on, or delete your account.",
+};
+
+// After withdrawing a consent, or when a document has a new version: accept the current documents again, keeping the date of birth
 // already given, or delete the account.
 export function ReconsentScreen() {
   const userId = useSession().session!.user.id;
@@ -43,6 +53,10 @@ function AcceptAgain({ birthDate }: { birthDate: string }) {
   const navigation =
     useNavigation<NativeStackNavigationProp<ReconsentParams>>();
   const refreshStage = useRefreshAccountStage();
+  const intro =
+    useAccountStage().data === 'updatedNotice'
+      ? intros.updatedNotice
+      : intros.withdrawn;
   const documents = useQuery({
     queryKey: ['consent-documents'],
     queryFn: fetchConsentDocuments,
@@ -60,7 +74,7 @@ function AcceptAgain({ birthDate }: { birthDate: string }) {
   return (
     <FlowScreen
       title="Accept to carry on"
-      intro="You withdrew a consent, so your profile is hidden from everyone. Accept the current Terms, Community Guidelines and data notice to show it again, or delete your account."
+      intro={intro}
       footer={
         <>
           {error ? (

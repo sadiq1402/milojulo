@@ -31,7 +31,10 @@ export const collected = [
     'Photos and profile answers',
     'to show you to people looking for the same kind of connection',
   ],
-  ['Area, never exact location', 'to suggest people nearby'],
+  [
+    'Location, shifted a few hundred metres',
+    'to show distance to people nearby',
+  ],
   ['Messages and media', 'to deliver your chats'],
 ];
 
