@@ -67,7 +67,7 @@ One Member silencing notifications from one Connection, without telling the othe
 One Member hiding both people from each other everywhere; closes their Connection and prevents any future one while it stands.
 
 **Connection Request**:
-A Connection in its Requested state, sent with an optional note under a chosen shared Mode.
+A Connection in its Requested state, sent with an optional note under one of the recipient's Eligible Modes, only to a Member the sender could see in Discover (inside their Discover Range). Accepting it is not re-checked against range.
 
 **Request Cap**:
 The limit of 10 Connection Requests a Member may send in any rolling 24 hours, across all Modes.

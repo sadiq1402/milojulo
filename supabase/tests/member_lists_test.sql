@@ -8,6 +8,8 @@ select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c2');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c3');
 update public.profiles set display_name = 'Asha', area_id = 'wakad' where id = '00000000-0000-0000-0000-0000000000c1';
 update public.profiles set display_name = 'Ravi', area_id = 'kharadi' where id = '00000000-0000-0000-0000-0000000000c2';
+-- Wakad to Kharadi is beyond the default range, so Asha looks anywhere in Pune.
+update public.profiles set discover_range_km = null where id = '00000000-0000-0000-0000-0000000000c1';
 select id as ravi_cover from public.photos
 where user_id = '00000000-0000-0000-0000-0000000000c2' and position = 1 \gset
 
