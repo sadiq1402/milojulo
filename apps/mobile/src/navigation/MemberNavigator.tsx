@@ -22,6 +22,7 @@ import { SafetyCentreScreen } from '../screens/me/SafetyCentreScreen';
 import { SettingsScreen } from '../screens/me/SettingsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { ReportScreen } from '../screens/reports/ReportScreen';
+import { MeetFeedbackScreen } from '../screens/meetFeedback/MeetFeedbackScreen';
 import type { MemberParams } from './types';
 
 const Stack = createNativeStackNavigator<MemberParams>();
@@ -86,6 +87,7 @@ export function MemberNavigator() {
       <Stack.Screen name="EditActivity" component={EditActivityScreen} />
       <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
       <Stack.Screen name="Report" component={ReportScreen} />
+      <Stack.Screen name="MeetFeedback" component={MeetFeedbackScreen} />
     </Stack.Navigator>
   );
 }

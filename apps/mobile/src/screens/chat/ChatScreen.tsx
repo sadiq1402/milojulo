@@ -53,6 +53,7 @@ import {
 } from '../../theme';
 import { ChatMenu } from './ChatMenu';
 import { formatDuration } from './MediaContent';
+import { useHasAnswered } from '../../features/meetFeedback/queries';
 import { MessageBubble } from './MessageBubble';
 import { ModeChangeCard } from './ModeChangeCard';
 
@@ -74,6 +75,12 @@ export function ChatScreen({
   );
   const name = conversation?.otherName ?? '';
   const accepted = conversation?.status === 'accepted';
+  // A closed chat was accepted before, so the pair can still say they met.
+  const answered = useHasAnswered(
+    accepted || conversation?.status === 'closed'
+      ? conversation.otherId
+      : undefined,
+  );
   const [choosingMode, setChoosingMode] = useState(false);
   const modeChange = useModeChange(
     connectionId,
@@ -304,6 +311,15 @@ export function ChatScreen({
         onSafety={() => navigation.navigate('SafetyCentre')}
         mediaConsent={consent.casual ? consent.mine : undefined}
         onMediaConsent={consent.setMine}
+        onWeMet={
+          conversation && answered.data === false
+            ? () =>
+                navigation.navigate('MeetFeedback', {
+                  otherUserId: conversation.otherId,
+                  otherName: conversation.otherName,
+                })
+            : undefined
+        }
       />
       <BottomSheet visible={attach.open} onClose={() => attach.setOpen(false)}>
         <View style={styles.sheet}>

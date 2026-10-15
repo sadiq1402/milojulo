@@ -24,6 +24,7 @@ import type { MemberParams } from '../../navigation/types';
 import { colors, layout, sizes, spacing } from '../../theme';
 import { PausedNotice } from '../shared/PausedNotice';
 import { ActivityCard } from './ActivityCard';
+import { MeetPrompts } from './MeetPrompts';
 
 type Row =
   | { kind: 'heading'; when: StartsWhen }
@@ -76,7 +77,10 @@ export function ActivitiesScreen() {
           }
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <Button label="Post an Activity" onPress={post} />
+            <>
+              <MeetPrompts />
+              <Button label="Post an Activity" onPress={post} />
+            </>
           }
           renderItem={({ item }) =>
             item.kind === 'heading' ? (
