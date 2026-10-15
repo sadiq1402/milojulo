@@ -41,6 +41,7 @@ describe('account stage', () => {
       { withdrawn_at: null },
       { withdrawn_at: '2026-10-16T10:00:00Z' },
     ]);
+    rpc.mockResolvedValue({ data: true, error: null });
     await expect(fetchAccountStage('u1')).resolves.toBe('reconsent');
   });
 
@@ -50,7 +51,7 @@ describe('account stage', () => {
     ]);
     rpc.mockResolvedValue({ data: false, error: null });
     await expect(fetchAccountStage('u1')).resolves.toBe('member');
-    expect(rpc).toHaveBeenCalledWith('needs_reconsent', undefined);
+    expect(rpc).toHaveBeenCalledWith('needs_reconsent');
   });
 
   test('a Member who accepted an older notice version accepts the new one', async () => {

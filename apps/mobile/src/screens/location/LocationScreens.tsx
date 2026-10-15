@@ -24,7 +24,13 @@ const privacy = [
   ],
 ];
 
-function PinBadge({ background, color }: { background: string; color: string }) {
+function PinBadge({
+  background,
+  color,
+}: {
+  background: string;
+  color: string;
+}) {
   return (
     <View style={[styles.badge, { backgroundColor: background }]}>
       <Icon name="pin" size={sizes.icon.feature} color={color} />

@@ -1,20 +1,15 @@
 import { supabase } from '../../lib/supabase';
 
-// set_location and needs_reconsent arrive with #102; once it merges, regenerate
-// database.types and call supabase.rpc directly.
-export const pendingRpc = (fn: string, args?: Record<string, unknown>) =>
-  (
-    supabase as unknown as {
-      rpc: (
-        name: string,
-        params?: Record<string, unknown>,
-      ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
-    }
-  ).rpc(fn, args);
+// Refusals the app passes over quietly: the next app open tries again, and outside Pune the
+// feed measures from the Member's Area centre.
+const quiet = [
+  'you can update your location once an hour',
+  'that location is outside Pune',
+];
 
 export async function setLocation(lat: number, lng: number): Promise<void> {
-  const { error } = await pendingRpc('set_location', { lat, lng });
-  if (error) {
+  const { error } = await supabase.rpc('set_location', { lat, lng });
+  if (error && !quiet.includes(error.message)) {
     throw new Error(error.message);
   }
 }

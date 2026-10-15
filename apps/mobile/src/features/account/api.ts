@@ -1,7 +1,6 @@
 import type { Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import type { ConsentKind } from '../consents/api';
-import { pendingRpc } from '../location/api';
 import { couldNotLoad } from '../me/api';
 
 // The step a signed-in account is at: give age and consents, accept a withdrawn consent or an
@@ -26,24 +25,23 @@ export async function fetchAccountStage(userId: string): Promise<AccountStage> {
   if (!data?.date_of_birth) {
     return 'consent';
   }
-  const consents = await supabase
-    .from('consents')
-    .select('withdrawn_at')
-    .eq('user_id', userId);
-  if (consents.error) {
-    throw consents.error;
-  }
-  // Every consent is required, so one withdrawn hides the Member until they accept again.
-  if (consents.data.some(row => row.withdrawn_at)) {
-    return 'reconsent';
-  }
-  // A new document version (the location notice, #101) hides the Member until they accept it.
-  const outdated = await pendingRpc('needs_reconsent');
+  // A current document missing or withdrawn hides the Member until they accept it.
+  const outdated = await supabase.rpc('needs_reconsent');
   if (outdated.error) {
     throw outdated.error;
   }
-  if (outdated.data === true) {
-    return 'updatedNotice';
+  if (outdated.data) {
+    // Which one only changes the explanation: a withdrawal, or a new version (#101).
+    const consents = await supabase
+      .from('consents')
+      .select('withdrawn_at')
+      .eq('user_id', userId);
+    if (consents.error) {
+      throw consents.error;
+    }
+    return consents.data.some(row => row.withdrawn_at)
+      ? 'reconsent'
+      : 'updatedNotice';
   }
   return data.submitted_at ? 'member' : 'profile';
 }

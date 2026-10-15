@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { AppState, Linking } from 'react-native';
 import {
   LocationOffScreen,
@@ -51,7 +57,11 @@ export function LocationGate({ children }: { children: ReactNode }) {
       }
       const { lat, lng } = await currentPosition();
       await setLocation(lat, lng);
-      await save({ ...record.current!, answer: 'allowed', sentAt: clock.now() });
+      await save({
+        ...record.current!,
+        answer: 'allowed',
+        sentAt: clock.now(),
+      });
     } catch {
       // No fix, no network or refused by the server: the next app open tries again.
     }

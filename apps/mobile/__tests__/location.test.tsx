@@ -44,7 +44,9 @@ beforeEach(async () => {
       return { remove: () => {} };
     });
   jest.spyOn(clock, 'now').mockImplementation(() => now);
-  jest.spyOn(device, 'hasPermission').mockImplementation(async () => permission);
+  jest
+    .spyOn(device, 'hasPermission')
+    .mockImplementation(async () => permission);
   jest.spyOn(device, 'requestPermission').mockImplementation(async () => {
     permission = true;
     return true;
