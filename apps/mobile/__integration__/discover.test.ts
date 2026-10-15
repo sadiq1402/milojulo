@@ -167,7 +167,7 @@ test('tag and prompt names come from the catalog', async () => {
 test('a profile without a shared Mode still opens, naming their Mode', async () => {
   expect(await fetchProfile(kabir.id)).toMatchObject({
     modes: [],
-    whyYouMatch: 'Kabir wants professional contacts. Less than 2 km away.',
+    whyYouMatch: "Less than 2 km away. They're here for Networking.",
   });
 });
 

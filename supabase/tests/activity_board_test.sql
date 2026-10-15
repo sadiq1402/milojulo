@@ -186,7 +186,7 @@ select set_eq('select b.id, b.starts_when from public.activity_board() b join la
 -- One Activity: d1 hosts, with a venue that only the host reads.
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 create temp table mine as
-  select public.post_activity('Trek', 'outdoors', 'baner', now() + interval '1 day',
+  select public.post_activity('Trek', 'outdoors', 'baner', pg_temp.india_noon(14),
                               venue_detail => 'Gate 2, Sinhagad base') as id;
 grant select on mine to authenticated, anon;
 
