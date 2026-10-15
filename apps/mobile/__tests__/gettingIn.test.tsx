@@ -2,6 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as auth from '../src/features/auth/api';
 import * as consents from '../src/features/consents/api';
+import { colors } from '../src/theme';
 import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -33,13 +34,25 @@ describe('welcome', () => {
     expect(screen.queryByText(/reviewed by a person/)).not.toBeOnTheScreen();
   });
 
-  test('shows the MiloJulo logo as its heading', async () => {
+  test('heads with the logo mark and the MiloJulo name on the orchid mockup theme', async () => {
     await renderApp(null);
-    expect(
-      await screen.findByRole('header', { name: 'MiloJulo' }),
-    ).toBeOnTheScreen();
-    expect(screen.getByTestId('welcome-logo')).toBeOnTheScreen();
-    expect(screen.queryByText('Milo')).not.toBeOnTheScreen();
+    const header = await screen.findByRole('header', { name: 'MiloJulo' });
+    expect(header).toBeOnTheScreen();
+    expect(screen.getByTestId('welcome-mark')).toBeOnTheScreen();
+    expect(screen.getByText('Milo')).toBeOnTheScreen();
+    expect(screen.getByText('Julo')).toBeOnTheScreen();
+    expect(screen.getByTestId('welcome-screen')).toHaveStyle({
+      backgroundColor: colors.orchid,
+    });
+    expect(screen.getByTestId('welcome-pink-blob')).toHaveStyle({
+      backgroundColor: colors.tintStrong,
+    });
+    expect(screen.getByTestId('welcome-lilac-blob')).toHaveStyle({
+      backgroundColor: colors.lilac,
+    });
+    expect(screen.getByTestId('welcome-butter-dot')).toHaveStyle({
+      backgroundColor: colors.butter,
+    });
   });
 
   test('one way in, for new and returning people alike', async () => {

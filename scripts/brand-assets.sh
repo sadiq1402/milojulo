@@ -124,10 +124,20 @@ for sc in 1 2 3; do
   save "$TMP/out.png" "$ASSETS/logo$suffix.png"
 done
 
+# In-app mark (Welcome, above the text name), 120 pt wide: two figures and the heart only.
+read -r MW MH <<<"$(magick identify -format '%w %h' "$MARK")"
+for sc in 1 2 3; do
+  suffix=$([ "$sc" = 1 ] && echo "" || echo "@${sc}x")
+  magick "$MARK" -filter Lanczos -resize "$((120 * sc))x" "$TMP/out.png"
+  save "$TMP/out.png" "$ASSETS/mark$suffix.png"
+done
+
 cat >"$ASSETS/index.ts" <<EOF
-// Written by scripts/brand-assets.sh: the in-app logo, mark and wordmark without the tagline.
+// Written by scripts/brand-assets.sh: the in-app logo (mark and wordmark, no tagline) and the mark alone.
 export const brandLogo = require('./logo.png');
 export const logoAspectRatio = $W / $LOGO_H;
+export const brandMark = require('./mark.png');
+export const markAspectRatio = $MW / $MH;
 EOF
 
 echo "Brand assets written: ink $INK, mark $BOX, logo ${W}x$LOGO_H."
