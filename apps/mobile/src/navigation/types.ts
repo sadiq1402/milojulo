@@ -1,3 +1,4 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { SetupStep } from '../features/profileSetup/model';
 import type { ReportTarget } from '../features/reports/api';
 
@@ -7,8 +8,19 @@ export type SignedOutParams = {
   Otp: { email: string };
 };
 
+export type TabParams = {
+  Discover: undefined;
+  Activities: undefined;
+  Circles: undefined;
+  // A tapped Connection Request notification opens the Inbox on Requests.
+  Inbox: { segment?: InboxSegment } | undefined;
+  Me: undefined;
+};
+
+export type InboxSegment = 'requests' | 'chats';
+
 export type MemberParams = {
-  Tabs: undefined;
+  Tabs: NavigatorScreenParams<TabParams> | undefined;
   Chat: { connectionId: string };
   Profile: { memberId: string };
   SafetyCentre: undefined;

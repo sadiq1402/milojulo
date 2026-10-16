@@ -102,3 +102,14 @@ jest.mock('./src/features/location/device', () => ({
   requestPermission: () => Promise.resolve(true),
   currentPosition: () => new Promise(() => {}),
 }));
+
+// Push (#36): no token and no tapped notification, so registration stays out of other tests' way.
+jest.mock('./src/features/push/messaging', () => ({
+  __esModule: true,
+  requestPermission: () => Promise.resolve(true),
+  getToken: () => Promise.resolve(null),
+  onTokenRefresh: () => () => {},
+  onForegroundMessage: () => () => {},
+  onNotificationOpened: () => () => {},
+  getInitialNotification: () => Promise.resolve(null),
+}));

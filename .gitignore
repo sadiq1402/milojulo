@@ -9,3 +9,6 @@ build/
 .DS_Store
 supabase/.branches/
 supabase/.temp/
+
+# Firebase config for push (#36); each developer downloads their own.
+apps/mobile/android/app/google-services.json

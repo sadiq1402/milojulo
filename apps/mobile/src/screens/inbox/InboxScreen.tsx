@@ -1,6 +1,10 @@
-import { useNavigation } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Button,
@@ -13,15 +17,24 @@ import {
 import type { Conversation } from '../../features/chat/api';
 import { formatChatTime, previewText } from '../../features/chat/messages';
 import { useConversations } from '../../features/chat/queries';
-import type { MemberParams } from '../../navigation/types';
+import type {
+  InboxSegment,
+  MemberParams,
+  TabParams,
+} from '../../navigation/types';
 import { RequestList } from '../requests/RequestList';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
 import { MemberAvatar } from '../shared/MemberAvatar';
 
-type Segment = 'requests' | 'chats';
-
 export function InboxScreen() {
-  const [segment, setSegment] = useState<Segment>('requests');
+  const params = useRoute<RouteProp<TabParams, 'Inbox'>>().params;
+  const [segment, setSegment] = useState<InboxSegment>('requests');
+  // Each navigation brings new params, so a second tap switches back even after a manual change.
+  useEffect(() => {
+    if (params?.segment) {
+      setSegment(params.segment);
+    }
+  }, [params]);
   return (
     <Screen>
       <Text variant="h1" accessibilityRole="header" style={styles.title}>

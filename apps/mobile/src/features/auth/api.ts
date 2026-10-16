@@ -1,5 +1,6 @@
 import type { AuthError, Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { forgetThisDevice } from '../push/forgetThisDevice';
 
 // Called at once with the current session (INITIAL_SESSION), then on every change.
 export function onSessionChange(
@@ -47,7 +48,9 @@ export async function verifyCode(email: string, code: string): Promise<void> {
   }
 }
 
+// This phone stops getting the account's notifications before the session goes.
 export async function signOut(): Promise<void> {
+  await forgetThisDevice();
   const { error } = await supabase.auth.signOut();
   if (error) {
     throw error;

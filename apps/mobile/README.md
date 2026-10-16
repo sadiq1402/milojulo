@@ -10,7 +10,8 @@ React Native CLI (bare workflow) with TypeScript. No Expo, no EAS (CLAUDE.md har
 4. Put the anon key in `src/config/env.ts`. The URL depends on where the app runs:
    - Android emulator: `http://10.0.2.2:54321` (the emulator's address for your computer)
    - USB device: `adb reverse tcp:54321 tcp:54321`, then `http://127.0.0.1:54321`
-5. `npm start` (Metro) and, in another terminal, `npm run android`.
+5. Push notifications (#36) need `android/app/google-services.json` (gitignored; the Android build fails without it). Download it from the Firebase console: Project settings → Your apps → the Android app `co.in.milojulo` → `google-services.json`, and put it in `android/app/`.
+6. `npm start` (Metro) and, in another terminal, `npm run android`.
 
 Photo uploads need the media Edge Function with R2 secrets. Without them, finish profile setup locally by giving your account two confirmed photos with `scripts/dev/confirmed_photos.sql` (instructions inside; local only).
 
@@ -55,9 +56,10 @@ Static Bricolage Grotesque (Bold) and Figtree (Regular, Medium, SemiBold, Bold) 
 
 `.github/workflows/android-distribute.yml` builds a release APK and sends it to Firebase App Distribution on every push to `main` that touches `apps/mobile/**`. Testers get a notification and install with one tap — no Play Store. The APK targets the hosted Supabase project and is signed with the shared debug keystore, so each build updates the app in place.
 
-App package id: `co.in.milojulo`. Requires two GitHub Actions secrets:
+App package id: `co.in.milojulo`. Requires three GitHub Actions secrets:
 
 - `FIREBASE_APP_ID` — the Android app id from Firebase (e.g. `1:…:android:…`).
 - `FIREBASE_SERVICE_ACCOUNT` — the full JSON of a Firebase service account (Project settings → Service accounts → Generate new private key).
+- `GOOGLE_SERVICES_JSON` — the full contents of `google-services.json` (see Set up, step 5); the workflow writes it to `android/app/` before building.
 
 In Firebase App Distribution, create a tester group named `devs` and add the tester emails. A real upload key replaces the debug keystore when the app goes to the Play Store.
