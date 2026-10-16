@@ -138,6 +138,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: spacing.xxs,
     minHeight: sizes.hitArea,
+    // Tighter to the note and buttons than the card gap, as in the mockup.
+    marginTop: -spacing.xs,
+    marginBottom: -spacing.xxs,
   },
   pressed: { opacity: 0.6 },
 });
