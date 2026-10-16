@@ -633,6 +633,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"push_queue": {
+                  Row: {
+                    "body": string,"created_at": string,"data": NonNullable<Json>,"id": number,"recipient_id": string,"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body": string,"created_at"?: string,"data": NonNullable<Json>,"id"?: never,"recipient_id": string,"title": string
+                  }
+                  Update: {
+                    "body"?: string,"created_at"?: string,"data"?: NonNullable<Json>,"id"?: never,"recipient_id"?: string,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_queue_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"reports": {
                   Row: {
                     "created_at": string,"details": string | null,"evidence": Json | null,"evidence_media_key": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"internal_note": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string | null,"status": Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id": string | null
@@ -827,6 +847,9 @@ isOneToOne: false
               "distance_m": number,"shared_modes": (Database["public"]['Enums']["mode"])[],"their_modes": (Database["public"]['Enums']["mode"])[]
             }[]
                            },
+"display_name_of":
+{ Args: { "member_id": string }; Returns: string
+                           },
 "distance_band":
 { Args: { "metres": number }; Returns: string
                            },
@@ -835,6 +858,9 @@ isOneToOne: false
                            },
 "english_list":
 { Args: { "items": (string)[] }; Returns: string
+                           },
+"enqueue_push":
+{ Args: { "body": string,"data": Json,"recipient": string,"setting": string,"title": string }; Returns: undefined
                            },
 "expire_activities":
 { Args: Record<PropertyKey, never>; Returns: undefined
