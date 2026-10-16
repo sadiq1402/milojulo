@@ -1,6 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import {
   Button,
   Card,
@@ -134,12 +139,30 @@ export function ActivityForm({
   const areas = useAreaNames();
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
+  const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  // Each field's top on the page, so a refusal can scroll back to the first flagged one.
+  const tops = useRef<Partial<Record<ActivityField, number>>>({});
+  const anchor = (field: ActivityField) => ({
+    testID: `field-${field}`,
+    onLayout: (e: LayoutChangeEvent) => {
+      tops.current[field] = e.nativeEvent.layout.y;
+    },
+  });
+  const scrollToFirst = (found: Errors) => {
+    const ys = (Object.keys(found) as ActivityField[])
+      .map(field => tops.current[field])
+      .filter((y): y is number => y !== undefined);
+    if (ys.length > 0) {
+      scroll.current?.scrollTo({ y: Math.min(...ys), animated: true });
+    }
+  };
   // Field refusals show beside their field; anything else under the button.
   const send = useMutation({
     mutationFn: onSubmit,
     onError: e => {
       if (e instanceof ActivityError && e.field) {
         setErrors({ [e.field]: e.message });
+        scrollToFirst({ [e.field]: e.message });
       }
     },
   });
@@ -198,11 +221,14 @@ export function ActivityForm({
     send.reset();
     if (Object.keys(found).length === 0) {
       send.mutate(values);
+    } else {
+      scrollToFirst(found);
     }
   };
 
   return (
     <FlowScreen
+      scrollRef={scroll}
       title={heading}
       onBack={onBack}
       footer={
@@ -239,39 +265,45 @@ export function ActivityForm({
           </Text>
         </Card>
       ) : (
-        <Input
-          label="What's the plan?"
-          placeholder="e.g. Badminton doubles"
-          value={values.title}
-          onChangeText={title => set({ title })}
-          maxLength={titleMaxLength}
-          error={errors.title}
-        />
+        <View {...anchor('title')}>
+          <Input
+            label="What's the plan?"
+            placeholder="e.g. Badminton doubles"
+            value={values.title}
+            onChangeText={title => set({ title })}
+            maxLength={titleMaxLength}
+            error={errors.title}
+          />
+        </View>
       )}
       {editing ? null : (
-        <ChipField label="Type" error={errors.type}>
-          {activityTypes.map(type => (
-            <Chip
-              key={type}
-              label={activityTypeLabels[type]}
-              selected={values.type === type}
-              onPress={() => set({ type })}
-            />
-          ))}
-        </ChipField>
-      )}
-      {locked ? null : (
-        <>
-          <ChipField label="Area" error={errors.areaId}>
-            {Object.entries(areas.data ?? {}).map(([id, name]) => (
+        <View {...anchor('type')}>
+          <ChipField label="Type" error={errors.type}>
+            {activityTypes.map(type => (
               <Chip
-                key={id}
-                label={name}
-                selected={values.areaId === id}
-                onPress={() => set({ areaId: id })}
+                key={type}
+                label={activityTypeLabels[type]}
+                selected={values.type === type}
+                onPress={() => set({ type })}
               />
             ))}
           </ChipField>
+        </View>
+      )}
+      {locked ? null : (
+        <>
+          <View {...anchor('areaId')}>
+            <ChipField label="Area" error={errors.areaId}>
+              {Object.entries(areas.data ?? {}).map(([id, name]) => (
+                <Chip
+                  key={id}
+                  label={name}
+                  selected={values.areaId === id}
+                  onPress={() => set({ areaId: id })}
+                />
+              ))}
+            </ChipField>
+          </View>
           <ChipField label="Day" error={undefined}>
             {days.map(day => (
               <Chip
@@ -282,7 +314,7 @@ export function ActivityForm({
               />
             ))}
           </ChipField>
-          <View style={styles.field}>
+          <View style={styles.field} {...anchor('startsAt')}>
             <Stepper
               label="Start time"
               value={formatTime(values.minutes)}
@@ -295,7 +327,7 @@ export function ActivityForm({
             />
             <FieldError message={errors.startsAt} />
           </View>
-          <View style={styles.field}>
+          <View style={styles.field} {...anchor('endsAt')}>
             <Stepper
               label="Length"
               value={lengthLabel(values.length)}
@@ -328,7 +360,7 @@ export function ActivityForm({
           </View>
         </>
       )}
-      <View style={styles.field}>
+      <View style={styles.field} {...anchor('capacity')}>
         <Stepper
           label="Spots"
           value={String(values.capacity)}
@@ -344,16 +376,18 @@ export function ActivityForm({
         </Text>
         <FieldError message={errors.capacity} />
       </View>
-      <TextArea
-        label="Details (optional)"
-        placeholder="Skill level, what to bring, how you'll recognise each other"
-        value={values.description}
-        onChangeText={description => set({ description })}
-        maxLength={descriptionMaxLength}
-        error={errors.description}
-      />
+      <View {...anchor('description')}>
+        <TextArea
+          label="Details (optional)"
+          placeholder="Skill level, what to bring, how you'll recognise each other"
+          value={values.description}
+          onChangeText={description => set({ description })}
+          maxLength={descriptionMaxLength}
+          error={errors.description}
+        />
+      </View>
       {locked ? null : (
-        <View style={styles.field}>
+        <View style={styles.field} {...anchor('venueDetail')}>
           <Input
             label="Where exactly (optional)"
             placeholder="e.g. Baner Sports Complex, court 2"

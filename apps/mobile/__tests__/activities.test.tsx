@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
+import { ScrollView } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import {
@@ -346,6 +347,23 @@ describe('posting an Activity', () => {
     expect(screen.getByText('Pick a type.')).toBeOnTheScreen();
     expect(screen.getByText('Pick an Area.')).toBeOnTheScreen();
     expect(activities.postActivity).not.toHaveBeenCalled();
+  });
+
+  test('a refused Post scrolls back to the first flagged field', async () => {
+    await openCreate();
+    const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo');
+    await fireEvent.press(screen.getByRole('button', { name: 'Baner' }));
+    // The title sits higher on the page than the Type chips.
+    await fireEvent(screen.getByTestId('field-title'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 120, width: 0, height: 0 } },
+    });
+    await fireEvent(screen.getByTestId('field-type'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 260, width: 0, height: 0 } },
+    });
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(scrollTo).toHaveBeenCalledWith({ y: 120, animated: true });
   });
 
   async function fillAndPost() {
