@@ -50,4 +50,6 @@ jobs:
 
       - name: Deploy Edge Functions
         if: steps.fns.outputs.changed == 'true'
-        run: supabase functions deploy media --project-ref "$PROJECT_REF"
+        run: |
+          supabase functions deploy media --project-ref "$PROJECT_REF"
+          supabase functions deploy push --project-ref "$PROJECT_REF"

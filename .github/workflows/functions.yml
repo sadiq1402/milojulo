@@ -12,9 +12,12 @@ jobs:
     name: function-tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      matrix:
+        function: [media, push]
     defaults:
       run:
-        working-directory: supabase/functions/media
+        working-directory: supabase/functions/${{ matrix.function }}
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2

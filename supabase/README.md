@@ -58,6 +58,17 @@ To change one later: `select vault.update_secret((select id from vault.secrets w
 
 If the nightly purge seems not to run, check `select * from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'purge-chat-media') order by start_time desc limit 5;` (did the job run and queue the request), then `net._http_response` (the HTTP status) and the `purge-chat-media` function logs in the dashboard.
 
+## Push notifications (#36)
+
+Queued pushes reach the `push` Edge Function through the same Vault secrets as the purge job above (`project_url`, `service_role_key`); without them pushes wait in `push_queue` and nothing is sent. The function needs a Firebase service account (Firebase console → Project settings → Service accounts → Generate new private key). Store the whole JSON as one secret, never in the repo:
+
+```bash
+printf 'FCM_SERVICE_ACCOUNT=%s\n' "$(jq -c . service-account.json)" > /tmp/push.env
+npx supabase secrets set --env-file /tmp/push.env && rm /tmp/push.env
+```
+
+or paste it in the dashboard (Edge Functions → Secrets) as `FCM_SERVICE_ACCOUNT`. If pushes stop, check `net._http_response` for the call and the `push` function logs.
+
 ## Continuous deployment
 
 `.github/workflows/deploy.yml` deploys to the hosted project automatically on every push to `main` that touches `supabase/migrations/**` or `supabase/functions/**`: it links the project, runs `supabase db push` (applies only new migrations), and redeploys the `media` function when a function file changed. PRs are gated by `db-tests` / `function-tests` before merge, so only tested changes reach it.
