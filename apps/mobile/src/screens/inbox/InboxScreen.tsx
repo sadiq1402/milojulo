@@ -14,6 +14,7 @@ import {
 import type { Conversation } from '../../features/chat/api';
 import { formatChatTime, previewText } from '../../features/chat/messages';
 import { useConversations } from '../../features/chat/queries';
+import { usePhotoUrl } from '../../features/photos/queries';
 import type { MemberParams } from '../../navigation/types';
 import { RequestList } from '../requests/RequestList';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
@@ -100,6 +101,7 @@ function ChatRow({
       ? previewText(chat.lastMessage)
       : 'Say hello';
   const unread = chat.unreadCount > 0;
+  const photo = usePhotoUrl(chat.otherPhotoId);
   return (
     <ListRow
       title={chat.otherName}
@@ -112,7 +114,13 @@ function ChatRow({
       ]
         .filter(Boolean)
         .join(', ')}
-      left={<Avatar name={chat.otherName} tone={tone} />}
+      left={
+        <Avatar
+          name={chat.otherName}
+          tone={tone}
+          uri={photo.data ?? undefined}
+        />
+      }
       right={
         <View style={styles.meta}>
           {chat.lastMessage ? (

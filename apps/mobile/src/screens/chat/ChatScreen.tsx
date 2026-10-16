@@ -41,6 +41,7 @@ import {
 } from '../../features/chat/useChatMedia';
 import { useModeChange } from '../../features/chat/useModeChange';
 import { useHasAnswered } from '../../features/meetFeedback/queries';
+import { usePhotoUrl } from '../../features/photos/queries';
 import { modeLabels } from '../../features/modes';
 import { useSecureScreen } from '../../lib/secureScreen';
 import type { MemberParams } from '../../navigation/types';
@@ -74,6 +75,7 @@ export function ChatScreen({
     c => c.connectionId === connectionId,
   );
   const name = conversation?.otherName ?? '';
+  const photo = usePhotoUrl(conversation?.otherPhotoId);
   const accepted = conversation?.status === 'accepted';
   // A closed chat was accepted before, so the pair can still say they met.
   const everAccepted = accepted || conversation?.status === 'closed';
@@ -130,7 +132,11 @@ export function ChatScreen({
           accessibilityLabel="Back"
           onPress={navigation.goBack}
         />
-        <Avatar name={name || ' '} size="chatHeader" />
+        <Avatar
+          name={name || ' '}
+          size="chatHeader"
+          uri={photo.data ?? undefined}
+        />
         <View style={styles.who}>
           <Text variant="title" accessibilityRole="header" numberOfLines={1}>
             {name}

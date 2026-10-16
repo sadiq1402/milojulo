@@ -2,10 +2,11 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Avatar, List, ListRow, Text } from '../../components';
+import { List, ListRow, Text } from '../../components';
 import { usePendingFeedback } from '../../features/meetFeedback/queries';
 import type { MemberParams } from '../../navigation/types';
 import { spacing } from '../../theme';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 // After an Activity ends, one row per person to answer about; nothing while loading or on error.
 export function MeetPrompts() {
@@ -23,7 +24,9 @@ export function MeetPrompts() {
         {pending.data.map(row => (
           <ListRow
             key={`${row.activityId}:${row.otherUserId}`}
-            left={<Avatar name={row.otherName} />}
+            left={
+              <MemberAvatar name={row.otherName} photoId={row.coverPhotoId} />
+            }
             title={`Did you meet ${row.otherName}?`}
             subtitle={row.activityTitle}
             accessibilityLabel={`Did you meet ${row.otherName} at ${row.activityTitle}?`}

@@ -1,11 +1,13 @@
 import React, { type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Avatar, Button, Card, ErrorText, Icon, Text } from '../../components';
+import { Button, Card, ErrorText, Icon, Text } from '../../components';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 // A request to answer: who sent it, then Accept and Decline (left out when it can't be answered).
 export function AnswerCard({
   name,
+  photoId,
   detail,
   tone,
   tag,
@@ -19,6 +21,7 @@ export function AnswerCard({
   canAnswer = true,
 }: {
   name: string;
+  photoId: string | null;
   detail?: string;
   tone: number;
   tag?: ReactNode;
@@ -33,7 +36,7 @@ export function AnswerCard({
 }) {
   const who = (
     <>
-      <Avatar name={name} tone={tone} />
+      <MemberAvatar name={name} photoId={photoId} tone={tone} />
       <View style={styles.grow}>
         <Text style={styles.name} numberOfLines={1}>
           {name}

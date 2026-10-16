@@ -16,7 +16,12 @@ export function Avatar({ name, size = 'row', uri, tone = 0 }: Props) {
   const round = { width: d, height: d, borderRadius: d / 2 };
   if (uri) {
     return (
-      <Image source={{ uri }} style={round} accessibilityIgnoresInvertColors />
+      <Image
+        source={{ uri }}
+        style={round}
+        accessibilityLabel={`Photo of ${name}`}
+        accessibilityIgnoresInvertColors
+      />
     );
   }
   return (

@@ -49,6 +49,7 @@ import {
   spacing,
 } from '../../theme';
 import { JoinRequestCard } from './JoinRequestCard';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 type Props = NativeStackScreenProps<MemberParams, 'ActivityDetail'>;
 
@@ -340,6 +341,7 @@ function HostJoinRequests({
                 key={request.id}
                 requestId={request.id}
                 name={request.requesterName}
+                photoId={request.requesterPhotoId}
                 detail={areaName(request.requesterAreaId)}
                 tone={i}
                 canAnswer={canAnswer}
@@ -357,13 +359,26 @@ function HostJoinRequests({
         ) : (
           <List>
             {going.map(
-              ({ id, requesterName, requesterAreaId, connectionId }, i) => (
+              (
+                {
+                  id,
+                  requesterName,
+                  requesterPhotoId,
+                  requesterAreaId,
+                  connectionId,
+                },
+                i,
+              ) => (
                 <ListRow
                   key={id}
                   title={requesterName}
                   subtitle={areaName(requesterAreaId)}
                   left={
-                    <Avatar name={requesterName} tone={waiting.length + i} />
+                    <MemberAvatar
+                      name={requesterName}
+                      photoId={requesterPhotoId}
+                      tone={waiting.length + i}
+                    />
                   }
                   right={
                     connectionId ? (

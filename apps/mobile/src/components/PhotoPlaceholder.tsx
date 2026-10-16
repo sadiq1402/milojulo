@@ -1,5 +1,11 @@
 import React, { type ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Image,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { colors, fontFamily, fonts, photoTones } from '../theme';
 import { Text } from './Text';
 
@@ -8,6 +14,8 @@ type Props = {
   // The same Member always gets the same tone.
   seed: string;
   initialSize: number;
+  // A signed link; the initial shows while it loads, or without one.
+  uri?: string | null;
   style?: StyleProp<ViewStyle>;
   children?: ReactNode;
 };
@@ -20,11 +28,12 @@ function toneFor(seed: string): string {
   return photoTones[sum % photoTones.length];
 }
 
-// A photo tone and the initial until signed photo URLs exist (#35); children overlay it.
+// The photo over a tone and the initial; children overlay it.
 export function PhotoPlaceholder({
   name,
   seed,
   initialSize,
+  uri,
   style,
   children,
 }: Props) {
@@ -40,6 +49,14 @@ export function PhotoPlaceholder({
       >
         {name.trim().charAt(0).toUpperCase()}
       </Text>
+      {uri ? (
+        <Image
+          source={{ uri }}
+          style={StyleSheet.absoluteFill}
+          accessibilityLabel={`Photo of ${name}`}
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
       {children}
     </View>
   );
