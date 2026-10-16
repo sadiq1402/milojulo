@@ -170,6 +170,23 @@ describe('tapping a notification', () => {
     );
   });
 
+  test('a tap that arrives before navigation is ready is followed once it is', async () => {
+    jest
+      .mocked(messaging.getInitialNotification)
+      .mockResolvedValue({ kind: 'message', connectionId: 'c9' });
+    jest.spyOn(navigationRef, 'isReady').mockReturnValueOnce(false);
+    await renderApp(sessionFor('asha@example.com'));
+    await screen.findByRole('tab', { name: 'Inbox' });
+    // Any later navigation state change makes the container ready.
+    await fireEvent.press(screen.getByRole('tab', { name: 'Inbox' }));
+    await waitFor(() =>
+      expect(route()).toMatchObject({
+        name: 'Chat',
+        params: { connectionId: 'c9' },
+      }),
+    );
+  });
+
   test('an unknown kind goes nowhere', async () => {
     await signIn();
     await act(async () => opened({ kind: 'mystery' }));

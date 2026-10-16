@@ -22,7 +22,12 @@ const register = (token: string | null) =>
   token ? registerDeviceToken(token, platform).catch(() => {}) : undefined;
 
 function openFor(data: PushData) {
+  // A tap that opens the app can land before the navigator mounts; follow it once it is ready.
   if (!navigationRef.isReady()) {
+    const stop = navigationRef.addListener('state', () => {
+      stop();
+      openFor(data);
+    });
     return;
   }
   switch (data.kind) {

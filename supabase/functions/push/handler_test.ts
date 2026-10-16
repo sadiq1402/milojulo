@@ -72,7 +72,7 @@ Deno.test('data values are sent as strings', async () => {
 
 Deno.test('deletes tokens FCM says are unregistered or invalid, and keeps the rest', async () => {
   const { handler, deletedTokens, deletedPushes } = setup({
-    tokens: ['gone', 'bad', 'fine', 'busy', 'payload'],
+    tokens: ['gone', 'bad', 'other-app', 'fine', 'payload'],
     fcm: (token) => {
       if (token === 'gone') {
         return Response.json({ error: { status: 'NOT_FOUND', details: [{ errorCode: 'UNREGISTERED' }] } }, {
@@ -87,7 +87,14 @@ Deno.test('deletes tokens FCM says are unregistered or invalid, and keeps the re
           },
         }, { status: 400 });
       }
-      if (token === 'busy') return new Response('unavailable', { status: 503 });
+      if (token === 'other-app') {
+        return Response.json(
+          { error: { status: 'PERMISSION_DENIED', details: [{ errorCode: 'SENDER_ID_MISMATCH' }] } },
+          {
+            status: 403,
+          },
+        );
+      }
       if (token === 'payload') {
         return Response.json({ error: { status: 'INVALID_ARGUMENT', message: 'Invalid value at message.data' } }, {
           status: 400,
@@ -98,8 +105,24 @@ Deno.test('deletes tokens FCM says are unregistered or invalid, and keeps the re
   });
   const res = await handler(call({ id: 3 }));
   assertEquals(await res.json(), { sent: 1 });
-  assertEquals(deletedTokens, ['gone', 'bad']);
+  assertEquals(deletedTokens, ['gone', 'bad', 'other-app']);
   assertEquals(deletedPushes, [3]);
+});
+
+Deno.test('a push FCM could not take for now (5xx or 429) stays queued, and its tokens are kept', async () => {
+  const { handler, deletedTokens, deletedPushes } = setup({
+    tokens: ['busy', 'limited', 'fine'],
+    fcm: (token) =>
+      token === 'busy'
+        ? new Response('unavailable', { status: 503 })
+        : token === 'limited'
+        ? new Response('slow down', { status: 429 })
+        : new Response('{}', { status: 200 }),
+  });
+  const res = await handler(call({ id: 4 }));
+  assertEquals(await res.json(), { sent: 1 });
+  assertEquals(deletedTokens, []);
+  assertEquals(deletedPushes, []);
 });
 
 Deno.test('a Member with no phones gets no FCM call', async () => {

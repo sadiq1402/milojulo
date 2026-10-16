@@ -65,7 +65,8 @@ as $$
   select p.id, enqueue_push.title, enqueue_push.body, enqueue_push.data
   from public.profiles p
   where p.id = recipient
-    and case setting when 'messages' then p.notify_messages else p.notify_activities end;
+    and p.status = 'active' and p.deleted_at is null
+    and case setting when 'messages' then p.notify_messages when 'activities' then p.notify_activities end;
 $$;
 
 create function public.display_name_of(member_id uuid) returns text

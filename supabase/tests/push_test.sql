@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(38);
+select plan(40);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000000' || suffix)::uuid $$;
@@ -119,6 +119,18 @@ select results_eq($$ select * from pg_temp.queued('f2') $$,
   format($$ values ('Asha', 'Badminton at 7?', '{"kind":"message","connectionId":"%s"}'::jsonb) $$, :'c12'),
   'the other participant is told of a text message');
 select is_empty($$ select * from pg_temp.queued('f1') $$, 'the sender is not told of their own message');
+delete from public.push_queue;
+update public.profiles set deleted_at = now() where id = pg_temp.m('f2');
+select pg_temp.act_as_member(pg_temp.m('f1'));
+insert into public.messages (id, connection_id, type, body) values (gen_random_uuid(), :'c12', 'text', 'Still on?');
+reset role;
+select is_empty($$ select * from pg_temp.queued('f2') $$, 'a deleted Member gets no pushes');
+update public.profiles set deleted_at = null, status = 'banned' where id = pg_temp.m('f2');
+select pg_temp.act_as_member(pg_temp.m('f1'));
+insert into public.messages (id, connection_id, type, body) values (gen_random_uuid(), :'c12', 'text', 'Hello?');
+reset role;
+select is_empty($$ select * from pg_temp.queued('f2') $$, 'a banned Member gets no pushes');
+update public.profiles set status = 'active' where id = pg_temp.m('f2');
 
 delete from public.push_queue;
 select pg_temp.chat_upload(pg_temp.m('f1'), :'c12', 'image') as img \gset
