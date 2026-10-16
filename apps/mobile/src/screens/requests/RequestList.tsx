@@ -3,7 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, List, ListRow, Tag, Text } from '../../components';
+import { Button, Icon, List, ListRow, Tag, Text } from '../../components';
 import { formatWhen } from '../../features/activities/time';
 import type { Conversation } from '../../features/chat/api';
 import { useAreaName } from '../../features/catalog/queries';
@@ -12,7 +12,7 @@ import { modeLabels } from '../../features/modes';
 import { respondRequest } from '../../features/requests/api';
 import { useRequests } from '../../features/requests/queries';
 import type { MemberParams } from '../../navigation/types';
-import { colors, fontFamily, fonts, layout, spacing } from '../../theme';
+import { colors, fontFamily, fonts, layout, sizes, spacing } from '../../theme';
 import { JoinRequestCard } from '../activities/JoinRequestCard';
 import { AnswerCard } from './AnswerCard';
 import { MemberAvatar } from '../shared/MemberAvatar';
@@ -113,7 +113,23 @@ export function RequestList() {
                     tone={sentToneStart + i}
                   />
                 }
-                right={<Tag label="Pending" />}
+                right={
+                  <View style={styles.sentTags}>
+                    <Tag label={modeLabels[request.mode]} tone={request.mode} />
+                    <Tag label="Pending" />
+                    <Icon
+                      name="chevronRight"
+                      size={sizes.icon.inline}
+                      color={colors.secondary}
+                    />
+                  </View>
+                }
+                onPress={() =>
+                  navigation.navigate('Profile', { memberId: request.otherId })
+                }
+                accessibilityLabel={`${request.otherName}, ${
+                  modeLabels[request.mode]
+                }, pending, see their profile`}
               />
             ))}
             {joinSent.map((request, i) => (
@@ -170,6 +186,9 @@ function RequestCard({
       detail={area}
       tone={tone}
       tag={<Tag label={modeLabels[request.mode]} tone={request.mode} />}
+      onViewProfile={() =>
+        navigation.navigate('Profile', { memberId: request.otherId })
+      }
       error={answer.error?.message}
       answering={answer.isPending ? answer.variables : undefined}
       onAnswer={accept => answer.mutate(accept)}
@@ -181,6 +200,7 @@ function RequestCard({
 }
 
 const styles = StyleSheet.create({
+  sentTags: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   section: { gap: spacing.sm },
   cards: { gap: layout.blockGap },
   heading: { fontFamily: fontFamily(fonts.text, '600') },

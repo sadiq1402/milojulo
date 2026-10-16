@@ -18,6 +18,7 @@ import type { Conversation } from '../src/features/chat/api';
 import { chatKeys } from '../src/features/chat/queries';
 import type { Mode } from '../src/features/modes';
 import * as requests from '../src/features/requests/api';
+import { navigationRef } from '../src/navigation/navigationRef';
 import { SendRequestSheet } from '../src/screens/requests/SendRequestSheet';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
@@ -61,6 +62,7 @@ const meera = conversation({
   connectionId: 'conn-meera',
   otherId: 'meera',
   otherName: 'Meera',
+  mode: 'dating',
   direction: 'outgoing',
 });
 // Far enough ahead that the label doesn't depend on today's date.
@@ -139,6 +141,34 @@ describe('Inbox requests', () => {
     expect(sent.getByText('Meera')).toBeOnTheScreen();
     expect(sent.getByText('Pending')).toBeOnTheScreen();
     expect(screen.queryByText('Isha')).not.toBeOnTheScreen();
+  });
+
+  test('a sent request shows the Mode it went under', async () => {
+    await openInbox();
+    const sent = within(screen.getByTestId('sent-requests'));
+    expect(sent.getByText('Dating')).toBeOnTheScreen();
+  });
+
+  test('View profile on a request opens their profile', async () => {
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', { name: "View Rohan's profile" }),
+    );
+    expect(navigationRef.getCurrentRoute()).toMatchObject({
+      name: 'Profile',
+      params: { memberId: 'rohan' },
+    });
+  });
+
+  test('a sent request opens their profile', async () => {
+    await openInbox();
+    await fireEvent.press(
+      screen.getByRole('button', { name: /^Meera, .*see their profile$/ }),
+    );
+    expect(navigationRef.getCurrentRoute()).toMatchObject({
+      name: 'Profile',
+      params: { memberId: 'meera' },
+    });
   });
 
   test('the Inbox tab shows how many requests are waiting', async () => {

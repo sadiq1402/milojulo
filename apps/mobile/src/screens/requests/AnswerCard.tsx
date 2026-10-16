@@ -13,6 +13,7 @@ export function AnswerCard({
   tag,
   onOpen,
   openLabel,
+  onViewProfile,
   children,
   error,
   answering,
@@ -26,6 +27,7 @@ export function AnswerCard({
   tone: number;
   tag?: ReactNode;
   onOpen?: () => void;
+  onViewProfile?: () => void;
   openLabel?: string;
   children?: ReactNode;
   error?: string;
@@ -74,6 +76,27 @@ export function AnswerCard({
         <View style={styles.who}>{who}</View>
       )}
       {children}
+      {onViewProfile ? (
+        <Pressable
+          onPress={onViewProfile}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${name}'s profile`}
+          hitSlop={spacing.xs}
+          style={({ pressed }) => [
+            styles.viewProfile,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text variant="label" color={colors.orchid}>
+            View profile
+          </Text>
+          <Icon
+            name="chevronRight"
+            size={sizes.icon.inline}
+            color={colors.orchid}
+          />
+        </Pressable>
+      ) : null}
       {error ? <ErrorText text={error} /> : null}
       {canAnswer ? (
         <View style={styles.actions}>
@@ -109,4 +132,15 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   name: { fontFamily: fontFamily(fonts.text, '600') },
   actions: { flexDirection: 'row', gap: spacing.xs },
+  viewProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.xxs,
+    minHeight: sizes.hitArea,
+    // Tighter to the note and buttons than the card gap, as in the mockup.
+    marginTop: -spacing.xs,
+    marginBottom: -spacing.xxs,
+  },
+  pressed: { opacity: 0.6 },
 });
