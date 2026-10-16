@@ -6,7 +6,9 @@ import { usePhotoUrl } from '../../features/photos/queries';
 export function MemberAvatar({
   photoId,
   ...props
-}: Omit<ComponentProps<typeof Avatar>, 'uri'> & { photoId: string | null }) {
+}: Omit<ComponentProps<typeof Avatar>, 'uri'> & {
+  photoId: string | null | undefined;
+}) {
   const photo = usePhotoUrl(photoId);
-  return <Avatar {...props} uri={photo.data ?? undefined} />;
+  return <Avatar {...props} uri={photo.data} />;
 }

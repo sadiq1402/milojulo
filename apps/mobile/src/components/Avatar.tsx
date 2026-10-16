@@ -6,24 +6,14 @@ import { Text } from './Text';
 type Props = {
   name: string;
   size?: keyof typeof sizes.avatar;
-  uri?: string;
+  uri?: string | null;
   tone?: number;
 };
 
-// Initial on a photo tone until a signed photo URL is available.
+// The photo over the initial on a photo tone, so a missing or failed photo leaves the initial.
 export function Avatar({ name, size = 'row', uri, tone = 0 }: Props) {
   const d = sizes.avatar[size];
   const round = { width: d, height: d, borderRadius: d / 2 };
-  if (uri) {
-    return (
-      <Image
-        source={{ uri }}
-        style={round}
-        accessibilityLabel={`Photo of ${name}`}
-        accessibilityIgnoresInvertColors
-      />
-    );
-  }
   return (
     <View
       style={[
@@ -40,6 +30,14 @@ export function Avatar({ name, size = 'row', uri, tone = 0 }: Props) {
       >
         {name.trim().charAt(0).toUpperCase()}
       </Text>
+      {uri ? (
+        <Image
+          source={{ uri }}
+          style={[StyleSheet.absoluteFill, round]}
+          accessibilityLabel={`Photo of ${name}`}
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
     </View>
   );
 }

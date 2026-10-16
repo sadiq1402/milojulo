@@ -56,7 +56,7 @@ export function MeScreen() {
   return (
     <Screen header={<TopBar title="Me" />}>
       <View style={styles.who}>
-        <Avatar name={name} size="profile" uri={cover.data ?? undefined} />
+        <Avatar name={name} size="profile" uri={cover.data} />
         <View style={styles.grow}>
           <Text variant="h2">
             {age === undefined ? name : `${name}, ${age}`}

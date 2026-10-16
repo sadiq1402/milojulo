@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Avatar,
   BottomSheet,
   Button,
   Icon,
@@ -41,7 +40,6 @@ import {
 } from '../../features/chat/useChatMedia';
 import { useModeChange } from '../../features/chat/useModeChange';
 import { useHasAnswered } from '../../features/meetFeedback/queries';
-import { usePhotoUrl } from '../../features/photos/queries';
 import { modeLabels } from '../../features/modes';
 import { useSecureScreen } from '../../lib/secureScreen';
 import type { MemberParams } from '../../navigation/types';
@@ -57,6 +55,7 @@ import { ChatMenu } from './ChatMenu';
 import { formatDuration } from './MediaContent';
 import { MessageBubble } from './MessageBubble';
 import { ModeChangeCard } from './ModeChangeCard';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 export function ChatScreen({
   navigation,
@@ -75,7 +74,6 @@ export function ChatScreen({
     c => c.connectionId === connectionId,
   );
   const name = conversation?.otherName ?? '';
-  const photo = usePhotoUrl(conversation?.otherPhotoId);
   const accepted = conversation?.status === 'accepted';
   // A closed chat was accepted before, so the pair can still say they met.
   const everAccepted = accepted || conversation?.status === 'closed';
@@ -132,10 +130,10 @@ export function ChatScreen({
           accessibilityLabel="Back"
           onPress={navigation.goBack}
         />
-        <Avatar
+        <MemberAvatar
           name={name || ' '}
+          photoId={conversation?.otherPhotoId}
           size="chatHeader"
-          uri={photo.data ?? undefined}
         />
         <View style={styles.who}>
           <Text variant="title" accessibilityRole="header" numberOfLines={1}>
