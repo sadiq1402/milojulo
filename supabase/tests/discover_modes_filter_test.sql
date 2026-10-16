@@ -29,10 +29,11 @@ select pg_temp.create_dater('00000000-0000-0000-0000-0000000000f6', '{friends,ca
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000f1');
 select set_eq($$ select user_id from public.discover_feed('{friends}') $$,
-  array['00000000-0000-0000-0000-0000000000f2'::uuid],
-  'one Mode keeps only Members who chose it');
+  array['00000000-0000-0000-0000-0000000000f2'::uuid, '00000000-0000-0000-0000-0000000000f6'],
+  'one Mode keeps only Members who chose it, Casual choosers included under their other Modes');
 select set_eq($$ select user_id from public.discover_feed('{friends,activities}') $$,
-  array['00000000-0000-0000-0000-0000000000f2'::uuid, '00000000-0000-0000-0000-0000000000f3'],
+  array['00000000-0000-0000-0000-0000000000f2'::uuid, '00000000-0000-0000-0000-0000000000f3',
+        '00000000-0000-0000-0000-0000000000f6'],
   'several Modes keep Members who chose any of them');
 select ok(not exists (select 1 from public.discover_feed('{friends,activities}')
                       where user_id = '00000000-0000-0000-0000-0000000000f4'),
@@ -46,7 +47,7 @@ select ok(exists (select 1 from public.discover_feed('{}')
 select is_empty($$ select 1 from public.discover_feed('{casual}') $$,
   'Casual shows nobody to a Member who did not choose Casual');
 select set_eq($$ select user_id from public.discover_feed('{casual,friends}') $$,
-  array['00000000-0000-0000-0000-0000000000f2'::uuid],
+  array['00000000-0000-0000-0000-0000000000f2'::uuid, '00000000-0000-0000-0000-0000000000f6'],
   'Casual in a list adds nobody for a Member who did not choose it');
 select results_eq(
   $$ select count(*)::integer from public.discover_feed('{friends,activities}', 1)

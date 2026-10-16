@@ -52,7 +52,7 @@ _Avoid_: Match, friendship
 A proposal by one side of an accepted Connection to move it to another Eligible Mode; the Connection keeps its current Mode until the other side accepts. One open proposal at a time; it lapses after 7 days, and a declined proposer waits 7 days to propose again.
 
 **Eligible Mode**:
-From a sender to a recipient: a Mode the recipient chose that the sender may see in Discover (Casual only when both chose it; a Dating Mode only when both Members' Dating Preferences fit and the recipient's range includes the sender). The sender need not hold it (decision 39). Connection Requests use the recipient's Eligible Modes; a Mode Change uses those of the side who answers it. Discover shows every Visible Member in range, with the Casual and Dating rules of decision 42.
+From a sender to a recipient: a Mode the recipient chose that the sender may see in Discover (Casual only when both chose it; a Dating Mode only when both Members' Dating Preferences fit and the recipient's range includes the sender). The sender need not hold it (decision 39). Connection Requests use the recipient's Eligible Modes; a Mode Change uses those of the side who answers it. Discover shows every Visible Member in range, with the Casual and Dating rules of decisions 42 and 44 (a Casual chooser shows to everyone else under their other Modes).
 
 **Media Consent**:
 In a Casual Connection, the per-side switch that must be on for both Members before either can send or open images or video (including ones sent earlier). Changing a Connection's Mode into Casual switches it off on both sides.
