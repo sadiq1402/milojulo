@@ -81,8 +81,10 @@ export function ModesSheet({
   onChoose: (modes: Mode[]) => void;
 }) {
   const [draft, setDraft] = useDraft(visible, value);
-  // Only my own Modes: the feed matches on a Mode both people chose, so any other is always empty.
-  const shown = filterModes.filter(mode => myModes.includes(mode));
+  // Casual profiles only reach Members who chose Casual themselves.
+  const shown = filterModes.filter(
+    mode => mode !== 'casual' || myModes.includes('casual'),
+  );
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <Text variant="h2" accessibilityRole="header">
