@@ -400,6 +400,9 @@ deno_version = 2
 [functions.media]
 verify_jwt = false
 
+[functions.push]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

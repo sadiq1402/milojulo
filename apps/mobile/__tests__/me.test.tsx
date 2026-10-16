@@ -8,6 +8,7 @@ import * as discover from '../src/features/discover/api';
 import * as me from '../src/features/me/api';
 import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
+import * as push from '../src/features/push/api';
 import { SetupError } from '../src/features/profileSetup/model';
 import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
@@ -20,6 +21,7 @@ jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
 jest.mock('../src/features/photos/api');
 jest.mock('../src/features/profileSetup/api');
+jest.mock('../src/features/push/api');
 // Keep the real helpers (age, the support address); stand in only the database calls.
 jest.mock('../src/features/me/api', () => ({
   ...jest.requireActual('../src/features/me/api'),
@@ -75,6 +77,10 @@ beforeEach(() => {
       { memberId: 'rohan', name: 'Rohan', blockedAt: '2026-10-02T10:00:00Z' },
     ]);
   jest.mocked(me.unblock).mockResolvedValue();
+  jest
+    .mocked(push.fetchNotificationSettings)
+    .mockResolvedValue({ messages: true, activities: true });
+  jest.mocked(push.saveNotificationSettings).mockResolvedValue();
 });
 
 const header = (name: string) => screen.findByRole('header', { name });
@@ -231,9 +237,60 @@ describe('Settings', () => {
     await waitFor(() => expect(me.setPaused).toHaveBeenCalledWith(false));
   });
 
-  test('notification rows wait for push', async () => {
+  test('notification switches show what my profile says', async () => {
+    jest
+      .mocked(push.fetchNotificationSettings)
+      .mockResolvedValue({ messages: true, activities: false });
     await openSettings();
-    expect(screen.queryByText(/Notifications/)).toBeNull();
+    expect(screen.getByText('Notifications')).toBeOnTheScreen();
+    expect(
+      await screen.findByRole('switch', {
+        name: 'Requests and messages',
+        checked: true,
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('switch', { name: 'Activity updates', checked: false }),
+    ).toBeOnTheScreen();
+    expect(push.fetchNotificationSettings).toHaveBeenCalledWith(userId);
+  });
+
+  test.each([
+    ['Requests and messages', { messages: false }],
+    ['Activity updates', { activities: false }],
+  ])('turning off %s saves it', async (name, change) => {
+    await openSettings();
+    await fireEvent.press(
+      await screen.findByRole('switch', { name, checked: true }),
+    );
+    await waitFor(() =>
+      expect(push.saveNotificationSettings).toHaveBeenCalledWith(
+        userId,
+        change,
+      ),
+    );
+    expect(
+      await screen.findByRole('switch', { name, checked: false }),
+    ).toBeOnTheScreen();
+  });
+
+  test('a failed save says so and puts the switch back', async () => {
+    jest
+      .mocked(push.saveNotificationSettings)
+      .mockRejectedValue(new Error("That didn't work. Try again."));
+    await openSettings();
+    await fireEvent.press(
+      await screen.findByRole('switch', {
+        name: 'Activity updates',
+        checked: true,
+      }),
+    );
+    expect(
+      await screen.findByText("That didn't work. Try again."),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('switch', { name: 'Activity updates', checked: true }),
+    ).toBeOnTheScreen();
   });
 
   test('blocked people are listed and can be unblocked', async () => {

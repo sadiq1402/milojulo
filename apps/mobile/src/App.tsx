@@ -9,6 +9,7 @@ import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider } from './features/auth/SessionProvider';
 import { queryClient } from './lib/queryClient';
+import { navigationRef } from './navigation/navigationRef';
 import { RootNavigator } from './navigation/RootNavigator';
 import { colors } from './theme';
 
@@ -32,7 +33,7 @@ export default function App({
       <StatusBar barStyle="dark-content" />
       <QueryClientProvider client={client}>
         <SessionProvider>
-          <NavigationContainer theme={navTheme}>
+          <NavigationContainer ref={navigationRef} theme={navTheme}>
             <RootNavigator />
           </NavigationContainer>
         </SessionProvider>

@@ -12,5 +12,7 @@ module.exports = {
     '^@react-native-async-storage/async-storage$':
       '<rootDir>/test/memoryStorage.ts',
     '/config/env$': '<rootDir>/__integration__/support/env.ts',
+    '^@react-native-firebase/messaging$':
+      '<rootDir>/__integration__/support/messaging.ts',
   },
 };

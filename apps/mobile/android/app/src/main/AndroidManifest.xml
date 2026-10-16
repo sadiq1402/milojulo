@@ -9,6 +9,8 @@
     <!-- Distance in Discover (#105), foreground only; no background location. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Push notifications (#36); Android 13+ asks for it after sign-in. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- tools:replace: TAndroidLame (via react-native-compressor) sets allowBackup="true"; the merge fails without it. -->

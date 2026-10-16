@@ -12,13 +12,17 @@ import {
 import { useSession } from '../../features/auth/SessionProvider';
 import { useMyDiscoverState } from '../../features/discover/queries';
 import { useSetPaused } from '../../features/me/queries';
+import {
+  useNotificationSettings,
+  useSaveNotificationSettings,
+} from '../../features/push/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors } from '../../theme';
 import { Section } from './Section';
 
 type Props = NativeStackScreenProps<MemberParams, 'Settings'>;
 
-// Only built features have rows; notifications arrive with the push ticket.
+// Only built features have rows.
 export function SettingsScreen({ navigation }: Props) {
   const userId = useSession().session!.user.id;
   const state = useMyDiscoverState(userId);
@@ -26,6 +30,13 @@ export function SettingsScreen({ navigation }: Props) {
   const paused = pause.isPending
     ? pause.variables
     : state.data?.paused ?? false;
+  const notify = useNotificationSettings(userId);
+  const saveNotify = useSaveNotificationSettings(userId);
+  // While a save is in flight the switch shows where it is going.
+  const notifyShown = {
+    ...notify.data,
+    ...(saveNotify.isPending ? saveNotify.variables : {}),
+  };
 
   return (
     <Screen
@@ -51,6 +62,38 @@ export function SettingsScreen({ navigation }: Props) {
           Circles. Your existing chats carry on.
         </Text>
         {pause.isError ? <ErrorText text={pause.error.message} /> : null}
+      </Section>
+
+      <Section title="Notifications">
+        <List>
+          <ListRow
+            title="Requests and messages"
+            right={
+              <Switch
+                accessibilityLabel="Requests and messages"
+                value={notifyShown.messages ?? false}
+                disabled={!notify.data || saveNotify.isPending}
+                onValueChange={value => saveNotify.mutate({ messages: value })}
+              />
+            }
+          />
+          <ListRow
+            title="Activity updates"
+            right={
+              <Switch
+                accessibilityLabel="Activity updates"
+                value={notifyShown.activities ?? false}
+                disabled={!notify.data || saveNotify.isPending}
+                onValueChange={value =>
+                  saveNotify.mutate({ activities: value })
+                }
+              />
+            }
+          />
+        </List>
+        {saveNotify.isError ? (
+          <ErrorText text={saveNotify.error.message} />
+        ) : null}
       </Section>
 
       <Section title="Privacy and data">
