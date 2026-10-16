@@ -96,6 +96,8 @@ const styles = StyleSheet.create({
     width: sizes.tabPill.w,
     height: sizes.tabPill.h,
     borderRadius: sizes.tabPill.h / 2,
+    // Android (New Architecture) drops the radius when a background first appears on a later render.
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
