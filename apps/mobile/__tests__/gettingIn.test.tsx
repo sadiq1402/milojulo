@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react-native';
+import { Keyboard } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as auth from '../src/features/auth/api';
 import * as consents from '../src/features/consents/api';
@@ -120,6 +121,16 @@ describe('6-digit code', () => {
     await openCodeScreen();
     await fireEvent.changeText(screen.getByLabelText('6-digit code'), '12345');
     expect(screen.getByRole('button', { name: 'Verify' })).toBeDisabled();
+  });
+
+  test('the keyboard closes once all six digits are in', async () => {
+    await openCodeScreen();
+    const dismiss = jest.spyOn(Keyboard, 'dismiss');
+    await fireEvent.changeText(screen.getByLabelText('6-digit code'), '12345');
+    expect(dismiss).not.toHaveBeenCalled();
+    await fireEvent.changeText(screen.getByLabelText('6-digit code'), '123456');
+    expect(dismiss).toHaveBeenCalled();
+    dismiss.mockRestore();
   });
 
   test('a new code can be sent after 30 seconds', async () => {
