@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(33);
+select plan(38);
 
 -- How many of the owner's photos the media Edge Function may sign for the viewer.
 create function pg_temp.seen(viewer uuid, owner uuid) returns integer
@@ -183,6 +183,46 @@ select public.submit_profile();
 reset role;
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036c1'), 2,
   'photos of a Casual-only Member are linked for a viewer who did not choose Casual');
+
+-- A Circle shares photos: Asha and Baner Members beyond her Discover range. 36d1 is in her Circle,
+-- 36d2 is in another Circle, 36d3 is in hers but paused.
+select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000036d1');
+select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000036d2');
+select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000036d3');
+select pg_temp.act_as_admin('00000000-0000-0000-0000-0000000036ad');
+select public.admin_create_circle('Trekkers', 'baner', (select id from public.tags where slug = 'trekking'),
+  'A local circle.') as circle \gset
+select public.admin_create_circle('Cyclists', 'baner', (select id from public.tags where slug = 'cycling'),
+  'A local circle.') as other_circle \gset
+reset role;
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d2');
+select public.join_circle(:'other_circle');
+select pg_temp.act_as_member('00000000-0000-0000-0000-000000003601');
+select public.join_circle(:'circle');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d1');
+select public.join_circle(:'circle');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d3');
+select public.join_circle(:'circle');
+select public.set_paused(true);
+reset role;
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d1'), 2,
+  'a fellow Circle member''s photos are linked, even beyond Discover range');
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d2'), 0,
+  'a member of another Circle, beyond Discover range, gets no links');
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d3'), 0,
+  'a paused fellow Circle member''s photos are not linked');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d1');
+select public.block_user('00000000-0000-0000-0000-000000003601');
+reset role;
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d1'), 0,
+  'a Block between fellow Circle members withholds the photos');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d3');
+select public.set_paused(false);
+select pg_temp.act_as_member('00000000-0000-0000-0000-000000003601');
+select public.set_paused(true);
+reset role;
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d3'), 0,
+  'a paused viewer gets no links to fellow Circle members');
 
 select * from finish();
 rollback;
