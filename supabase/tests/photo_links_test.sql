@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(36);
+select plan(38);
 
 -- How many of the owner's photos the media Edge Function may sign for the viewer.
 create function pg_temp.seen(viewer uuid, owner uuid) returns integer
@@ -211,6 +211,18 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-00
   'a member of another Circle, beyond Discover range, gets no links');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d3'), 0,
   'a paused fellow Circle member''s photos are not linked');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d1');
+select public.block_user('00000000-0000-0000-0000-000000003601');
+reset role;
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d1'), 0,
+  'a Block between fellow Circle members withholds the photos');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d3');
+select public.set_paused(false);
+select pg_temp.act_as_member('00000000-0000-0000-0000-000000003601');
+select public.set_paused(true);
+reset role;
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036d3'), 0,
+  'a paused viewer gets no links to fellow Circle members');
 
 select * from finish();
 rollback;
