@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Avatar,
   BottomSheet,
   Button,
   Icon,
@@ -56,6 +55,7 @@ import { ChatMenu } from './ChatMenu';
 import { formatDuration } from './MediaContent';
 import { MessageBubble } from './MessageBubble';
 import { ModeChangeCard } from './ModeChangeCard';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 export function ChatScreen({
   navigation,
@@ -130,7 +130,11 @@ export function ChatScreen({
           accessibilityLabel="Back"
           onPress={navigation.goBack}
         />
-        <Avatar name={name || ' '} size="chatHeader" />
+        <MemberAvatar
+          name={name || ' '}
+          photoId={conversation?.otherPhotoId}
+          size="chatHeader"
+        />
         <View style={styles.who}>
           <Text variant="title" accessibilityRole="header" numberOfLines={1}>
             {name}

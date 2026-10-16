@@ -9,6 +9,7 @@ import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
+import * as photos from '../src/features/photos/api';
 import type { Conversation, Message } from '../src/features/chat/api';
 import * as reports from '../src/features/reports/api';
 import { areas } from '../test/catalog';
@@ -18,6 +19,7 @@ jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
+jest.mock('../src/features/photos/api');
 jest.mock('../src/features/activities/api');
 // Keep the real reason list; only the call to the database is stood in.
 jest.mock('../src/features/reports/api', () => ({
@@ -93,6 +95,7 @@ beforeEach(() => {
     .mocked(chat.fetchChatState)
     .mockResolvedValue({ otherLastReadAt: null, muted: false });
   jest.mocked(chat.markRead).mockResolvedValue();
+  jest.mocked(photos.fetchPhotoUrls).mockResolvedValue({});
   jest.mocked(chat.subscribeToChat).mockImplementation((_id, handlers) => {
     live = handlers;
     return () => {};
@@ -139,6 +142,24 @@ describe('chat list', () => {
       screen.getByRole('button', { name: /^Kabir, Closed/ }),
     ).toBeOnTheScreen();
     expect(screen.queryByText('Rohan')).not.toBeOnTheScreen();
+  });
+
+  test('the chat list and chat header show their photo', async () => {
+    jest
+      .mocked(chat.fetchConversations)
+      .mockResolvedValue([{ ...isha, otherPhotoId: 'isha-cover' }, kabir]);
+    jest
+      .mocked(photos.fetchPhotoUrls)
+      .mockResolvedValue({ 'isha-cover': 'https://r2.example/isha.jpg' });
+    await openInbox();
+    const row = await screen.findByLabelText('Photo of Isha');
+    expect(row.props.source).toEqual({ uri: 'https://r2.example/isha.jpg' });
+    expect(screen.queryByLabelText('Photo of Kabir')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: /^Isha/ }));
+    await screen.findByLabelText('Chat menu');
+    // The Inbox under the chat is hidden from queries, so this is the header's photo.
+    const header = await screen.findByLabelText('Photo of Isha');
+    expect(header.props.source).toEqual({ uri: 'https://r2.example/isha.jpg' });
   });
 
   test('with no chats yet, says how they start', async () => {

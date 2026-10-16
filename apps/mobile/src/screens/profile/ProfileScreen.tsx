@@ -22,6 +22,7 @@ import {
   TopBar,
 } from '../../components';
 import { blockMember } from '../../features/chat/api';
+import { usePhotoUrl } from '../../features/photos/queries';
 import { chatKeys, useConversations } from '../../features/chat/queries';
 import type { Profile } from '../../features/discover/api';
 import {
@@ -112,6 +113,7 @@ export function ProfileScreen({ navigation, route }: Props) {
 function ProfileBody({ profile }: { profile: Profile }) {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const heroPhotoId = profile.photoIds[0];
+  const hero = usePhotoUrl(heroPhotoId);
   const reportPhoto = () =>
     navigation.navigate('Report', {
       targetType: 'photo',
@@ -145,6 +147,7 @@ function ProfileBody({ profile }: { profile: Profile }) {
           name={profile.name}
           seed={profile.id}
           initialSize={heroInitialSize}
+          uri={hero.data}
           style={styles.hero}
         >
           {areaName ? (

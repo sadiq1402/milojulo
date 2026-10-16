@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Card, PhotoPlaceholder, Tag, Text } from '../../components';
 import type { FeedCard as FeedCardData } from '../../features/discover/api';
+import { usePhotoUrl } from '../../features/photos/queries';
 import { modeLabels } from '../../features/modes';
 import { colors, radius, sizes, spacing } from '../../theme';
 
@@ -17,6 +18,7 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
   const place = [areaName, card.distanceBand].filter(Boolean).join(' · ');
   // With no Mode in common, the card shows what they're here for.
   const modes = card.modes.length > 0 ? card.modes : card.theirModes;
+  const cover = usePhotoUrl(card.coverPhotoId);
   return (
     <Pressable
       onPress={onPress}
@@ -29,6 +31,7 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
           name={card.name}
           seed={card.id}
           initialSize={initialSize}
+          uri={cover.data}
           style={styles.media}
         >
           {place ? (

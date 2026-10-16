@@ -6,6 +6,7 @@ import { AnswerCard } from '../requests/AnswerCard';
 export function JoinRequestCard({
   requestId,
   name,
+  photoId,
   detail,
   tone,
   onOpen,
@@ -15,6 +16,7 @@ export function JoinRequestCard({
 }: {
   requestId: string;
   name: string;
+  photoId: string | null;
   detail?: string;
   tone: number;
   onOpen?: () => void;
@@ -26,6 +28,7 @@ export function JoinRequestCard({
   return (
     <AnswerCard
       name={name}
+      photoId={photoId}
       detail={detail}
       tone={tone}
       onOpen={onOpen}

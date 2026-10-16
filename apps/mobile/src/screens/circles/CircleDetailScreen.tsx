@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Avatar,
   BottomSheet,
   Button,
   ErrorText,
@@ -29,6 +28,7 @@ import {
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, spacing } from '../../theme';
 import { ActivityCard } from '../activities/ActivityCard';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 type Props = NativeStackScreenProps<MemberParams, 'CircleDetail'>;
 
@@ -171,7 +171,13 @@ function CircleMembers({
               key={member.id}
               title={member.name}
               subtitle={areaName(member.areaId)}
-              left={<Avatar name={member.name} tone={i} />}
+              left={
+                <MemberAvatar
+                  name={member.name}
+                  photoId={member.coverPhotoId}
+                  tone={i}
+                />
+              }
               onPress={() => onOpenMember(member.id)}
               accessibilityLabel={`${member.name}, see their profile`}
             />

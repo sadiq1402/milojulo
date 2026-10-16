@@ -3,7 +3,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
-  Avatar,
   Button,
   List,
   ListRow,
@@ -17,6 +16,7 @@ import { useConversations } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
 import { RequestList } from '../requests/RequestList';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 type Segment = 'requests' | 'chats';
 
@@ -112,7 +112,13 @@ function ChatRow({
       ]
         .filter(Boolean)
         .join(', ')}
-      left={<Avatar name={chat.otherName} tone={tone} />}
+      left={
+        <MemberAvatar
+          name={chat.otherName}
+          photoId={chat.otherPhotoId}
+          tone={tone}
+        />
+      }
       right={
         <View style={styles.meta}>
           {chat.lastMessage ? (

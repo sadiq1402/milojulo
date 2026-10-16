@@ -11,6 +11,7 @@ import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import * as photos from '../src/features/photos/api';
 import type { FeedCard, Profile } from '../src/features/discover/api';
 import * as reports from '../src/features/reports/api';
 import { areas, numbered } from '../test/catalog';
@@ -22,6 +23,7 @@ jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/activities/api');
 jest.mock('../src/features/discover/api');
+jest.mock('../src/features/photos/api');
 // Keep the real reason list; only the call to the database is stood in.
 jest.mock('../src/features/reports/api', () => ({
   ...jest.requireActual('../src/features/reports/api'),
@@ -137,6 +139,7 @@ beforeEach(() => {
     .mockResolvedValue({ cards: [isha, rohan], nextCursor: null });
   jest.mocked(discover.fetchProfile).mockResolvedValue(ishaProfile);
   jest.mocked(discover.saveRange).mockResolvedValue();
+  jest.mocked(photos.fetchPhotoUrls).mockResolvedValue({});
   jest.mocked(chat.fetchConversations).mockResolvedValue([]);
   jest.mocked(chat.blockMember).mockResolvedValue();
   jest.mocked(reports.reportContent).mockResolvedValue();
@@ -176,6 +179,24 @@ describe('the Discover feed', () => {
       modes: [],
       cursor: null,
     });
+  });
+
+  test('a card shows the cover photo, and the initial when the photo is withheld', async () => {
+    jest.mocked(discover.fetchFeedPage).mockResolvedValue({
+      cards: [
+        card({ coverPhotoId: 'isha-cover' }),
+        card({ id: 'rohan', name: 'Rohan', coverPhotoId: 'rohan-cover' }),
+      ],
+      nextCursor: null,
+    });
+    jest
+      .mocked(photos.fetchPhotoUrls)
+      .mockResolvedValue({ 'isha-cover': 'https://r2.example/isha.jpg' });
+    await renderApp(me);
+    const photo = await screen.findByLabelText('Photo of Isha');
+    expect(photo.props.source).toEqual({ uri: 'https://r2.example/isha.jpg' });
+    expect(screen.queryByLabelText('Photo of Rohan')).toBeNull();
+    expect(photos.fetchPhotoUrls).toHaveBeenCalledTimes(1);
   });
 
   test('with no Mode in common, the card shows the Modes they are here for', async () => {
@@ -400,6 +421,15 @@ describe('a profile', () => {
     expect(screen.getByText('Make up a badminton group.')).toBeOnTheScreen();
     expect(screen.getByText('Badminton')).toBeOnTheScreen();
     expect(screen.getByText('Trekking')).toBeOnTheScreen();
+  });
+
+  test('the profile hero shows their first photo', async () => {
+    jest
+      .mocked(photos.fetchPhotoUrls)
+      .mockResolvedValue({ p1: 'https://r2.example/p1.jpg' });
+    await openProfile();
+    const hero = await screen.findByLabelText('Photo of Isha');
+    expect(hero.props.source).toEqual({ uri: 'https://r2.example/p1.jpg' });
   });
 
   test('Send request offers only the Modes I may request under, and our shared ones', async () => {

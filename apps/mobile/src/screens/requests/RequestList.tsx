@@ -3,7 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Avatar, Button, List, ListRow, Tag, Text } from '../../components';
+import { Button, List, ListRow, Tag, Text } from '../../components';
 import { formatWhen } from '../../features/activities/time';
 import type { Conversation } from '../../features/chat/api';
 import { useAreaName } from '../../features/catalog/queries';
@@ -15,6 +15,7 @@ import type { MemberParams } from '../../navigation/types';
 import { colors, fontFamily, fonts, layout, spacing } from '../../theme';
 import { JoinRequestCard } from '../activities/JoinRequestCard';
 import { AnswerCard } from './AnswerCard';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 // Sent rows start further along the avatar tones than the cards above them.
 const sentToneStart = 2;
@@ -73,6 +74,7 @@ export function RequestList() {
                 key={request.id}
                 requestId={request.id}
                 name={request.otherName}
+                photoId={request.otherPhotoId}
                 detail={`Asks to join ${request.activityTitle}, ${formatWhen(
                   request.activityStartsAt,
                   null,
@@ -105,7 +107,11 @@ export function RequestList() {
                 title={request.otherName}
                 subtitle={areaName(request.otherAreaId)}
                 left={
-                  <Avatar name={request.otherName} tone={sentToneStart + i} />
+                  <MemberAvatar
+                    name={request.otherName}
+                    photoId={request.otherPhotoId}
+                    tone={sentToneStart + i}
+                  />
                 }
                 right={<Tag label="Pending" />}
               />
@@ -116,8 +122,9 @@ export function RequestList() {
                 title={request.activityTitle}
                 subtitle={`Join Request, hosted by ${request.otherName}`}
                 left={
-                  <Avatar
+                  <MemberAvatar
                     name={request.otherName}
+                    photoId={request.otherPhotoId}
                     tone={sentToneStart + sent.length + i}
                   />
                 }
@@ -159,6 +166,7 @@ function RequestCard({
   return (
     <AnswerCard
       name={otherName}
+      photoId={request.otherPhotoId}
       detail={area}
       tone={tone}
       tag={<Tag label={modeLabels[request.mode]} tone={request.mode} />}
