@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(36);
+select plan(38);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000103' || suffix)::uuid $$;
@@ -54,9 +54,12 @@ select pg_temp.locate(pg_temp.m('02'), 18.5905, 73.7868);
 select pg_temp.member(pg_temp.m('03'), 'Kiran', '{friends}');
 select pg_temp.locate(pg_temp.m('03'), 18.5515, 73.9348);
 select pg_temp.member(pg_temp.m('04'), 'Ravi', '{networking}');
--- m05 chose Casual; v06 chose Casual too.
+-- m05 chose Friends and Casual; m06 chose them too.
 select pg_temp.member(pg_temp.m('05'), 'Meera', '{friends,casual}', 'woman', '{man}');
 select pg_temp.member(pg_temp.m('06'), 'Dev', '{friends,casual}', 'man', '{woman}');
+-- m13 chose only Casual; m14 chose Dating, not Casual, and fits m06's Dating Preferences.
+select pg_temp.member(pg_temp.m('13'), 'Kabir', '{casual}', 'man', '{woman}');
+select pg_temp.member(pg_temp.m('14'), 'Tara', '{dating}', 'woman', '{man}');
 -- m07's last location (Kharadi) is 8 days old, so their Baner Area centre stands in.
 select pg_temp.member(pg_temp.m('07'), 'Sana', '{friends}');
 select pg_temp.locate(pg_temp.m('07'), 18.5515, 73.9348);
@@ -79,7 +82,8 @@ update public.profiles set discover_range_km = 10 where id = auth.uid();
 
 -- No Mode overlap needed; Casual only to Casual choosers
 select ok(pg_temp.in_feed(pg_temp.m('04')), 'a Member who shares no Mode appears');
-select ok(not pg_temp.in_feed(pg_temp.m('05')), 'a Member who chose Casual does not appear to someone who did not');
+select ok(pg_temp.in_feed(pg_temp.m('05')), 'a Member who chose Casual and Friends appears to someone who did not choose Casual');
+select ok(not pg_temp.in_feed(pg_temp.m('13')), 'a Member who chose only Casual does not appear to someone who did not');
 select pg_temp.act_as_member(pg_temp.m('06'));
 select ok(pg_temp.in_feed(pg_temp.m('05')), 'a Member who chose Casual appears to another Casual Member');
 
@@ -107,8 +111,12 @@ select pg_temp.act_as_member(pg_temp.m('06'));
 select is((select their_modes from public.discover_feed(null, 50) where user_id = pg_temp.m('05')),
   '{friends,casual}'::public.mode[], 'a Casual Member sees another''s Casual Mode');
 select pg_temp.act_as_member(pg_temp.m('01'));
-select is((select their_modes from public.discover_feed(null, 50) where user_id = pg_temp.m('06')), null,
-  'nobody outside Casual sees a Casual Member, nor their Modes');
+select is((select their_modes from public.discover_feed(null, 50) where user_id = pg_temp.m('06')),
+  '{friends}'::public.mode[], 'outside Casual, a Casual Member''s card leaves Casual out');
+select pg_temp.act_as_member(pg_temp.m('14'));
+select is((select their_modes from public.discover_feed(null, 50) where user_id = pg_temp.m('06')),
+  '{friends}'::public.mode[], 'fitting Dating Preferences do not open Casual to someone who did not choose it');
+select pg_temp.act_as_member(pg_temp.m('01'));
 
 -- Distance ranks: nearer first when nothing else differs (m08 about 8 km, m09 at the Area centre)
 reset role;
