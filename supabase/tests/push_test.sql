@@ -116,8 +116,8 @@ select pg_temp.act_as_member(pg_temp.m('f1'));
 insert into public.messages (id, connection_id, type, body) values (gen_random_uuid(), :'c12', 'text', 'Badminton at 7?');
 reset role;
 select results_eq($$ select * from pg_temp.queued('f2') $$,
-  format($$ values ('Asha', 'Badminton at 7?', '{"kind":"message","connectionId":"%s"}'::jsonb) $$, :'c12'),
-  'the other participant is told of a text message');
+  format($$ values ('Asha', 'Sent you a message.', '{"kind":"message","connectionId":"%s"}'::jsonb) $$, :'c12'),
+  'the other participant is told of a text message, without its text');
 select is_empty($$ select * from pg_temp.queued('f1') $$, 'the sender is not told of their own message');
 delete from public.push_queue;
 update public.profiles set deleted_at = now() where id = pg_temp.m('f2');

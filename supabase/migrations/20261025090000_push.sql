@@ -119,7 +119,7 @@ begin
   where m.connection_id = new.connection_id and m.user_id <> new.sender_id and not m.muted;
   if recipient is not null then
     perform public.enqueue_push(recipient, 'messages', public.display_name_of(new.sender_id),
-      case new.type when 'text' then new.body when 'image' then 'Sent a photo' when 'video' then 'Sent a video'
+      case new.type when 'text' then 'Sent you a message.' when 'image' then 'Sent a photo' when 'video' then 'Sent a video'
                     when 'voice' then 'Sent a voice note' else 'Shared an activity' end,
       jsonb_build_object('kind', 'message', 'connectionId', new.connection_id));
   end if;
