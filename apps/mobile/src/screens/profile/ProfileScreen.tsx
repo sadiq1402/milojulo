@@ -232,7 +232,7 @@ function ProfileAction({ profile }: { profile: Profile }) {
         member={{
           id: profile.id,
           name: profile.name,
-          modes: profile.theirModes,
+          modes: profile.requestModes,
           sharedModes: profile.modes,
         }}
         onSent={() =>

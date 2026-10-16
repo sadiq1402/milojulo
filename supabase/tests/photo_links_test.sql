@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(32);
+select plan(33);
 
 -- How many of the owner's photos the media Edge Function may sign for the viewer.
 create function pg_temp.seen(viewer uuid, owner uuid) returns integer
@@ -170,6 +170,19 @@ reset role;
 select pg_temp.act_as_anon();
 select throws_ok(format($$ select * from public.photo_links('00000000-0000-0000-0000-000000003602', array[%L]::uuid[]) $$,
   :'asha_cover'), '42501', null, 'a signed-out visitor cannot ask for photo keys');
+
+reset role;
+
+-- 36c1 chose only Casual, in Kharadi beside Asha, who did not choose Casual.
+select pg_temp.create_complete_member('00000000-0000-0000-0000-0000000036c1');
+update public.profiles set area_id = 'kharadi', modes = '{casual}', gender = 'man', pref_genders = '{woman}',
+  pref_age_min = 18, pref_age_max = 60, pref_max_km = 50
+where id = '00000000-0000-0000-0000-0000000036c1';
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036c1');
+select public.submit_profile();
+reset role;
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-0000000036c1'), 2,
+  'photos of a Casual-only Member are linked for a viewer who did not choose Casual');
 
 select * from finish();
 rollback;

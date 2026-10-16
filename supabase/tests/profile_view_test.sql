@@ -62,7 +62,7 @@ select is(
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(p)) from public.get_profile('00000000-0000-0000-0000-0000000000a2') p $$,
   array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'why_you_match', 'photo_ids', 'prompts',
-        'tag_ids', 'availability'],
+        'tag_ids', 'availability', 'request_modes'],
   'a profile carries only safe columns, never date of birth');
 select is(
   (select photo_ids from public.get_profile('00000000-0000-0000-0000-0000000000a2')),

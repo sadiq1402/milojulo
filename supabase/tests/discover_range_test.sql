@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(38);
+select plan(43);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000103' || suffix)::uuid $$;
@@ -57,7 +57,7 @@ select pg_temp.member(pg_temp.m('04'), 'Ravi', '{networking}');
 -- m05 chose Friends and Casual; m06 chose them too.
 select pg_temp.member(pg_temp.m('05'), 'Meera', '{friends,casual}', 'woman', '{man}');
 select pg_temp.member(pg_temp.m('06'), 'Dev', '{friends,casual}', 'man', '{woman}');
--- m13 chose only Casual; m14 chose Dating, not Casual, and fits m06's Dating Preferences.
+-- m13 chose only Casual; m14 chose only Dating, fitting m06's Dating Preferences but not m01's (none).
 select pg_temp.member(pg_temp.m('13'), 'Kabir', '{casual}', 'man', '{woman}');
 select pg_temp.member(pg_temp.m('14'), 'Tara', '{dating}', 'woman', '{man}');
 -- m07's last location (Kharadi) is 8 days old, so their Baner Area centre stands in.
@@ -80,10 +80,11 @@ update public.profiles set discover_range_km = null where id = auth.uid();
 select ok(pg_temp.in_feed(pg_temp.m('03')), 'anywhere in the region shows a Member across Pune');
 update public.profiles set discover_range_km = 10 where id = auth.uid();
 
--- No Mode overlap needed; Casual only to Casual choosers
+-- No Mode rules: everyone in range appears
 select ok(pg_temp.in_feed(pg_temp.m('04')), 'a Member who shares no Mode appears');
 select ok(pg_temp.in_feed(pg_temp.m('05')), 'a Member who chose Casual and Friends appears to someone who did not choose Casual');
-select ok(not pg_temp.in_feed(pg_temp.m('13')), 'a Member who chose only Casual does not appear to someone who did not');
+select ok(pg_temp.in_feed(pg_temp.m('13')), 'a Member who chose only Casual appears to someone who did not');
+select ok(pg_temp.in_feed(pg_temp.m('14')), 'a Member who chose only Dating appears though Dating Preferences do not fit');
 select pg_temp.act_as_member(pg_temp.m('06'));
 select ok(pg_temp.in_feed(pg_temp.m('05')), 'a Member who chose Casual appears to another Casual Member');
 
@@ -92,8 +93,9 @@ select pg_temp.act_as_member(pg_temp.m('01'));
 select set_eq($$ select user_id from public.discover_feed('{networking}', 50) $$, array[pg_temp.m('04')],
   'the Modes filter keeps only Members who chose that Mode');
 select ok(not pg_temp.in_feed(pg_temp.m('04'), 'friends'), 'the Modes filter leaves out Members without it');
-select is_empty($$ select 1 from public.discover_feed('{casual}', 50) $$,
-  'a Member who did not choose Casual finds nobody under the Casual filter');
+select set_eq($$ select user_id from public.discover_feed('{casual}', 50) $$,
+  array[pg_temp.m('05'), pg_temp.m('06'), pg_temp.m('13')],
+  'a Member who did not choose Casual finds Casual choosers under the Casual filter');
 
 -- What the card says
 select is(pg_temp.card(pg_temp.m('04'))::text,
@@ -112,10 +114,10 @@ select is((select their_modes from public.discover_feed(null, 50) where user_id 
   '{friends,casual}'::public.mode[], 'a Casual Member sees another''s Casual Mode');
 select pg_temp.act_as_member(pg_temp.m('01'));
 select is((select their_modes from public.discover_feed(null, 50) where user_id = pg_temp.m('06')),
-  '{friends}'::public.mode[], 'outside Casual, a Casual Member''s card leaves Casual out');
+  '{friends,casual}'::public.mode[], 'a Casual Member''s card shows all their Modes to everyone');
 select pg_temp.act_as_member(pg_temp.m('14'));
 select is((select their_modes from public.discover_feed(null, 50) where user_id = pg_temp.m('06')),
-  '{friends}'::public.mode[], 'fitting Dating Preferences do not open Casual to someone who did not choose it');
+  '{friends,casual}'::public.mode[], 'a Dating viewer sees a Casual Member''s Modes too');
 select pg_temp.act_as_member(pg_temp.m('01'));
 
 -- Distance ranks: nearer first when nothing else differs (m08 about 8 km, m09 at the Area centre)
@@ -128,7 +130,7 @@ select ok((select array_position(array_agg(user_id), pg_temp.m('09')) < array_po
            from public.discover_feed(null, 50)),
   'a nearer Member ranks before a farther one');
 
--- Dating keeps its two-way check, with the other Member's range: d10 about 6 km from d11 and d12
+-- Requests keep Dating's two-way check, with the other Member's range: d10 about 6 km from d11 and d12
 reset role;
 select pg_temp.member(pg_temp.m('10'), 'Riya', '{dating}', 'woman', '{man}');
 update public.profiles set discover_range_km = 25 where id = pg_temp.m('10');
@@ -138,12 +140,23 @@ select pg_temp.locate(pg_temp.m('11'), 18.6130, 73.7868);
 select pg_temp.member(pg_temp.m('12'), 'Neel', '{dating}', 'man', '{woman}');
 select pg_temp.locate(pg_temp.m('12'), 18.6130, 73.7868);
 select pg_temp.act_as_member(pg_temp.m('10'));
-select ok(not pg_temp.in_feed(pg_temp.m('11'), 'dating'), 'a dater does not see someone whose range leaves them out');
-select ok(pg_temp.in_feed(pg_temp.m('12'), 'dating'), 'a dater sees someone whose range includes them');
+select ok(pg_temp.in_feed(pg_temp.m('11'), 'dating'), 'a dater sees someone whose range leaves them out');
+select throws_ok(format('select public.send_request(%L, %L)', pg_temp.m('11'), 'dating'),
+  'P0001', 'that mode is not open between you', 'but cannot request Dating from someone whose range leaves them out');
+select lives_ok(format('select public.send_request(%L, %L)', pg_temp.m('12'), 'dating'),
+  'a dater can request Dating from someone whose range includes them');
 
 -- get_profile follows the feed
 select pg_temp.act_as_member(pg_temp.m('01'));
 select ok(exists (select 1 from public.get_profile(pg_temp.m('04'))), 'a profile opens with no shared Mode');
+select is((select modes from public.get_profile(pg_temp.m('13'))), '{}'::public.mode[],
+  'a Casual-only Member''s profile opens for someone who did not choose Casual, sharing no Mode');
+select is((select request_modes from public.get_profile(pg_temp.m('05'))), '{friends}'::public.mode[],
+  'the profile lists only the Modes the viewer may request under');
+select pg_temp.act_as_member(pg_temp.m('06'));
+select is((select request_modes from public.get_profile(pg_temp.m('05'))), '{friends,casual}'::public.mode[],
+  'Casual is requestable between two Casual choosers whose preferences fit');
+select pg_temp.act_as_member(pg_temp.m('01'));
 select ok(not exists (select 1 from public.get_profile(pg_temp.m('03'))), 'a profile beyond the range does not open');
 select is((select distance_band from public.get_profile(pg_temp.m('04'))), '<2 km', 'a profile shows the distance band');
 

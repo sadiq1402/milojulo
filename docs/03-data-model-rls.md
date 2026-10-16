@@ -36,7 +36,7 @@ Sixteen tables in Supabase Postgres. RLS on every table, default deny.
 `is_blocked(a, b)`, `discover_feed(mode_filter, limit, cursor)`, `match_reason(a, b)` (templated text), `send_request(to, note)`, `respond_request(id, accept)`, `block_user(id)`, `report(target_type, target_id, reason, details)`, `accept_consents(birth_date, document_ids)` (creates the profile; open sign-up, decision 27), `join_activity_request(activity)`, `join_circle(circle)`, `submit_meetup_feedback(...)`, `delete_account()` (also triggers R2 cleanup), `expire_activities()` (pg_cron).
 
 ## Matching (rule-based, SQL)
-Candidates: within the viewer's Discover Range of their Member Location (or Area centre), Casual only to Casual, other Modes to everyone (decisions 38, 44), not blocked, visible, availability overlap. Score: shared intent, shared interests/activity tags, availability overlap, distance. "Why you match" is a template filled from the overlap (for example "You both want friends, like badminton and cafés, and are free on weekends"). Keep matching in one module/function so AI can later become one more signal.
+Candidates: within the viewer's Discover Range of their Member Location (or Area centre), every Mode shown (decision 45; Casual and Dating rules apply to requests only), not blocked, visible, availability overlap. Score: shared intent, shared interests/activity tags, availability overlap, distance. "Why you match" is a template filled from the overlap (for example "You both want friends, like badminton and cafés, and are free on weekends"). Keep matching in one module/function so AI can later become one more signal.
 
 ## Illustrative sketch (verify and test before use)
 ```sql

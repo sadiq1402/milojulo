@@ -84,7 +84,8 @@ const ishaProfile: Profile = {
   age: 27,
   areaId: 'baner',
   modes: ['friends', 'activities'],
-  theirModes: ['activities', 'friends', 'networking'],
+  theirModes: ['activities', 'friends', 'networking', 'casual'],
+  requestModes: ['activities', 'friends', 'networking'],
   distanceBand: '~3 km',
   whyYouMatch: 'You both want friends, like badminton and cafes.',
   photoIds: ['p1', 'p2'],
@@ -196,8 +197,8 @@ describe('the Discover feed', () => {
     );
     expect(await screen.findByText('Show people here for')).toBeOnTheScreen();
     expect(screen.getByRole('checkbox', { name: 'Dating' })).toBeOnTheScreen();
-    // Casual is offered only to Members who chose Casual.
-    expect(screen.queryByRole('checkbox', { name: 'Casual' })).toBeNull();
+    // Casual is offered to everyone: Discover shows every Mode.
+    expect(screen.getByRole('checkbox', { name: 'Casual' })).toBeOnTheScreen();
 
     jest
       .mocked(discover.fetchFeedPage)
@@ -401,7 +402,7 @@ describe('a profile', () => {
     expect(screen.getByText('Trekking')).toBeOnTheScreen();
   });
 
-  test('Send request opens the request sheet with their Modes and our shared ones', async () => {
+  test('Send request offers only the Modes I may request under, and our shared ones', async () => {
     await openProfile();
     await fireEvent.press(
       await screen.findByRole('button', { name: 'Send request' }),

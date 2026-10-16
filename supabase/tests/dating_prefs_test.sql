@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(14);
+select plan(13);
 
 -- A visible Member holding the given Modes and Dating Preferences. Run as postgres.
 create function pg_temp.create_dater(
@@ -22,10 +22,20 @@ begin
 end;
 $$;
 
--- The Modes the signed-in Member sees this Member under in Discover; null when absent.
-create function pg_temp.feed_modes(member_id uuid) returns public.mode[]
-language sql as $$
-  select modes from public.discover_feed() where user_id = member_id;
+-- Whether the signed-in Member may send a request under this Mode; the request is undone either way.
+create function pg_temp.can_request(member_id uuid, under public.mode) returns boolean
+language plpgsql as $$
+begin
+  begin
+    perform public.send_request(member_id, under);
+    raise exception 'undo';
+  exception
+    when others then
+      if sqlerrm = 'undo' then return true; end if;
+      if sqlerrm = 'that mode is not open between you' then return false; end if;
+      raise;
+  end;
+end;
 $$;
 
 select pg_temp.create_dater('00000000-0000-0000-0000-0000000000a1', '{dating}', 'woman', '{man}');
@@ -49,24 +59,26 @@ select pg_temp.create_dater('00000000-0000-0000-0000-00000000a010', '{dating}', 
   max_km => 6, member_area => 'wakad');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a1');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a2'), '{dating}'::public.mode[],
-  'two Members who fit each other''s Dating Preferences see each other in Dating');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a3'), null,
-  'a Member does not see someone whose preferred genders exclude them');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a4'), null,
-  'a Member does not see someone outside their own preferred genders');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a5'), null,
-  'a Member does not see someone outside their own age range');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a6'), null,
-  'a Member does not see someone whose age range excludes them');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a7'), '{dating}'::public.mode[],
-  'age ranges include both ends');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a8'), null,
-  'a Member does not see someone beyond their own max distance');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000a9'), null,
-  'a Member does not see someone whose max distance they are beyond');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-00000000a010'), '{dating}'::public.mode[],
-  'Members within each other''s max distance see each other');
+-- Anywhere in Pune, so only the Dating Preferences decide.
+update public.profiles set discover_range_km = null where id = auth.uid();
+select ok(pg_temp.can_request('00000000-0000-0000-0000-0000000000a2', 'dating'),
+  'two Members who fit each other''s Dating Preferences may request each other in Dating');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a3', 'dating'),
+  'a Member may not request someone whose preferred genders exclude them');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a4', 'dating'),
+  'a Member may not request someone outside their own preferred genders');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a5', 'dating'),
+  'a Member may not request someone outside their own age range');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a6', 'dating'),
+  'a Member may not request someone whose age range excludes them');
+select ok(pg_temp.can_request('00000000-0000-0000-0000-0000000000a7', 'dating'),
+  'age ranges include both ends for requests');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a8', 'dating'),
+  'a Member may not request someone beyond their own max distance');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a9', 'dating'),
+  'a Member may not request someone whose max distance they are beyond');
+select ok(pg_temp.can_request('00000000-0000-0000-0000-00000000a010', 'dating'),
+  'Members within each other''s max distance may request each other');
 reset role;
 
 -- c2 is outside c1's preferred genders but shares Friends; c3 fits c1 in Casual.
@@ -75,21 +87,14 @@ select pg_temp.create_dater('00000000-0000-0000-0000-0000000000c2', '{friends,ca
 select pg_temp.create_dater('00000000-0000-0000-0000-0000000000c3', '{friends,casual}', 'man', '{woman}');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000c2'), '{friends}'::public.mode[],
-  'a Member outside someone''s Dating Preferences still appears under a shared non-dating Mode');
-select is(pg_temp.feed_modes('00000000-0000-0000-0000-0000000000c3'), '{friends,casual}'::public.mode[],
-  'a Member who fits shows under both the shared non-dating and Dating Modes');
-select is_empty(
-  $$ select 1 from public.discover_feed('{casual}') where user_id = '00000000-0000-0000-0000-0000000000c2' $$,
-  'the Casual feed leaves out Members outside the Dating Preferences');
-select is(
-  (select row(modes, why_you_match)::text from public.get_profile('00000000-0000-0000-0000-0000000000c2')),
-  row('{friends}'::public.mode[], 'Less than 2 km away. You both want friends.')::text,
-  'the profile view shows only Eligible Modes, and so does why-you-match');
-select is(
-  (select why_you_match from public.get_profile('00000000-0000-0000-0000-0000000000c3')),
-  'Less than 2 km away. You both want friends and something casual.',
-  'why-you-match names a Dating Mode the pair is eligible for');
+select is((select their_modes from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000c2'),
+  '{friends,casual}'::public.mode[], 'Discover shows every Mode, whatever the Dating Preferences');
+select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000c2', 'casual'),
+  'a Casual request is refused outside the Dating Preferences');
+select ok(pg_temp.can_request('00000000-0000-0000-0000-0000000000c2', 'friends'),
+  'a non-dating request still goes outside the Dating Preferences');
+select ok(pg_temp.can_request('00000000-0000-0000-0000-0000000000c3', 'casual'),
+  'a Casual request goes when both chose Casual and the preferences fit');
 reset role;
 
 select * from finish();
