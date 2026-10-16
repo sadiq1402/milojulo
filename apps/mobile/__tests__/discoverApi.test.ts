@@ -1,4 +1,4 @@
-import { fetchFeedPage } from '../src/features/discover/api';
+import { fetchFeedPage, fetchProfile } from '../src/features/discover/api';
 import { supabase } from '../src/lib/supabase';
 
 // jest.setup.js stands Supabase in with an empty object; give it an rpc that answers like the database would.
@@ -32,4 +32,24 @@ test('the feed sends every picked Mode and keeps each card the database returns'
   });
   expect(page.cards.map(c => c.id)).toEqual(['a', 'b']);
   expect(page.nextCursor).toBe('c-b');
+});
+
+test('a profile carries the Modes I may request under', async () => {
+  rpc.mockResolvedValue({
+    data: [
+      {
+        ...row('a'),
+        their_modes: ['friends', 'casual'],
+        photo_ids: [],
+        prompts: [],
+        tag_ids: [],
+        availability: [],
+        request_modes: ['friends'],
+      },
+    ],
+    error: null,
+  });
+  const profile = await fetchProfile('a');
+  expect(profile?.theirModes).toEqual(['friends', 'casual']);
+  expect(profile?.requestModes).toEqual(['friends']);
 });

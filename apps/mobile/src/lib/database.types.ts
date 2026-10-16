@@ -834,7 +834,7 @@ isOneToOne: false
                            },
 "get_profile":
 { Args: { "member_id": string }; Returns: {
-              "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
+              "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"request_modes": (Database["public"]['Enums']["mode"])[],"tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
             }[]
                            },
 "hosts_activity":

@@ -19,7 +19,7 @@ begin
 end;
 $$;
 
--- f1 views; f2 to f4 each chose one Mode; f5 chose only Casual, which f1 did not but f6 did.
+-- f1 views; f2 to f4 each chose one Mode; f5 chose only Casual, which f1 did not but f6 did. Discover ignores that.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000f1', '{friends,activities,networking}');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000f2', '{friends}');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000f3', '{activities}');
@@ -44,11 +44,13 @@ select set_eq($$ select user_id from public.discover_feed('{}') $$,
 select ok(exists (select 1 from public.discover_feed('{}')
                   where user_id = '00000000-0000-0000-0000-0000000000f4'),
   'an empty list keeps every Mode');
-select is_empty($$ select 1 from public.discover_feed('{casual}') $$,
-  'Casual shows nobody to a Member who did not choose Casual');
+select set_eq($$ select user_id from public.discover_feed('{casual}') $$,
+  array['00000000-0000-0000-0000-0000000000f5'::uuid, '00000000-0000-0000-0000-0000000000f6'],
+  'Casual shows Casual choosers to a Member who did not choose Casual');
 select set_eq($$ select user_id from public.discover_feed('{casual,friends}') $$,
-  array['00000000-0000-0000-0000-0000000000f2'::uuid, '00000000-0000-0000-0000-0000000000f6'],
-  'Casual in a list adds nobody for a Member who did not choose it');
+  array['00000000-0000-0000-0000-0000000000f2'::uuid, '00000000-0000-0000-0000-0000000000f5',
+        '00000000-0000-0000-0000-0000000000f6'],
+  'Casual in a list adds Casual choosers for a Member who did not choose it');
 select results_eq(
   $$ select count(*)::integer from public.discover_feed('{friends,activities}', 1)
      union all

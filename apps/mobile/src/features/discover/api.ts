@@ -25,9 +25,10 @@ export type Profile = {
   name: string;
   age: number;
   areaId: string;
-  // Shared Modes; theirModes are all the Modes I may see and send a request under.
+  // Shared Modes; theirModes are all their Modes; requestModes the ones I may send a request under.
   modes: Mode[];
   theirModes: Mode[];
+  requestModes: Mode[];
   distanceBand: string;
   whyYouMatch: string;
   photoIds: string[];
@@ -109,6 +110,7 @@ export async function fetchProfile(memberId: string): Promise<Profile | null> {
     areaId: row.area_id,
     modes: row.modes,
     theirModes: row.their_modes,
+    requestModes: row.request_modes,
     distanceBand: row.distance_band,
     whyYouMatch: row.why_you_match,
     photoIds: row.photo_ids,

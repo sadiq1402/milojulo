@@ -114,7 +114,6 @@ export function DiscoverScreen() {
           />
           <ModesSheet
             visible={picker === 'modes'}
-            myModes={me.data!.modes}
             value={modes}
             onClose={() => setPicker(null)}
             onChoose={next => {
