@@ -383,6 +383,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"device_tokens": {
+                  Row: {
+                    "last_seen_at": string,"platform": string,"token": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "last_seen_at"?: string,"platform": string,"token": string,"user_id": string
+                  }
+                  Update: {
+                    "last_seen_at"?: string,"platform"?: string,"token"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "device_tokens_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"industries": {
                   Row: {
                     "created_at": string,"id": number,"is_active": boolean,"label": string,"slug": string,"sort_order": number
@@ -575,14 +595,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "area_id": string | null,"availability": (Database["public"]['Enums']["availability_slot"])[],"banned_at": string | null,"banned_reason": string | null,"career_stage": Database["public"]['Enums']["career_stage"] | null,"created_at": string,"date_of_birth": string | null,"deleted_at": string | null,"discover_range_km": number | null,"display_name": string | null,"gender": Database["public"]['Enums']["gender"] | null,"hidden_at": string | null,"id": string,"industry_id": number | null,"modes": (Database["public"]['Enums']["mode"])[],"paused_at": string | null,"pref_age_max": number | null,"pref_age_min": number | null,"pref_genders": (Database["public"]['Enums']["gender"])[] | null,"pref_max_km": number | null,"profession": string | null,"status": Database["public"]['Enums']["account_status"],"submitted_at": string | null
+                    "area_id": string | null,"availability": (Database["public"]['Enums']["availability_slot"])[],"banned_at": string | null,"banned_reason": string | null,"career_stage": Database["public"]['Enums']["career_stage"] | null,"created_at": string,"date_of_birth": string | null,"deleted_at": string | null,"discover_range_km": number | null,"display_name": string | null,"gender": Database["public"]['Enums']["gender"] | null,"hidden_at": string | null,"id": string,"industry_id": number | null,"modes": (Database["public"]['Enums']["mode"])[],"notify_activities": boolean,"notify_messages": boolean,"paused_at": string | null,"pref_age_max": number | null,"pref_age_min": number | null,"pref_genders": (Database["public"]['Enums']["gender"])[] | null,"pref_max_km": number | null,"profession": string | null,"status": Database["public"]['Enums']["account_status"],"submitted_at": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "area_id"?: string | null,"availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number | null,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id": string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
+                    "area_id"?: string | null,"availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number | null,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id": string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"notify_activities"?: boolean,"notify_messages"?: boolean,"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
                   }
                   Update: {
-                    "area_id"?: string | null,"availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number | null,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id"?: string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
+                    "area_id"?: string | null,"availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number | null,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id"?: string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"notify_activities"?: boolean,"notify_messages"?: boolean,"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
                   }
                   Relationships: [
                     {
@@ -942,6 +962,9 @@ isOneToOne: false
                            },
 "region_of":
 { Args: { "point": unknown }; Returns: number
+                           },
+"register_device_token":
+{ Args: { "platform": string,"token": string }; Returns: undefined
                            },
 "report":
 { Args: { "details"?: string,"reason": Database["public"]['Enums']["report_reason"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined

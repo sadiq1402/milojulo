@@ -5,6 +5,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { TabBar, type TabItem } from '../components';
+import { PushNotifications } from '../features/push/PushNotifications';
 import { useRequests } from '../features/requests/queries';
 import { ActivitiesScreen } from '../screens/activities/ActivitiesScreen';
 import { ActivityDetailScreen } from '../screens/activities/ActivityDetailScreen';
@@ -77,23 +78,29 @@ function MainTabs() {
 // A Member's app: the five tabs, with chats, profiles and other full screens pushed over them.
 export function MemberNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Tabs" component={MainTabs} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="SafetyCentre" component={SafetyCentreScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="BlockedPeople" component={BlockedPeopleScreen} />
-      <Stack.Screen name="ConsentSettings" component={ConsentSettingsScreen} />
-      <Stack.Screen name="DataCopy" component={DataCopyScreen} />
-      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-      <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
-      <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
-      <Stack.Screen name="EditActivity" component={EditActivityScreen} />
-      <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
-      <Stack.Screen name="Report" component={ReportScreen} />
-      <Stack.Screen name="MeetFeedback" component={MeetFeedbackScreen} />
-    </Stack.Navigator>
+    <>
+      <PushNotifications />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Tabs" component={MainTabs} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="SafetyCentre" component={SafetyCentreScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="BlockedPeople" component={BlockedPeopleScreen} />
+        <Stack.Screen
+          name="ConsentSettings"
+          component={ConsentSettingsScreen}
+        />
+        <Stack.Screen name="DataCopy" component={DataCopyScreen} />
+        <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+        <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+        <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
+        <Stack.Screen name="EditActivity" component={EditActivityScreen} />
+        <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
+        <Stack.Screen name="Report" component={ReportScreen} />
+        <Stack.Screen name="MeetFeedback" component={MeetFeedbackScreen} />
+      </Stack.Navigator>
+    </>
   );
 }
