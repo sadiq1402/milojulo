@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { chatKeys } from '../chat/queries';
 import {
   askToJoin,
@@ -10,6 +11,7 @@ import {
   respondJoinRequest,
   withdrawJoinRequest,
 } from './api';
+import type { BoardListing } from './model';
 
 // All under 'activities', so invalidating `all` also refreshes both Join Request lists.
 export const activityKeys = {
@@ -29,9 +31,30 @@ export function useBoard() {
   return useQuery({
     queryKey: activityKeys.board,
     queryFn: fetchBoard,
-    // Activities end while the board is open; the database hides them, so check now and then.
-    refetchInterval: 60_000,
   });
+}
+
+const dayMs = 24 * 60 * 60_000;
+
+// Drops each Activity when its time on the board is up, with one timer for the next to go.
+export function useStillListed(listings: BoardListing[] | undefined) {
+  const [now, setNow] = useState(Date.now);
+  const next = listings
+    ?.map(listing => Date.parse(listing.visibleUntil))
+    .filter(until => until > now)
+    .sort((a, b) => a - b)[0];
+  useEffect(() => {
+    if (next === undefined) {
+      return;
+    }
+    // Capped at a day: longer timeouts overflow; waking early just sets the next one.
+    const timer = setTimeout(
+      () => setNow(Date.now()),
+      Math.min(next - Date.now(), dayMs),
+    );
+    return () => clearTimeout(timer);
+  }, [next, now]);
+  return listings?.filter(listing => Date.parse(listing.visibleUntil) > now);
 }
 
 export function useJoined() {

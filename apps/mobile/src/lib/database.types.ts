@@ -724,7 +724,7 @@ isOneToOne: false
                            },
 "activity_board":
 { Args: Record<PropertyKey, never>; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"visible_until": string
             }[]
                            },
 "activity_ends_at":
@@ -1017,6 +1017,12 @@ isOneToOne: false
                            },
 "send_request":
 { Args: { "mode": Database["public"]['Enums']["mode"],"note"?: string,"to_member": string }; Returns: string
+                           },
+"send_to_other_members":
+{ Args: { "actor": string,"connection_id": string,"event": string }; Returns: undefined
+                           },
+"send_to_pair":
+{ Args: { "a": string,"actor": string,"b": string,"event": string,"payload": Json }; Returns: undefined
                            },
 "set_location":
 { Args: { "lat": number,"lng": number }; Returns: undefined
