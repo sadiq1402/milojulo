@@ -21,8 +21,9 @@ Static HTML mockups: design/reference-html/screens/*.dc.html (390 x 844 each; Ad
 | | Inbox: requests (Inbox) | Incoming (accept/decline) and sent |
 | | Inbox: chats (Chats) | Conversation list with unread dot |
 | | Chat (Chat) | Text, image, voice note, activity plan card, safety strip, composer |
-| Activities and circles | Activities (Activities) | Tonight / This weekend / Later, tinted activity cards |
+| Activities and circles | Activities (Activities) | Tonight / This weekend / Later, Post and Joined compact buttons, tinted activity cards with the host's photo |
 | | Activity (ActivityDetail) | Details, host, safety tips, Request to join, Report |
+| | Activity, joined (ActivityDetailJoined) | As Activity for an accepted joiner or the host: You're in tag, venue with Directions (Google Maps), Message host |
 | | New activity (CreateActivity) | Plan, type, area, when, time, spots, optional details |
 | | Circles (Circles) | List with Join / Joined |
 | | Circle (CircleDetail) | Description, upcoming activities, tappable members, Post an activity |
@@ -34,7 +35,7 @@ Static HTML mockups: design/reference-html/screens/*.dc.html (390 x 844 each; Ad
 | | Delete account (DeleteAccount) | Consequences, type DELETE, pause alternative |
 | Admin (web) | Moderation queue (Admin) | Reports table with response targets, detail panel, actions |
 
-Screens still to design (from docs/12-db-schema.md): a Dating setup step after Modes (own gender, Dating Preferences) shown only when a Dating Mode is chosen and reused from Settings; a Mode picker in Send request (Eligible Modes only); propose / accept a Mode change in Chat; the Casual media-consent switch and first-open reminder in Chat; a "We met" action in Chat; Withdraw on an accepted Activity; Networking industry and career stage fields; admin auto-hidden and recently-joined lists.
+Screens still to design (from docs/12-db-schema.md): a Dating setup step after Modes (own gender, Dating Preferences) shown only when a Dating Mode is chosen and reused from Settings; a Mode picker in Send request (Eligible Modes only); propose / accept a Mode change in Chat; the Casual media-consent switch and first-open reminder in Chat; a "We met" action in Chat; Withdraw on an accepted Activity; the Joined list opened from Activities (#134); Networking industry and career stage fields; admin auto-hidden and recently-joined lists.
 
 Navigation: bottom tabs are Discover, Activities, Circles, Inbox, Me. No bracketed placeholders remain in the mockups. The support address and the retention period are still open (see docs/09-open-questions.md).
 
