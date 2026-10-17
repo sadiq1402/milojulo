@@ -140,6 +140,11 @@ describe('tapping a notification', () => {
       'ActivityDetail',
       { activityId: 'a2' },
     ],
+    [
+      { kind: 'meet_nudge', otherUserId: 'ravi', otherName: 'Ravi' },
+      'MeetFeedback',
+      { otherUserId: 'ravi', otherName: 'Ravi' },
+    ],
   ])('%p opens %s', async (data, name, params) => {
     await signIn();
     await act(async () => opened(data));
