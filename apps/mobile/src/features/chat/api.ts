@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
 import type { Mode } from '../modes';
+import { listenToMember, type LiveStatus } from '../live/memberChannel';
 import { toMessageMedia } from './messages';
 
 type Enums = Database['public']['Enums'];
@@ -199,10 +200,9 @@ export async function fetchChatState(connectionId: string): Promise<ChatState> {
   };
 }
 
-export type ChatStatus = 'live' | 'offline';
+export type ChatStatus = LiveStatus;
 
-// New messages on the Connection's private channel (Broadcast from a database trigger).
-// 'live' fires on every (re)subscribe, which is when to catch up on anything missed.
+// New messages in one Connection, from the Member's private channel.
 export function subscribeToChat(
   connectionId: string,
   handlers: {
@@ -210,25 +210,19 @@ export function subscribeToChat(
     onStatus?: (status: ChatStatus) => void;
   },
 ): () => void {
-  const channel = supabase.channel(`connection:${connectionId}`, {
-    config: { private: true },
+  return listenToMember({
+    onEvent: ({ event, payload }) => {
+      const row = payload as MessageRow & { removed_at: string | null };
+      if (
+        event === 'message' &&
+        row.connection_id === connectionId &&
+        !row.removed_at
+      ) {
+        handlers.onMessage(toMessage(row));
+      }
+    },
+    onStatus: handlers.onStatus,
   });
-  channel.on('broadcast', { event: 'message' }, ({ payload }) => {
-    const row = payload as MessageRow & { removed_at: string | null };
-    if (!row.removed_at) {
-      handlers.onMessage(toMessage(row));
-    }
-  });
-  supabase.realtime
-    .setAuth()
-    .then(() =>
-      channel.subscribe(status =>
-        handlers.onStatus?.(status === 'SUBSCRIBED' ? 'live' : 'offline'),
-      ),
-    );
-  return () => {
-    supabase.removeChannel(channel);
-  };
 }
 
 // Mute only silences push notifications for me; the other side isn't told.

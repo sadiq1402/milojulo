@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(45);
+select plan(44);
 
 -- The sender's text insert, to pass to lives_ok / throws_ok.
 create function pg_temp.text_from(sender uuid, conn uuid) returns text
@@ -46,15 +46,13 @@ language sql as $$
   select payload from realtime.messages where realtime.messages.topic = broadcasts_on.topic;
 $$;
 
-select results_eq(format($$ select p->>'id', p->>'body' from pg_temp.broadcasts_on('connection:%s') p $$, :'chat'),
+select results_eq($$ select p->>'id', p->>'body'
+                      from pg_temp.broadcasts_on('member:00000000-0000-0000-0000-0000000000c2') p $$,
   $$ values ('00000000-0000-0000-0000-00000000aa01', 'Badminton at 7?') $$,
-  'the message is broadcast on the Connection''s private topic, which the other Member can join');
-select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
-select isnt_empty(format($$ select pg_temp.broadcasts_on('connection:%s') $$, :'chat'),
-  'the sender can join the Connection''s topic too');
+  'the message is broadcast on the other Member''s private topic');
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c3');
-select is_empty(format($$ select pg_temp.broadcasts_on('connection:%s') $$, :'chat'),
-  'a Member outside the Connection cannot join its topic');
+select is_empty($$ select pg_temp.broadcasts_on('member:00000000-0000-0000-0000-0000000000c2') $$,
+  'a Member outside the Connection cannot join the recipient''s topic');
 select is_empty($$ select 1 from realtime.messages $$,
   'a Member reads no broadcasts without joining a topic');
 
@@ -66,8 +64,11 @@ select lives_ok(format($$ insert into public.messages (id, connection_id, sender
   'retrying a send with the same id succeeds');
 select results_eq($$ select count(*)::int from public.messages $$, array[1],
   'a retried send leaves one message');
-select results_eq(format($$ select count(*)::int from pg_temp.broadcasts_on('connection:%s') $$, :'chat'), array[1],
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c2');
+select results_eq($$ select count(*)::int
+                      from pg_temp.broadcasts_on('member:00000000-0000-0000-0000-0000000000c2') $$, array[1],
   'a retried send is not broadcast again');
+select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 
 select throws_ok(format($$ insert into public.messages (id, connection_id, sender_id, type, body)
     values (gen_random_uuid(), %L, '00000000-0000-0000-0000-0000000000c2', 'text', 'Hi') $$, :'chat'),
@@ -120,9 +121,9 @@ select public.send_request('00000000-0000-0000-0000-0000000000c1', 'friends') as
 select throws_ok(format($$ insert into public.messages (id, connection_id, sender_id, type, body)
     values (gen_random_uuid(), %L, '00000000-0000-0000-0000-0000000000c3', 'text', 'Hi') $$, :'pending'),
   '42501', null, 'sending in a Connection that was never accepted is refused');
-select set_config('realtime.topic', 'connection:' || :'pending', true);
-select is_empty(format($$ select 1 from realtime.messages where topic = 'connection:%s' $$, :'chat'),
-  'joining one''s own topic does not reveal another Connection''s broadcasts');
+select set_config('realtime.topic', 'member:00000000-0000-0000-0000-0000000000c3', true);
+select is_empty($$ select 1 from realtime.messages where topic = 'member:00000000-0000-0000-0000-0000000000c2' $$,
+  'joining one''s own topic does not reveal another Member''s broadcasts');
 
 -- Per-type checks, as c1 in the c1–c2 chat.
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');

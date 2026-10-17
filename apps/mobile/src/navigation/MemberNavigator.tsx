@@ -5,6 +5,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { TabBar, type TabItem } from '../components';
+import { MemberLive } from '../features/live/MemberLive';
 import { PushNotifications } from '../features/push/PushNotifications';
 import { useRequests } from '../features/requests/queries';
 import { ActivitiesScreen } from '../screens/activities/ActivitiesScreen';
@@ -81,6 +82,7 @@ export function MemberNavigator() {
   return (
     <>
       <PushNotifications />
+      <MemberLive />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={MainTabs} />
         <Stack.Screen name="Chat" component={ChatScreen} />
