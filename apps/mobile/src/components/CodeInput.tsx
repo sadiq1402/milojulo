@@ -1,5 +1,5 @@
 import React, { useRef, type ComponentRef } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { colors, radius, sizes, textStyles } from '../theme';
 import { Text } from './Text';
 
@@ -13,6 +13,7 @@ type Props = {
 export function CodeInput({ value, onChange, length = 6 }: Props) {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   const digits = value.split('');
+  const focused = useRef(false);
   return (
     <Pressable onPress={() => input.current?.focus()} accessible={false}>
       <View style={styles.boxes}>
@@ -31,14 +32,26 @@ export function CodeInput({ value, onChange, length = 6 }: Props) {
       <TextInput
         ref={input}
         value={value}
-        onChangeText={text =>
-          onChange(text.replace(/\D/g, '').slice(0, length))
-        }
+        onChangeText={text => {
+          const code = text.replace(/\D/g, '').slice(0, length);
+          onChange(code);
+          // All digits in: drop the keyboard so the main button shows.
+          if (code.length === length) {
+            Keyboard.dismiss();
+          }
+        }}
+        // Focus after the first layout, not on mount: a keyboard that opens before the
+        // screen's KeyboardAvoidingView has measured itself leaves the button underneath.
+        onLayout={() => {
+          if (!focused.current) {
+            focused.current = true;
+            requestAnimationFrame(() => input.current?.focus());
+          }
+        }}
         keyboardType="number-pad"
         autoComplete="one-time-code"
         textContentType="oneTimeCode"
         maxLength={length}
-        autoFocus
         caretHidden
         accessibilityLabel={`${length}-digit code`}
         style={styles.hidden}
