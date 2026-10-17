@@ -1,6 +1,6 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -20,6 +20,7 @@ import {
   activityKeys,
   useBoard,
   useJoined,
+  useStillListed,
 } from '../../features/activities/queries';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaNames } from '../../features/catalog/queries';
@@ -37,9 +38,21 @@ type Row =
 export function ActivitiesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const board = useBoard();
+  const listed = useStillListed(board.data);
+  // The first focus is the first load; each later one shows the latest board.
+  const focusedBefore = useRef(false);
+  const { refetch } = board;
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedBefore.current) {
+        refetch();
+      }
+      focusedBefore.current = true;
+    }, [refetch]),
+  );
   const me = useMyDiscoverState(useSession().session!.user.id);
   const areas = useAreaNames();
-  const rows: Row[] = groupBoard(board.data ?? []).flatMap(section => [
+  const rows: Row[] = groupBoard(listed ?? []).flatMap(section => [
     { kind: 'heading' as const, when: section.when },
     ...section.activities.map(activity => ({
       kind: 'activity' as const,

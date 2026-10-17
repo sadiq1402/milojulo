@@ -64,6 +64,9 @@ export type JoinedActivity = BoardActivity & {
   requestStatus: Extract<JoinRequestStatus, 'accepted' | 'requested'>;
 };
 
+// On the board until `visibleUntil`, the end the database hides it at.
+export type BoardListing = BoardActivity & { visibleUntil: string };
+
 export type Activity = BoardActivity & {
   status: ActivityStatus;
   // Only the host and accepted joiners get it.

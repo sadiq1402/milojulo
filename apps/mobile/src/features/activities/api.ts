@@ -9,6 +9,7 @@ import {
   type ActivityField,
   type ActivityFields,
   type BoardActivity,
+  type BoardListing,
   type JoinRequest,
   type JoinedActivity,
   type MyJoinRequest,
@@ -16,7 +17,11 @@ import {
 } from './model';
 
 type Functions = Database['public']['Functions'];
-type BoardRow = Functions['activity_board']['Returns'][number];
+// Shared by every list of Activities; only the board says when each leaves it.
+type ActivityRow = Omit<
+  Functions['activity_board']['Returns'][number],
+  'visible_until'
+>;
 
 export const couldNotLoad =
   "We couldn't load this. Check your connection and try again.";
@@ -71,7 +76,7 @@ function refusal(error: { message: string }): ActivityError {
 
 // Generated function types drop nullability; description and ends_at can be null.
 // Exported so the Circle feed, which returns the same board rows, reuses it.
-export function toBoardActivity(row: BoardRow): BoardActivity {
+export function toBoardActivity(row: ActivityRow): BoardActivity {
   return {
     id: row.id,
     hostId: row.host_id,
@@ -94,12 +99,15 @@ export function toBoardActivity(row: BoardRow): BoardActivity {
 }
 
 // Open Activities only; empty when I'm not a Visible Member (Paused, hidden).
-export async function fetchBoard(): Promise<BoardActivity[]> {
+export async function fetchBoard(): Promise<BoardListing[]> {
   const { data, error } = await supabase.rpc('activity_board');
   if (error) {
     throw new Error(couldNotLoad);
   }
-  return data.map(toBoardActivity);
+  return data.map(row => ({
+    ...toBoardActivity(row),
+    visibleUntil: row.visible_until,
+  }));
 }
 
 // Activities I'm going to and Join Requests still waiting, soonest first.

@@ -1,11 +1,17 @@
-import { act, fireEvent, screen, within } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import { Linking, ScrollView } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import {
   ActivityError,
   type Activity,
-  type BoardActivity,
+  type BoardListing,
   type JoinRequest,
 } from '../src/features/activities/model';
 import {
@@ -64,7 +70,7 @@ const me = sessionFor('asha@example.com');
 const inDays = (days: number, hourIndia: number) =>
   indiaInstant(addDays(indiaParts(new Date()).dateKey, days), hourIndia * 60);
 
-const boardActivity = (overrides: Partial<BoardActivity>): BoardActivity => ({
+const boardActivity = (overrides: Partial<BoardListing>): BoardListing => ({
   id: 'badminton',
   hostId: 'isha',
   hostName: 'Isha',
@@ -81,6 +87,7 @@ const boardActivity = (overrides: Partial<BoardActivity>): BoardActivity => ({
   circleId: null,
   circleName: null,
   hostPhotoId: null,
+  visibleUntil: inDays(1, 2),
   ...overrides,
 });
 
@@ -218,6 +225,33 @@ describe('the Activity Board', () => {
     const mine = within(await cardFor('Sinhagad trek'));
     expect(mine.getByText('Hosted by you')).toBeOnTheScreen();
     expect(mine.getByText('Full')).toBeOnTheScreen();
+  });
+
+  test('an Activity leaves the board when it ends, without asking the server again', async () => {
+    const endsSoon = new Date(Date.now() + 300).toISOString();
+    jest
+      .mocked(activities.fetchBoard)
+      .mockResolvedValue([{ ...badminton, visibleUntil: endsSoon }, chai]);
+    await openBoard();
+    await cardFor('Badminton doubles');
+    const calls = jest.mocked(activities.fetchBoard).mock.calls.length;
+    jest.setSystemTime(Date.now() + 1000);
+    await waitFor(() =>
+      expect(screen.queryByText('Badminton doubles')).not.toBeOnTheScreen(),
+    );
+    expect(await cardFor('Chai and board games')).toBeOnTheScreen();
+    expect(activities.fetchBoard).toHaveBeenCalledTimes(calls);
+  });
+
+  test('coming back to the Activities tab shows the latest board', async () => {
+    await openBoard();
+    await cardFor('Badminton doubles');
+    jest.mocked(activities.fetchBoard).mockResolvedValue([chai]);
+    await fireEvent.press(screen.getByRole('tab', { name: /^Discover/ }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Activities' }));
+    await waitFor(() =>
+      expect(screen.queryByText('Badminton doubles')).not.toBeOnTheScreen(),
+    );
   });
 
   test("each card shows its host's photo", async () => {
