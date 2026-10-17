@@ -128,6 +128,33 @@ test('a message from the other side arrives live on the private channel', async 
   });
 }, 30_000);
 
+test("each chat gets only its own Connection's messages from my one channel", async () => {
+  const meera = await createMember('Meera');
+  const otherChat = await connect(meera, me);
+  const inRavis: Message[] = [];
+  const inMeeras: Message[] = [];
+  const live = (connection: string, into: Message[]) =>
+    new Promise<void>(resolve => {
+      afterAllCleanups.push(
+        subscribeToChat(connection, {
+          onMessage: message => into.push(message),
+          onStatus: status => status === 'live' && resolve(),
+        }),
+      );
+    });
+  await Promise.all([live(connectionId, inRavis), live(otherChat, inMeeras)]);
+
+  const id = newMessageId();
+  await meera.client.from('messages').insert({
+    id,
+    connection_id: otherChat,
+    type: 'text',
+    body: 'Trek Sunday?',
+  });
+  await waitFor(() => inMeeras.some(m => m.id === id));
+  expect(inRavis.some(m => m.id === id)).toBe(false);
+}, 30_000);
+
 test('catching up fetches only messages from the given time on', async () => {
   const all = await fetchMessages(connectionId);
   const since = all[1].createdAt;

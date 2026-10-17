@@ -113,3 +113,6 @@ jest.mock('./src/features/push/messaging', () => ({
   onNotificationOpened: () => () => {},
   getInitialNotification: () => Promise.resolve(null),
 }));
+
+// Realtime doesn't run under Jest; tests drive the Member channel through its manual mock.
+jest.mock('./src/features/live/memberChannel');

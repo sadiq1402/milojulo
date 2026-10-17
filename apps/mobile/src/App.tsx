@@ -3,9 +3,13 @@ import {
   NavigationContainer,
   type Theme,
 } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
-import { StatusBar } from 'react-native';
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { AppState, StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider } from './features/auth/SessionProvider';
 import { queryClient } from './lib/queryClient';
@@ -28,6 +32,17 @@ export default function App({
 }: {
   client?: QueryClient;
 }) {
+  // Foreground counts as focused: polls pause in the background, stale queries refetch on return.
+  useEffect(
+    () =>
+      focusManager.setEventListener(setFocused => {
+        const sub = AppState.addEventListener('change', state =>
+          setFocused(state === 'active'),
+        );
+        return () => sub.remove();
+      }),
+    [],
+  );
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />

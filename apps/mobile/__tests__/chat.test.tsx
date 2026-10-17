@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react-native';
+import { AppState } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
@@ -14,6 +15,10 @@ import type { Conversation, Message } from '../src/features/chat/api';
 import * as reports from '../src/features/reports/api';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
+
+const member = jest.requireMock<
+  typeof import('../src/features/live/__mocks__/memberChannel')
+>('../src/features/live/memberChannel');
 
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
@@ -128,6 +133,59 @@ async function openChatWith(name: string) {
 }
 
 describe('chat list', () => {
+  test('coming back to the app refreshes the Inbox', async () => {
+    const appState: ((state: string) => void)[] = [];
+    const spy = jest
+      .spyOn(AppState, 'addEventListener')
+      .mockImplementation((_type, listener) => {
+        appState.push(listener as (state: string) => void);
+        return { remove: () => {} };
+      });
+    await openInbox();
+    await screen.findByRole('button', { name: /^Isha, Count me in/ });
+    jest.mocked(chat.fetchConversations).mockResolvedValue([kabir, rohan]);
+    await act(() => appState.forEach(listener => listener('background')));
+    await act(() => appState.forEach(listener => listener('active')));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /^Isha/ })).toBeNull(),
+    );
+    spy.mockRestore();
+  });
+
+  test('a message on my Member channel refreshes the Inbox, and so does reconnecting', async () => {
+    await openInbox();
+    await screen.findByRole('button', { name: /^Isha, Count me in/ });
+    jest.mocked(chat.fetchConversations).mockResolvedValue([
+      {
+        ...isha,
+        lastMessage: {
+          type: 'text',
+          body: 'On my way',
+          at: '2026-10-12T10:05:00.000Z',
+        },
+        unreadCount: 2,
+      },
+      kabir,
+      rohan,
+    ]);
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'message',
+        payload: { connection_id: 'conn-isha' },
+      }),
+    );
+    expect(
+      await screen.findByRole('button', { name: /^Isha, On my way, 2 unread/ }),
+    ).toBeOnTheScreen();
+
+    jest.mocked(chat.fetchConversations).mockResolvedValue([kabir, rohan]);
+    await act(() => member.emitMemberStatus('offline'));
+    await act(() => member.emitMemberStatus('live'));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /^Isha/ })).toBeNull(),
+    );
+  });
+
   test('lists accepted and closed chats with preview and unread, but not pending requests', async () => {
     await openInbox();
     expect(
