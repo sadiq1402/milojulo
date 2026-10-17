@@ -1,4 +1,5 @@
 import {
+  areaShortlist,
   distanceBand,
   distanceKm,
   nearestAreas,
@@ -46,4 +47,32 @@ test('distance bands are never finer than a kilometre, as on Discover', () => {
   expect(distanceBand(1.99)).toBe('<2 km');
   expect(distanceBand(2.4)).toBe('~2 km');
   expect(distanceBand(2.6)).toBe('~3 km');
+});
+
+describe('the Area shortlist', () => {
+  const line = areas(
+    { a: 'A', b: 'B', c: 'C', d: 'D', far: 'Far' },
+    {
+      a: { lat: 18.5, lng: 73.8 },
+      b: { lat: 18.51, lng: 73.8 },
+      c: { lat: 18.53, lng: 73.8 },
+      d: { lat: 18.56, lng: 73.8 },
+      far: { lat: 18.9, lng: 73.8 },
+    },
+  );
+  const ids = (list: { id: string }[]) => list.map(area => area.id);
+
+  test('is my Area first, then the nearest to it', () => {
+    expect(ids(areaShortlist(line, 'b', null, 3))).toEqual(['b', 'a', 'c']);
+  });
+
+  test('always holds the chosen Area, even a far one', () => {
+    expect(ids(areaShortlist(line, 'a', 'far', 3))).toEqual(['a', 'b', 'far']);
+    expect(ids(areaShortlist(line, 'a', 'b', 3))).toEqual(['a', 'b', 'c']);
+  });
+
+  test('with no Area of my own, starts from the chosen one, else the list', () => {
+    expect(ids(areaShortlist(line, null, 'd', 2))).toEqual(['d', 'c']);
+    expect(ids(areaShortlist(line, null, null, 2))).toEqual(['a', 'b']);
+  });
 });

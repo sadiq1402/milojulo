@@ -39,3 +39,21 @@ export function suggestedArea(point: Point, areas: Area[]): Area | undefined {
 export function distanceBand(km: number): string {
   return km < 2 ? '<2 km' : `~${Math.round(km)} km`;
 }
+
+// The Areas to offer first: mine, then the nearest to it, always including the one chosen.
+export function areaShortlist(
+  areas: Area[],
+  homeId: string | null,
+  chosenId: string | null,
+  count: number,
+): Area[] {
+  const from = areas.find(a => a.id === (homeId ?? chosenId)) ?? areas[0];
+  if (!from) {
+    return [];
+  }
+  const list = nearestAreas(from, areas, count).map(near => near.area);
+  const chosen = areas.find(a => a.id === chosenId);
+  return chosen && !list.includes(chosen)
+    ? [...list.slice(0, count - 1), chosen]
+    : list;
+}

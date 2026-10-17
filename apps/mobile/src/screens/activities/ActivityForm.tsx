@@ -38,7 +38,10 @@ import {
   lastStartMinutes,
   minutesStep,
 } from '../../features/activities/time';
-import { useAreaNames } from '../../features/catalog/queries';
+import { useSession } from '../../features/auth/SessionProvider';
+import { areaShortlist } from '../../features/catalog/nearest';
+import { useAreaList } from '../../features/catalog/queries';
+import { useProfileDraft } from '../../features/profileSetup/queries';
 import {
   colors,
   sizes,
@@ -47,6 +50,10 @@ import {
   fontFamily,
   fonts,
 } from '../../theme';
+import { AreaSheet } from '../profileSetup/AreaPicker';
+
+// Mine and the nearest to it; the rest are under All areas.
+const shortlistSize = 6;
 
 export type FormValues = {
   title: string;
@@ -136,7 +143,10 @@ export function ActivityForm({
   locked = false,
   circleName,
 }: Props) {
-  const areas = useAreaNames();
+  const areas = useAreaList();
+  const myAreaId =
+    useProfileDraft(useSession().session!.user.id).data?.areaId ?? null;
+  const [pickingArea, setPickingArea] = useState(false);
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
   const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -294,15 +304,36 @@ export function ActivityForm({
         <>
           <View {...anchor('areaId')}>
             <ChipField label="Area" error={errors.areaId}>
-              {Object.entries(areas.data ?? {}).map(([id, name]) => (
+              {areaShortlist(
+                areas.data ?? [],
+                myAreaId,
+                values.areaId,
+                shortlistSize,
+              ).map(area => (
                 <Chip
-                  key={id}
-                  label={name}
-                  selected={values.areaId === id}
-                  onPress={() => set({ areaId: id })}
+                  key={area.id}
+                  label={area.label}
+                  selected={values.areaId === area.id}
+                  onPress={() => set({ areaId: area.id })}
                 />
               ))}
+              <Chip
+                label="All areas"
+                action
+                onPress={() => setPickingArea(true)}
+              />
             </ChipField>
+            <AreaSheet
+              visible={pickingArea}
+              title="Where is it?"
+              areas={areas.data ?? []}
+              selected={values.areaId}
+              onClose={() => setPickingArea(false)}
+              onChoose={areaId => {
+                set({ areaId });
+                setPickingArea(false);
+              }}
+            />
           </View>
           <ChipField label="Day" error={undefined}>
             {days.map(day => (

@@ -24,6 +24,8 @@ import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
 import * as photos from '../src/features/photos/api';
+import * as profileSetup from '../src/features/profileSetup/api';
+import { emptyDraft } from '../test/profileSetup';
 import * as reports from '../src/features/reports/api';
 import { areas, numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
@@ -35,6 +37,7 @@ jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
 jest.mock('../src/features/photos/api');
+jest.mock('../src/features/profileSetup/api');
 // Keep the real reason list; only the call to the database is stood in.
 jest.mock('../src/features/reports/api', () => ({
   ...jest.requireActual('../src/features/reports/api'),
@@ -135,6 +138,9 @@ const myActivity = detail({
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
+  jest
+    .mocked(profileSetup.fetchDraft)
+    .mockResolvedValue({ ...emptyDraft, areaId: 'baner' });
   jest.mocked(catalog.fetchAreas).mockResolvedValue(
     areas({
       baner: 'Baner',
@@ -382,6 +388,55 @@ describe('the Joined screen', () => {
 });
 
 describe('posting an Activity', () => {
+  test('Area offers mine and the 5 nearest, and All areas for the rest', async () => {
+    const at = (lat: number) => ({ lat, lng: 73.8 });
+    jest.mocked(catalog.fetchAreas).mockResolvedValue(
+      areas(
+        {
+          baner: 'Baner',
+          aundh: 'Aundh',
+          balewadi: 'Balewadi',
+          pashan: 'Pashan',
+          sus: 'Sus',
+          bavdhan: 'Bavdhan',
+          wakad: 'Wakad',
+          kharadi: 'Kharadi',
+        },
+        {
+          baner: at(18.56),
+          aundh: at(18.561),
+          balewadi: at(18.562),
+          pashan: at(18.563),
+          sus: at(18.564),
+          bavdhan: at(18.565),
+          wakad: at(18.6),
+          kharadi: at(18.9),
+        },
+      ),
+    );
+    await openCreate();
+    for (const name of [
+      'Baner',
+      'Aundh',
+      'Balewadi',
+      'Pashan',
+      'Sus',
+      'Bavdhan',
+    ]) {
+      expect(screen.getByRole('button', { name })).toBeOnTheScreen();
+    }
+    expect(screen.queryByRole('button', { name: 'Kharadi' })).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'All areas' }));
+    expect(
+      await screen.findByRole('header', { name: 'Where is it?' }),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('radio', { name: /Kharadi/ }));
+    expect(
+      screen.getByRole('button', { name: 'Kharadi', selected: true }),
+    ).toBeOnTheScreen();
+  });
+
   test('sends every field and opens the new Activity', async () => {
     await openCreate();
     await fireEvent.changeText(
