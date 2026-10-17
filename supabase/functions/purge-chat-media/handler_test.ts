@@ -8,7 +8,7 @@ function fakes(opts: { expired?: ExpiredMedia[]; failing?: string[]; clock?: () 
   const deleted: string[] = [];
   const marked: string[] = [];
   const db: Db = {
-    expired: async (batch) => due.slice(0, batch),
+    expired: async (batch, skip) => due.filter((m) => !skip.includes(m.messageId)).slice(0, batch),
     markDeleted: async (ids) => {
       marked.push(...ids);
       due = due.filter((m) => !ids.includes(m.messageId));
@@ -61,5 +61,22 @@ Deno.test('stops starting batches past its time budget', async () => {
 Deno.test('only the service role may run it', async () => {
   const f = fakes({ expired: [media('a')] });
   assertEquals((await f.call('Bearer someone-else')).status, 401);
+  assertEquals(f.deleted, []);
+});
+
+Deno.test('files that keep failing do not hold back the ones behind them', async () => {
+  const f = fakes({ expired: [media('a'), media('b'), media('c')], failing: ['chat/c/a.jpg', 'chat/c/b.jpg'] });
+  assertEquals(await (await f.call()).json(), { purged: 1, kept: 0, failed: 2 });
+  assertEquals(f.marked, ['c']);
+});
+
+Deno.test('answers only POST', async () => {
+  const f = fakes();
+  const handler = createHandler({
+    serviceRoleKey: key,
+    db: { expired: async () => [], markDeleted: async () => {} },
+    storage: { delete: async () => {} },
+  });
+  assertEquals((await handler(new Request('http://x', { method: 'GET' }))).status, 405);
   assertEquals(f.deleted, []);
 });

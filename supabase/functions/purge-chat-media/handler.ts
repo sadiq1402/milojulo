@@ -5,7 +5,7 @@ export interface ExpiredMedia {
 }
 
 export interface Db {
-  expired(batch: number): Promise<ExpiredMedia[]>;
+  expired(batch: number, skip: string[]): Promise<ExpiredMedia[]>;
   markDeleted(messageIds: string[]): Promise<void>;
 }
 
@@ -39,7 +39,7 @@ export function createHandler(deps: Deps) {
     let kept = 0;
     const failed = new Set<string>();
     while (now() - started <= budgetMs) {
-      const due = (await deps.db.expired(batch)).filter((m) => !failed.has(m.messageId));
+      const due = await deps.db.expired(batch, [...failed]);
       if (due.length === 0) break;
       const done: string[] = [];
       for (let i = 0; i < due.length; i += parallelDeletes) {
@@ -62,8 +62,7 @@ export function createHandler(deps: Deps) {
           }),
         );
       }
-      if (done.length === 0) break;
-      await deps.db.markDeleted(done);
+      if (done.length > 0) await deps.db.markDeleted(done);
     }
     return json(200, { purged, kept, failed: failed.size });
   };

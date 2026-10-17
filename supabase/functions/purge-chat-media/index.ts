@@ -21,8 +21,8 @@ function check<T>({ data, error }: { data: T; error: { message: string } | null 
 }
 
 const db: Db = {
-  async expired(batch) {
-    const rows = check(await supabase.rpc('expired_chat_media', { batch }), 'load expired media');
+  async expired(batch, skip) {
+    const rows = check(await supabase.rpc('expired_chat_media', { batch, skip }), 'load expired media');
     return (rows ?? []).map((r: { message_id: string; media_key: string; keep_file: boolean }) => ({
       messageId: r.message_id,
       mediaKey: r.media_key,
