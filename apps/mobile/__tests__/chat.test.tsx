@@ -368,6 +368,28 @@ describe('a chat', () => {
     expect(await screen.findByText('Seen')).toBeOnTheScreen();
   });
 
+  test('"Seen" appears as soon as the other side reads, from my Member channel', async () => {
+    jest
+      .mocked(chat.fetchMessages)
+      .mockResolvedValue([
+        message({ id: 'm1', senderId: myId, body: 'Coffee?' }),
+      ]);
+    await openChatWith('Isha');
+    await screen.findByText('Coffee?');
+    expect(screen.queryByText('Seen')).not.toBeOnTheScreen();
+    jest.mocked(chat.fetchChatState).mockResolvedValue({
+      otherLastReadAt: '2026-10-12T10:01:00.000Z',
+      muted: false,
+    });
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'read',
+        payload: { connection_id: 'conn-isha' },
+      }),
+    );
+    expect(await screen.findByText('Seen')).toBeOnTheScreen();
+  });
+
   test('an Activity card message shows as a card', async () => {
     jest.mocked(chat.fetchMessages).mockResolvedValue([
       message({
@@ -559,23 +581,24 @@ describe('Mode Change', () => {
       toMode: 'activities',
       proposedAt: '2026-10-12T10:00:00.000Z',
     });
-    const { client } = await openChatWith('Isha');
+    await openChatWith('Isha');
     expect(
       await screen.findByText(
         'You suggested moving to Activities. Waiting for Isha.',
       ),
     ).toBeOnTheScreen();
 
-    // Isha accepts on her phone; this phone's next check finds no open proposal.
+    // Isha accepts on her phone; the answer arrives on my Member channel.
     jest.mocked(chat.fetchOpenModeChange).mockResolvedValue(null);
     jest
       .mocked(chat.fetchConversations)
       .mockResolvedValue([{ ...isha, mode: 'activities' }]);
-    await act(async () => {
-      await client.invalidateQueries({
-        queryKey: ['mode-change', 'conn-isha'],
-      });
-    });
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'mode-change',
+        payload: { connection_id: 'conn-isha' },
+      }),
+    );
     expect(await screen.findByText('Activities')).toBeOnTheScreen();
   });
 

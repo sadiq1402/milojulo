@@ -51,8 +51,6 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
   const state = useQuery({
     queryKey: chatKeys.state(connectionId),
     queryFn: () => fetchChatState(connectionId),
-    // The other side's read position isn't broadcast, so check it now and then.
-    refetchInterval: 15_000,
   });
   const [pending, setPending] = useState<Pending[]>([]);
   const setDelivery = (id: string, delivery: Delivery, failure?: string) =>

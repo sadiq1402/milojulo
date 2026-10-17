@@ -11,6 +11,10 @@ import type { OutgoingMedia } from '../src/features/chat/media';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
+const member = jest.requireMock<
+  typeof import('../src/features/live/__mocks__/memberChannel')
+>('../src/features/live/memberChannel');
+
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
@@ -450,6 +454,28 @@ describe('Media Consent in a Casual Connection', () => {
     );
     const photo = await screen.findByLabelText('Photo');
     expect(photo.props.source).toEqual({ uri: 'https://r2/img-1' });
+  });
+
+  test('when the other side switches it on, the chat opens up at once', async () => {
+    jest
+      .mocked(media.fetchMediaState)
+      .mockResolvedValue({ isCasual: true, mine: true, theirs: false });
+    await openChat();
+    await screen.findByText(/Waiting for Isha to allow photos and video too/);
+    jest
+      .mocked(media.fetchMediaState)
+      .mockResolvedValue({ isCasual: true, mine: true, theirs: true });
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'media-consent',
+        payload: { connection_id: 'conn-isha' },
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Attach photo or video' }),
+      ).toBeEnabled(),
+    );
   });
 
   test('with both on, photo and video can be sent', async () => {

@@ -20,8 +20,6 @@ export function useModeChange(
   const open = useQuery({
     queryKey: chatKeys.modeChange(connectionId),
     queryFn: () => fetchOpenModeChange(connectionId),
-    // Proposals aren't broadcast, so check now and then while the chat is open.
-    refetchInterval: 15_000,
   });
   const eligible = useQuery({
     queryKey: chatKeys.eligibleModes(otherId ?? ''),
