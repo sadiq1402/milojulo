@@ -57,8 +57,6 @@ export function useMyJoinRequests() {
   return useQuery({
     queryKey: activityKeys.myJoinRequests,
     queryFn: fetchMyJoinRequests,
-    // Join Requests aren't broadcast, so the Inbox badge polls.
-    refetchInterval: 30_000,
   });
 }
 
