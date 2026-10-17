@@ -3,15 +3,13 @@ import {
   NavigationContainer,
   type Theme,
 } from '@react-navigation/native';
-import {
-  focusManager,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
-import React, { useEffect } from 'react';
+import { focusManager, QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import React, { useEffect, useState } from 'react';
 import { AppState, StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider } from './features/auth/SessionProvider';
+import { keepSavedQueries, persistOptions } from './lib/persistCache';
 import { queryClient } from './lib/queryClient';
 import { navigationRef } from './navigation/navigationRef';
 import { RootNavigator } from './navigation/RootNavigator';
@@ -32,6 +30,7 @@ export default function App({
 }: {
   client?: QueryClient;
 }) {
+  useState(() => keepSavedQueries(client));
   // Foreground counts as focused: polls pause in the background, stale queries refetch on return.
   useEffect(
     () =>
@@ -46,13 +45,16 @@ export default function App({
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
-      <QueryClientProvider client={client}>
+      <PersistQueryClientProvider
+        client={client}
+        persistOptions={persistOptions}
+      >
         <SessionProvider>
           <NavigationContainer ref={navigationRef} theme={navTheme}>
             <RootNavigator />
           </NavigationContainer>
         </SessionProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </SafeAreaProvider>
   );
 }

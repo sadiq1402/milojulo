@@ -6,7 +6,8 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useIsRestoring, useQueryClient } from '@tanstack/react-query';
+import { forgetCache } from '../../lib/persistCache';
 import { onSessionChange } from './api';
 
 type SessionState = { session: Session | null; loading: boolean };
@@ -28,11 +29,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // Signed out (or deleted): nothing the account loaded may stay for the next one.
         if (!session) {
           client.clear();
+          forgetCache().catch(() => {});
         }
         setState({ session, loading: false });
       }),
     [client],
   );
+  // A restore that finishes after the sign-out would bring the last account's lists back.
+  const signedOut = !state.loading && !state.session;
+  const restoring = useIsRestoring();
+  useEffect(() => {
+    if (signedOut && !restoring) {
+      client.clear();
+    }
+  }, [signedOut, restoring, client]);
   return (
     <SessionContext.Provider value={state}>{children}</SessionContext.Provider>
   );
