@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(5);
+select plan(6);
 
 -- How many of the owner's photos the media Edge Function may sign for the viewer.
 create function pg_temp.seen(viewer uuid, owner uuid) returns integer
@@ -35,6 +35,14 @@ select is((select host_photo_id from public.activity_board()), :'host_cover'::uu
 select is((select host_photo_id from public.get_activity((select id from public.activity_board()))), :'host_cover'::uuid,
   'the Activity gives its host''s cover photo');
 reset role;
+
+-- 04 blocked the host, so the Activity is not on 04's board.
+select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004104');
+update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000004104';
+insert into public.blocks (blocker_id, blocked_id) values
+  ('00000000-0000-0000-0000-000000004104', '00000000-0000-0000-0000-000000004101');
+select is(pg_temp.seen('00000000-0000-0000-0000-000000004104', '00000000-0000-0000-0000-000000004101'), 0,
+  'a Member who blocked the host gets none of their photos through the board');
 
 -- 03 is Paused, so the board is empty for them.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004103');
