@@ -107,7 +107,7 @@ Connection rules (docs/adr/0001):
 - Mode Change: one open proposal per Connection; `to_mode` must be an Eligible Mode from the proposer to the other side, checked again when they accept; an open proposal older than 7 days counts as lapsed; a declined proposer cannot propose again for 7 days. Accepting updates `connections.mode`.
 - Dropping a Mode from a profile leaves existing Connections and their Mode untouched.
 
-Realtime: an insert trigger on `messages` broadcasts the row to the other Member's private topic `member:<id>` (not the sender's, never across a Block); a policy on `realtime.messages` lets a Member join only their own topic (decision 51). Unread = messages newer than my `last_read_at`. Mute only suppresses push for that Member.
+Realtime: an insert trigger on `messages` broadcasts the row to the other Member's private topic `member:<id>` (not the sender's, never across a Block); a policy on `realtime.messages` lets a Member join only their own topic (decision 51). Changes to `last_read_at` (`read`), `media_consent` (`media-consent`) and Mode Change proposals or answers (`mode-change`) send `{connection_id}` to the other Member the same way (`send_to_other_members`: not the actor, not across a Block); the app refetches that Connection's query. Unread = messages newer than my `last_read_at`. Mute only suppresses push for that Member.
 
 Chat media: uploads capped at 20 MB for video (upload Edge Function). Media Expiry: the `purge-chat-media` Edge Function (not built yet), scheduled daily at 03:00 India time by the pg_cron job `purge-chat-media` through pg_net (URL and key from Vault, supabase/README.md), deletes R2 objects older than 90 days and sets `media_deleted_at`; the message stays.
 

@@ -9,10 +9,18 @@ export function MemberLive() {
   useEffect(() => {
     let dropped = false;
     return listenToMember({
-      onEvent: ({ event }) => {
-        if (event === 'message') {
-          client.invalidateQueries({ queryKey: chatKeys.conversations });
-        }
+      onEvent: ({ event, payload }) => {
+        const connectionId = String(payload.connection_id);
+        const stale = {
+          message: [chatKeys.conversations],
+          read: [chatKeys.state(connectionId)],
+          'media-consent': [chatKeys.mediaStateAll(connectionId)],
+          'mode-change': [
+            chatKeys.modeChange(connectionId),
+            chatKeys.conversations,
+          ],
+        }[event];
+        stale?.forEach(queryKey => client.invalidateQueries({ queryKey }));
       },
       // Back after a drop: anything on screen may have missed events.
       onStatus: status => {

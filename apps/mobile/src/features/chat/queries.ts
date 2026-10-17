@@ -100,8 +100,6 @@ export function useMediaState(
     queryKey: chatKeys.mediaState(connectionId, mode),
     queryFn: () => fetchMediaState(connectionId),
     enabled,
-    // The other side's switch isn't broadcast.
-    refetchInterval: 15_000,
   });
 }
 
