@@ -2,12 +2,13 @@ begin;
 \ir helpers/act_as.psql
 select plan(10);
 
--- The events a Member can see on their own topic, as (event, Connection).
+-- The chat-state events a Member can see on their own topic, as (event, Connection).
 create function pg_temp.events_for(member uuid) returns table (event text, connection_id text)
 language sql as $$
   select set_config('realtime.topic', 'member:' || member, true);
   select m.event, m.payload->>'connection_id' from realtime.messages m
-  where m.topic = 'member:' || member order by m.inserted_at;
+  where m.topic = 'member:' || member and m.event in ('read', 'media-consent', 'mode-change')
+  order by m.inserted_at;
 $$;
 
 \set m1 '00000000-0000-0000-0000-0000000000f1'

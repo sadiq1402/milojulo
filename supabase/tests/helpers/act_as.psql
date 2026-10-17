@@ -167,9 +167,9 @@ begin
 end;
 $$;
 
--- Realtime admits a subscriber to a topic only if they can select from it with that topic set.
-create function pg_temp.broadcasts_on(topic text) returns setof jsonb
+-- One kind of event on a topic, as a subscriber Realtime admits (select with the topic set).
+create function pg_temp.broadcasts_on(topic text, kind text default 'message') returns setof jsonb
 language sql as $$
   select set_config('realtime.topic', topic, true);
-  select payload from realtime.messages where realtime.messages.topic = broadcasts_on.topic;
+  select payload from realtime.messages m where m.topic = broadcasts_on.topic and m.event = kind;
 $$;

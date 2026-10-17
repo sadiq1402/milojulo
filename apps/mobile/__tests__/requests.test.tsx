@@ -23,6 +23,10 @@ import { SendRequestSheet } from '../src/screens/requests/SendRequestSheet';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
+const member = jest.requireMock<
+  typeof import('../src/features/live/__mocks__/memberChannel')
+>('../src/features/live/memberChannel');
+
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/activities/api');
 jest.mock('../src/features/auth/api');
@@ -179,6 +183,24 @@ describe('Inbox requests', () => {
     expect(screen.getByText('2')).toBeOnTheScreen();
   });
 
+  test('a new request shows on the Inbox badge as soon as it arrives on my Member channel', async () => {
+    jest.mocked(chat.fetchConversations).mockResolvedValue([meera, isha]);
+    await renderApp(me);
+    await screen.findByRole('tab', { name: 'Inbox' });
+    jest
+      .mocked(chat.fetchConversations)
+      .mockResolvedValue([rohan, meera, isha]);
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'connection',
+        payload: { connection_id: 'conn-rohan' },
+      }),
+    );
+    expect(
+      await screen.findByRole('tab', { name: 'Inbox, 1 waiting' }),
+    ).toBeOnTheScreen();
+  });
+
   test('accepting a request opens the chat', async () => {
     await openInbox();
     jest
@@ -261,6 +283,25 @@ describe('Inbox Join Requests', () => {
     await renderApp(me);
     expect(
       await screen.findByRole('tab', { name: 'Inbox, 3 waiting' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('a new Join Request shows on the Inbox badge as soon as it arrives on my Member channel', async () => {
+    jest.mocked(chat.fetchConversations).mockResolvedValue([meera, isha]);
+    jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([askedTrek]);
+    await renderApp(me);
+    await screen.findByRole('tab', { name: 'Inbox' });
+    jest
+      .mocked(activities.fetchMyJoinRequests)
+      .mockResolvedValue([kabirJoins, askedTrek]);
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'join-request',
+        payload: { activity_id: 'badminton' },
+      }),
+    );
+    expect(
+      await screen.findByRole('tab', { name: 'Inbox, 1 waiting' }),
     ).toBeOnTheScreen();
   });
 

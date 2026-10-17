@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { activityKeys } from '../activities/queries';
 import { chatKeys } from '../chat/queries';
 import { listenToMember } from './memberChannel';
 
@@ -13,6 +14,8 @@ export function MemberLive() {
         const connectionId = String(payload.connection_id);
         const stale = {
           message: [chatKeys.conversations],
+          connection: [chatKeys.conversations],
+          'join-request': [activityKeys.all],
           read: [chatKeys.state(connectionId)],
           'media-consent': [chatKeys.mediaStateAll(connectionId)],
           'mode-change': [
