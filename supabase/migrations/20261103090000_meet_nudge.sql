@@ -18,9 +18,12 @@ declare
   due record;
 begin
   for due in
-    select c.id, m.user_id as member, o.user_id as other
+    select c.id, m.user_id as member, o.user_id as other, public.display_name_of(o.user_id) as other_name
     from public.connections c
     join public.connection_members m on m.connection_id = c.id
+    -- Only Members a push would reach are marked asked; the rest wait until it would.
+    join public.profiles p on p.id = m.user_id
+      and p.status = 'active' and p.deleted_at is null and p.notify_messages
     join public.connection_members o on o.connection_id = c.id and o.user_id <> m.user_id
     where c.status = 'accepted' and c.activity_id is null
       and c.responded_at <= now() - interval '7 days'
@@ -34,12 +37,14 @@ begin
   loop
     insert into public.meet_nudges (connection_id, user_id) values (due.id, due.member);
     perform public.enqueue_push(due.member, 'messages',
-      'Did you meet ' || public.display_name_of(due.other) || '?', 'Tell us how it went. It takes a moment.',
-      jsonb_build_object('kind', 'meet_nudge', 'otherUserId', due.other,
-                         'otherName', public.display_name_of(due.other)));
+      'Did you meet ' || due.other_name || '?', 'Tell us how it went. It takes a moment.',
+      jsonb_build_object('kind', 'meet_nudge', 'otherUserId', due.other, 'otherName', due.other_name));
   end loop;
 end;
 $$;
+
+-- The daily check asks whether each side of a chat has written.
+create index on public.messages (connection_id, sender_id);
 
 revoke execute on function public.send_meet_nudges() from public, anon, authenticated;
 

@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(9);
+select plan(12);
 
 -- The meet nudges queued for a Member, as (title, other Member).
 create function pg_temp.nudges(member uuid) returns table (title text, other text)
@@ -76,8 +76,27 @@ select public.send_meet_nudges();
 select is_empty(format($$ select * from pg_temp.nudges(%L) $$, :'neha'),
   'not across a Block');
 
+-- Notifications off is a wait, not a skip: turned back on, the Member is asked.
+select pg_temp.chat(:'meera', :'kabir', 8, array[:'meera', :'kabir']::uuid[]);
+update public.profiles set notify_messages = false where id = :'meera';
+select public.send_meet_nudges();
+update public.profiles set notify_messages = true where id = :'meera';
+select public.send_meet_nudges();
+select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'meera'), array[1],
+  'a Member with message notifications off is asked once they turn them back on');
+
+-- An Activity Connection is asked about by its Activity's prompt instead.
+select pg_temp.chat(:'dev', :'asha', 8, array[:'dev', :'asha']::uuid[]) as activity_chat \gset
+insert into public.activities (id, host_id, title, type, area_id, starts_at, capacity)
+values ('00000000-0000-0000-0000-00000000a5a1', :'dev', 'Trek', 'outdoors', 'baner', now() - interval '9 days', 3);
+update public.connections set activity_id = '00000000-0000-0000-0000-00000000a5a1' where id = :'activity_chat';
+select public.send_meet_nudges();
+select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'asha'), array[1],
+  'an Activity Connection gets no meet nudge');
+
 select pg_temp.act_as_member(:'asha');
 select throws_ok($$ select public.send_meet_nudges() $$, '42501', null, 'a Member cannot send nudges');
+select throws_ok($$ select * from public.meet_nudges $$, '42501', null, 'a Member cannot read who was nudged');
 
 select * from finish();
 rollback;
