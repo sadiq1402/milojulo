@@ -10,6 +10,7 @@ import {
   type ActivityFields,
   type BoardActivity,
   type JoinRequest,
+  type JoinedActivity,
   type MyJoinRequest,
   type StartsWhen,
 } from './model';
@@ -99,6 +100,18 @@ export async function fetchBoard(): Promise<BoardActivity[]> {
     throw new Error(couldNotLoad);
   }
   return data.map(toBoardActivity);
+}
+
+// Activities I'm going to and Join Requests still waiting, soonest first.
+export async function fetchJoined(): Promise<JoinedActivity[]> {
+  const { data, error } = await supabase.rpc('joined_activities');
+  if (error) {
+    throw new Error(couldNotLoad);
+  }
+  return data.map(row => ({
+    ...toBoardActivity(row),
+    requestStatus: row.request_status as JoinedActivity['requestStatus'],
+  }));
 }
 
 // Null when it isn't mine to see (a blocked host, or not there at all). The host sees their

@@ -59,6 +59,11 @@ export type BoardActivity = {
 
 export type JoinRequestStatus = Database['public']['Enums']['request_status'];
 
+// On the Joined screen: accepted shows under Going, requested under Waiting.
+export type JoinedActivity = BoardActivity & {
+  requestStatus: Extract<JoinRequestStatus, 'accepted' | 'requested'>;
+};
+
 export type Activity = BoardActivity & {
   status: ActivityStatus;
   // Only the host and accepted joiners get it.

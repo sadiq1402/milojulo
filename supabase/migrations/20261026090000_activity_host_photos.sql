@@ -146,3 +146,45 @@ as $$
 $$;
 
 revoke execute on function public.get_activity(uuid) from public, anon;
+
+-- The Joined screen: Activities the caller is going to (accepted, not yet over) and Join Requests still
+-- waiting (open, not yet started), soonest first. Hosts that are gone or blocked drop out, as in my_join_requests.
+create function public.joined_activities() returns table (
+  id uuid,
+  host_id uuid,
+  host_name varchar,
+  title varchar,
+  type public.activity_type,
+  area_id text,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  capacity smallint,
+  spots_left integer,
+  description varchar,
+  starts_when text,
+  is_mine boolean,
+  circle_id uuid,
+  circle_name varchar,
+  host_photo_id uuid,
+  request_status public.request_status
+)
+language sql stable security definer
+set search_path = ''
+as $$
+  select a.id, a.host_id, h.display_name, a.title, a.type, a.area_id, a.starts_at, a.ends_at, a.capacity,
+    public.activity_spots_left(a.id), a.description, public.activity_starts_when(a.starts_at),
+    false, a.circle_id, cc.name, public.cover_photo_id(a.host_id), r.status
+  from public.activity_requests r
+  join public.activities a on a.id = r.activity_id
+  join public.profiles h on h.id = a.host_id
+  left join public.circles cc on cc.id = a.circle_id and cc.is_active
+  where r.requester_id = auth.uid()
+    and a.status = 'open'
+    and ((r.status = 'accepted' and public.activity_ends_at(a) > now())
+         or (r.status = 'requested' and a.starts_at > now()))
+    and public.is_reachable(a.host_id)
+    and not public.is_blocked(auth.uid(), a.host_id)
+  order by a.starts_at, a.id;
+$$;
+
+revoke execute on function public.joined_activities() from public, anon;

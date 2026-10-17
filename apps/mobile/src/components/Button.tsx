@@ -3,10 +3,12 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
+  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { colors, radius, shadow, sizes } from '../theme';
+import { colors, radius, shadow, sizes, spacing } from '../theme';
+import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
 // inverse sits on a dark brand screen (Welcome).
@@ -20,6 +22,9 @@ type Props = {
   disabled?: boolean;
   loading?: boolean;
   accessibilityLabel?: string;
+  icon?: IconName;
+  // A count shown in an orchid pill after the label; hidden at 0.
+  badge?: number;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -39,6 +44,8 @@ export function Button({
   disabled = false,
   loading = false,
   accessibilityLabel,
+  icon,
+  badge = 0,
   style,
 }: Props) {
   const inactive = disabled || loading;
@@ -63,9 +70,25 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={labelColor[variant]} />
       ) : (
-        <Text variant="label" color={labelColor[variant]}>
-          {label}
-        </Text>
+        <View style={styles.content}>
+          {icon ? (
+            <Icon
+              name={icon}
+              size={sizes.icon.inline}
+              color={labelColor[variant]}
+            />
+          ) : null}
+          <Text variant="label" color={labelColor[variant]}>
+            {label}
+          </Text>
+          {badge > 0 ? (
+            <View style={styles.badge}>
+              <Text variant="caption" color={colors.white}>
+                {badge}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       )}
     </Pressable>
   );
@@ -90,6 +113,16 @@ const styles = StyleSheet.create({
     minHeight: sizes.button.compact,
     minWidth: sizes.button.compactMinWidth,
     alignSelf: 'flex-start',
+  },
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  badge: {
+    minWidth: sizes.tabBadge.min,
+    minHeight: sizes.tabBadge.min,
+    borderRadius: sizes.tabBadge.min / 2,
+    paddingHorizontal: sizes.tabBadge.paddingX,
+    backgroundColor: colors.orchid,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryPressed: { backgroundColor: colors.orchidDark },
   pressed: { opacity: 0.7 },

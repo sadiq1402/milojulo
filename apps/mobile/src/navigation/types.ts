@@ -32,6 +32,7 @@ export type MemberParams = {
   // One profile setup step, opened from the Me tab.
   EditProfile: { section: SetupStep };
   ActivityDetail: { activityId: string };
+  Joined: undefined;
   // Posting from a Circle pre-selects it and shows its name.
   CreateActivity: { circleId: string; circleName: string } | undefined;
   EditActivity: { activityId: string };

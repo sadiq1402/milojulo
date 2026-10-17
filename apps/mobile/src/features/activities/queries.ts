@@ -4,6 +4,7 @@ import {
   askToJoin,
   fetchActivity,
   fetchBoard,
+  fetchJoined,
   fetchJoinRequests,
   fetchMyJoinRequests,
   respondJoinRequest,
@@ -14,6 +15,7 @@ import {
 export const activityKeys = {
   all: ['activities'],
   board: ['activities', 'board'],
+  joined: ['activities', 'joined'],
   detail: (activityId: string) => ['activities', 'detail', activityId],
   joinRequests: (activityId: string) => [
     'activities',
@@ -30,6 +32,10 @@ export function useBoard() {
     // Activities end while the board is open; the database hides them, so check now and then.
     refetchInterval: 60_000,
   });
+}
+
+export function useJoined() {
+  return useQuery({ queryKey: activityKeys.joined, queryFn: fetchJoined });
 }
 
 export function useActivity(activityId: string) {

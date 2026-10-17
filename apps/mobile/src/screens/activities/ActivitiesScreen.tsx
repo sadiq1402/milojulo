@@ -16,7 +16,11 @@ import {
   type BoardActivity,
   type StartsWhen,
 } from '../../features/activities/model';
-import { activityKeys, useBoard } from '../../features/activities/queries';
+import {
+  activityKeys,
+  useBoard,
+  useJoined,
+} from '../../features/activities/queries';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaNames } from '../../features/catalog/queries';
 import { useMyDiscoverState } from '../../features/discover/queries';
@@ -43,6 +47,10 @@ export function ActivitiesScreen() {
     })),
   ]);
   const post = () => navigation.navigate('CreateActivity');
+  const joined = useJoined();
+  const going = (joined.data ?? []).filter(
+    activity => activity.requestStatus === 'accepted',
+  ).length;
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -81,7 +89,28 @@ export function ActivitiesScreen() {
           ListHeaderComponent={
             <>
               <MeetPrompts />
-              <Button label="Post an Activity" onPress={post} />
+              <View style={styles.actions}>
+                <Button
+                  label="Post"
+                  accessibilityLabel="Post an Activity"
+                  icon="plus"
+                  compact
+                  onPress={post}
+                  style={styles.action}
+                />
+                <Button
+                  label="Joined"
+                  accessibilityLabel={
+                    going > 0 ? `Joined, ${going} going` : 'Joined'
+                  }
+                  icon="calendarCheck"
+                  badge={going}
+                  variant="secondary"
+                  compact
+                  onPress={() => navigation.navigate('Joined')}
+                  style={styles.action}
+                />
+              </View>
             </>
           }
           renderItem={({ item }) =>
@@ -147,6 +176,8 @@ const styles = StyleSheet.create({
     gap: layout.blockGap,
   },
   heading: { marginTop: spacing.xs },
+  actions: { flexDirection: 'row', gap: spacing.xs },
+  action: { flex: 1 },
   emptyBody: { marginTop: spacing.xs },
   padded: { paddingHorizontal: layout.pageMargin, gap: spacing.xs },
 });

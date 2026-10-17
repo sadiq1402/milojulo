@@ -10,6 +10,7 @@ import { useRequests } from '../features/requests/queries';
 import { ActivitiesScreen } from '../screens/activities/ActivitiesScreen';
 import { ActivityDetailScreen } from '../screens/activities/ActivityDetailScreen';
 import { CreateActivityScreen } from '../screens/activities/CreateActivityScreen';
+import { JoinedScreen } from '../screens/activities/JoinedScreen';
 import { EditActivityScreen } from '../screens/activities/EditActivityScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
 import { CircleDetailScreen } from '../screens/circles/CircleDetailScreen';
@@ -96,6 +97,7 @@ export function MemberNavigator() {
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
         <Stack.Screen name="CreateActivity" component={CreateActivityScreen} />
+        <Stack.Screen name="Joined" component={JoinedScreen} />
         <Stack.Screen name="EditActivity" component={EditActivityScreen} />
         <Stack.Screen name="CircleDetail" component={CircleDetailScreen} />
         <Stack.Screen name="Report" component={ReportScreen} />

@@ -157,6 +157,7 @@ beforeEach(() => {
   jest.mocked(activities.cancelActivity).mockResolvedValue();
   jest.mocked(activities.fetchJoinRequests).mockResolvedValue([]);
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
+  jest.mocked(activities.fetchJoined).mockResolvedValue([]);
 });
 
 const cardFor = (title: string) =>
@@ -285,6 +286,64 @@ describe('the Activity Board', () => {
     await act(() => refreshControl.props.onRefresh());
     expect(await cardFor('Kabaddi practice')).toBeOnTheScreen();
     expect(screen.queryByText('Badminton doubles')).not.toBeOnTheScreen();
+  });
+});
+
+describe('the Joined screen', () => {
+  const going = { ...chai, requestStatus: 'accepted' as const };
+  const waiting = { ...badminton, requestStatus: 'requested' as const };
+
+  test("the Joined button counts the Activities I'm going to", async () => {
+    jest.mocked(activities.fetchJoined).mockResolvedValue([going, waiting]);
+    await openBoard();
+    expect(
+      await screen.findByRole('button', { name: 'Joined, 1 going' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('Going lists what I was accepted into; Waiting lists unanswered Join Requests', async () => {
+    jest.mocked(activities.fetchJoined).mockResolvedValue([going, waiting]);
+    await openBoard();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /^Joined/ }),
+    );
+    expect(await cardFor('Chai and board games')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /^Badminton doubles, / }),
+    ).toBeNull();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Waiting' }));
+    expect(await cardFor('Badminton doubles')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /^Chai and board games, / }),
+    ).toBeNull();
+    expect(screen.getByText("The host hasn't answered yet.")).toBeOnTheScreen();
+  });
+
+  test('with nothing joined, each tab says so', async () => {
+    await openBoard();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /^Joined/ }),
+    );
+    expect(
+      await screen.findByText("You're not going to any Activities yet."),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Waiting' }));
+    expect(
+      await screen.findByText('No Join Requests waiting.'),
+    ).toBeOnTheScreen();
+  });
+
+  test('tapping a card opens the Activity', async () => {
+    jest.mocked(activities.fetchJoined).mockResolvedValue([going]);
+    await openBoard();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /^Joined/ }),
+    );
+    await fireEvent.press(await cardFor('Chai and board games'));
+    expect(
+      await screen.findByRole('header', { name: 'Badminton doubles' }),
+    ).toBeOnTheScreen();
+    expect(activities.fetchActivity).toHaveBeenCalledWith('chai');
   });
 });
 
