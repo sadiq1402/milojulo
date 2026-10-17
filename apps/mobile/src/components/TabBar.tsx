@@ -51,7 +51,8 @@ export function TabBar({ items, activeKey, onSelect, bottomInset }: Props) {
             accessibilityState={{ selected: active }}
             style={styles.tab}
           >
-            <View style={[styles.pill, active && styles.pillActive]}>
+            <View style={styles.pill}>
+              <View style={[styles.pillTint, !active && styles.hidden]} />
               <Icon name={item.icon} color={tint} />
               {badge > 0 ? (
                 <View style={styles.badge}>
@@ -96,12 +97,17 @@ const styles = StyleSheet.create({
     width: sizes.tabPill.w,
     height: sizes.tabPill.h,
     borderRadius: sizes.tabPill.h / 2,
-    // Android (New Architecture) drops the radius when a background first appears on a later render.
-    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillActive: { backgroundColor: colors.tint },
+  // Android (New Architecture) drops the radius when a background colour changes after mount,
+  // so the tint is always painted and only its opacity toggles.
+  pillTint: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: sizes.tabPill.h / 2,
+    backgroundColor: colors.tint,
+  },
+  hidden: { opacity: 0 },
   badge: {
     position: 'absolute',
     top: -spacing.xxs,
