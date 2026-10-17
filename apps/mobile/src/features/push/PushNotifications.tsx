@@ -51,6 +51,14 @@ function openFor(data: PushData) {
         });
       }
       return;
+    case 'meet_nudge':
+      if (data.otherUserId) {
+        navigationRef.navigate('MeetFeedback', {
+          otherUserId: data.otherUserId,
+          otherName: data.otherName ?? '',
+        });
+      }
+      return;
   }
 }
 
