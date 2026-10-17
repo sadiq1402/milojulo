@@ -9,15 +9,14 @@ type Listener = {
 };
 
 const listeners = new Set<Listener>();
-let current: { channel: RealtimeChannel | null; closed: boolean } | null = null;
+let openChannel: { channel: RealtimeChannel | null; closed: boolean } | null =
+  null;
 let status: LiveStatus = 'offline';
 
-// The signed-in Member's one private channel (Broadcast from database triggers), shared by
-// every listener; it opens with the first and closes with the last. 'live' fires on every
-// (re)subscribe, which is when to catch up on anything missed.
+// One shared channel: opens with the first listener, closes with the last; 'live' means catch up.
 export function listenToMember(listener: Listener): () => void {
   listeners.add(listener);
-  if (!current) {
+  if (!openChannel) {
     open();
   } else if (status === 'live') {
     listener.onStatus?.('live');
@@ -30,14 +29,25 @@ export function listenToMember(listener: Listener): () => void {
   };
 }
 
+function notify(next: LiveStatus) {
+  status = next;
+  listeners.forEach(l => l.onStatus?.(next));
+}
+
 function open() {
-  const state: NonNullable<typeof current> = { channel: null, closed: false };
-  current = state;
+  const opening: NonNullable<typeof openChannel> = {
+    channel: null,
+    closed: false,
+  };
+  openChannel = opening;
   (async () => {
     const { data } = await supabase.auth.getSession();
     const memberId = data.session?.user.id;
+    if (!memberId) {
+      throw new Error('signed out');
+    }
     await supabase.realtime.setAuth();
-    if (!memberId || state.closed) {
+    if (opening.closed) {
       return;
     }
     const channel = supabase.channel(`member:${memberId}`, {
@@ -46,21 +56,29 @@ function open() {
     channel.on('broadcast', { event: '*' }, ({ event, payload }) =>
       listeners.forEach(l => l.onEvent?.({ event, payload })),
     );
-    state.channel = channel;
+    opening.channel = channel;
     channel.subscribe(subscribed => {
-      status = subscribed === 'SUBSCRIBED' ? 'live' : 'offline';
-      listeners.forEach(l => l.onStatus?.(status));
+      // A removed channel still reports CLOSED; only the open one speaks.
+      if (openChannel === opening) {
+        notify(subscribed === 'SUBSCRIBED' ? 'live' : 'offline');
+      }
     });
-  })().catch(() => {});
+  })().catch(() => {
+    // Not opened: the next listener tries again.
+    if (openChannel === opening) {
+      openChannel = null;
+      notify('offline');
+    }
+  });
 }
 
 function close() {
-  if (current) {
-    current.closed = true;
-    if (current.channel) {
-      supabase.removeChannel(current.channel);
+  if (openChannel) {
+    openChannel.closed = true;
+    if (openChannel.channel) {
+      supabase.removeChannel(openChannel.channel);
     }
-    current = null;
+    openChannel = null;
     status = 'offline';
   }
 }

@@ -39,13 +39,6 @@ select results_eq($$ select sender_id, type::text, body from public.messages $$,
   $$ values ('00000000-0000-0000-0000-0000000000c1'::uuid, 'text', 'Badminton at 7?') $$,
   'the other Member reads a text message in their Connection');
 
--- Realtime admits a subscriber to a topic only if they can select from it with that topic set.
-create function pg_temp.broadcasts_on(topic text) returns setof jsonb
-language sql as $$
-  select set_config('realtime.topic', topic, true);
-  select payload from realtime.messages where realtime.messages.topic = broadcasts_on.topic;
-$$;
-
 select results_eq($$ select p->>'id', p->>'body'
                       from pg_temp.broadcasts_on('member:00000000-0000-0000-0000-0000000000c2') p $$,
   $$ values ('00000000-0000-0000-0000-00000000aa01', 'Badminton at 7?') $$,

@@ -32,8 +32,7 @@ export default function App({
 }: {
   client?: QueryClient;
 }) {
-  // The app in the foreground counts as focused: polls pause in the background and stale
-  // queries refetch on return.
+  // Foreground counts as focused: polls pause in the background, stale queries refetch on return.
   useEffect(
     () =>
       focusManager.setEventListener(setFocused => {

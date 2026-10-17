@@ -166,3 +166,10 @@ begin
   return query select l.message_id from public.chat_media_links(viewer, ids) l order by 1;
 end;
 $$;
+
+-- Realtime admits a subscriber to a topic only if they can select from it with that topic set.
+create function pg_temp.broadcasts_on(topic text) returns setof jsonb
+language sql as $$
+  select set_config('realtime.topic', topic, true);
+  select payload from realtime.messages where realtime.messages.topic = broadcasts_on.topic;
+$$;
