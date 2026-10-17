@@ -121,7 +121,9 @@ export function AreaSheet({
   selected,
   onClose,
   onChoose,
+  title = 'Choose your area',
 }: {
+  title?: string;
   visible: boolean;
   areas: Area[];
   near?: NearArea[];
@@ -154,7 +156,7 @@ export function AreaSheet({
   return (
     <BottomSheet visible={visible} onClose={close} full>
       <Text variant="h2" accessibilityRole="header">
-        Choose your area
+        {title}
       </Text>
       <View style={[styles.search, focused && styles.searchFocused]}>
         <Icon name="search" size={sizes.icon.inline} color={colors.secondary} />

@@ -13,7 +13,10 @@ type Props = {
   // A chip that opens a picker: an optional leading icon, a bold label and a chevron.
   icon?: IconName;
   opensPicker?: boolean;
+  // An orchid-outlined chip that leads somewhere (All areas), with a chevron.
+  action?: boolean;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   // Shown after the label, such as a Shared tag.
   badge?: ReactNode;
 };
@@ -25,20 +28,28 @@ export function Chip({
   tint,
   icon,
   opensPicker = false,
+  action = false,
   accessibilityLabel,
+  accessibilityHint,
   badge,
 }: Props) {
-  const ink = selected ? colors.white : tint?.fg ?? colors.ink;
+  const ink = selected
+    ? colors.white
+    : action
+    ? colors.orchid
+    : tint?.fg ?? colors.ink;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       hitSlop={(sizes.hitArea - sizes.chip.height) / 2}
       style={[
         styles.chip,
         tint && { backgroundColor: tint.bg, borderColor: tint.bg },
+        action && styles.action,
         selected && styles.selected,
       ]}
     >
@@ -50,8 +61,12 @@ export function Chip({
       >
         {label}
       </Text>
-      {opensPicker ? (
-        <Icon name="chevronDown" size={sizes.icon.tiny} color={ink} />
+      {opensPicker || action ? (
+        <Icon
+          name={action ? 'chevronRight' : 'chevronDown'}
+          size={sizes.icon.tiny}
+          color={ink}
+        />
       ) : null}
       {badge}
     </Pressable>
@@ -73,6 +88,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   selected: { backgroundColor: colors.orchid, borderColor: colors.orchid },
+  action: { borderColor: colors.orchid },
   label: { fontFamily: fontFamily(fonts.text, '500') },
   bold: { fontFamily: fontFamily(fonts.text, '700') },
 });
