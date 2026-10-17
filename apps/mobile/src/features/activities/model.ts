@@ -53,6 +53,8 @@ export type BoardActivity = {
   // so the label drops but the Activity stays (CONTEXT: an archived Circle disappears).
   circleId: string | null;
   circleName: string | null;
+  // The host's cover photo; its link is asked for separately.
+  hostPhotoId: string | null;
 };
 
 export type JoinRequestStatus = Database['public']['Enums']['request_status'];
@@ -158,6 +160,14 @@ export const fieldMessages = {
   endsAt: 'The end has to be after the start.',
   capacity: `Spots must be between ${minSpots} and ${maxSpots}.`,
 } as const;
+
+// Google Maps searches the venue text the host typed; the Area and city narrow it down.
+export function directionsUrl(venue: string, areaName: string): string {
+  const destination = [venue, areaName, 'Pune'].filter(Boolean).join(', ');
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    destination,
+  )}`;
+}
 
 export function hostLine(activity: Pick<BoardActivity, 'isMine' | 'hostName'>) {
   return activity.isMine ? 'Hosted by you' : `Hosted by ${activity.hostName}`;

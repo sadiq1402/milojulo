@@ -88,6 +88,7 @@ export function toBoardActivity(row: BoardRow): BoardActivity {
     circleId: row.circle_id ?? null,
     // Null when the Circle is archived: no label, but the Activity stays.
     circleName: row.circle_name ?? null,
+    hostPhotoId: row.host_photo_id ?? null,
   };
 }
 

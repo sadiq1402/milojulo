@@ -40,6 +40,7 @@ const glyphs = {
   ),
   play: <Path d="M8 5.5v13l11-6.5z" />,
   pause: <Path d="M8 5v14M16 5v14" />,
+  directions: <Path d="M3 11l18-8-8 18-2-8z" />,
   send: <Path d="M21 3L10 14M21 3l-6.5 18-3.5-7-7-3.5z" />,
   shieldCheck: (
     <>
