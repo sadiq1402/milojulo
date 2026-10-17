@@ -1,6 +1,6 @@
 -- #147: Connection Requests and Join Requests reach the Inbox live (decision 51).
 
--- Definer: sends to whichever of a and b did not act, never across a Block between them.
+-- Definer: sends to whichever of a and b did not act (both, for a scheduled job), never across a Block.
 create function public.send_to_pair(a uuid, b uuid, actor uuid, event text, payload jsonb) returns void
 language sql security definer
 set search_path = ''
