@@ -724,7 +724,7 @@ isOneToOne: false
                            },
 "activity_board":
 { Args: Record<PropertyKey, never>; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
             }[]
                            },
 "activity_ends_at":
@@ -802,7 +802,7 @@ isOneToOne: false
                            },
 "circle_activities":
 { Args: { "circle_id": string }; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
             }[]
                            },
 "circle_members_of":
@@ -870,7 +870,7 @@ isOneToOne: false
                            },
 "get_activity":
 { Args: { "activity_id": string }; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
+              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
             }[]
                            },
 "get_circle":
@@ -909,6 +909,11 @@ isOneToOne: false
                            },
 "join_circle":
 { Args: { "circle_id": string }; Returns: undefined
+                           },
+"joined_activities":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+            }[]
                            },
 "kept_connections":
 { Args: { "since": string }; Returns: {

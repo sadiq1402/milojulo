@@ -61,6 +61,7 @@ const circleActivity: BoardActivity = {
   isMine: false,
   circleId: 'trekkers',
   circleName: 'Weekend Trekkers',
+  hostPhotoId: null,
 };
 
 const members: CircleMember[] = [

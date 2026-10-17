@@ -1,10 +1,16 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Avatar,
   BottomSheet,
   Button,
   Card,
@@ -21,6 +27,7 @@ import {
 import { cancelActivity } from '../../features/activities/api';
 import {
   activityTypeLabels,
+  directionsUrl,
   hostLine,
   spotsLeftLabel,
   type Activity,
@@ -174,9 +181,6 @@ export function ActivityDetailScreen({ navigation, route }: Props) {
 }
 
 function venueNote(activity: Activity): string {
-  if (activity.venueDetail) {
-    return activity.venueDetail;
-  }
   if (activity.isMine) {
     return 'No exact spot added yet.';
   }
@@ -196,6 +200,7 @@ function ActivityBody({
 }) {
   const areas = useAreaNames();
   const taken = activity.capacity - activity.spotsLeft;
+  const areaName = areas.data?.[activity.areaId] ?? '';
   return (
     <ScrollView contentContainerStyle={styles.body}>
       {activity.status !== 'open' ? (
@@ -215,11 +220,18 @@ function ActivityBody({
           icon="clock"
           title={formatWhen(activity.startsAt, activity.endsAt)}
         />
-        <Fact
-          icon="pin"
-          title={areas.data?.[activity.areaId] ?? ''}
-          note={venueNote(activity)}
-        />
+        {activity.venueDetail ? (
+          <Fact
+            icon="pin"
+            title={activity.venueDetail}
+            note={areaName}
+            action={
+              <Directions url={directionsUrl(activity.venueDetail, areaName)} />
+            }
+          />
+        ) : (
+          <Fact icon="pin" title={areaName} note={venueNote(activity)} />
+        )}
         <Fact
           icon="circles"
           title={`${taken} of ${activity.capacity} spots taken`}
@@ -229,7 +241,7 @@ function ActivityBody({
         ) : null}
       </View>
       <Card style={styles.host}>
-        <Avatar name={activity.hostName} />
+        <MemberAvatar photoId={activity.hostPhotoId} name={activity.hostName} />
         <Text variant="title">
           {activity.isMine ? "You're hosting" : hostLine(activity)}
         </Text>
@@ -266,10 +278,12 @@ function Fact({
   icon,
   title,
   note,
+  action,
 }: {
   icon: IconName;
   title: string;
   note?: string;
+  action?: React.ReactNode;
 }) {
   return (
     <View style={styles.fact}>
@@ -282,7 +296,34 @@ function Fact({
           </Text>
         ) : null}
       </View>
+      {action}
     </View>
+  );
+}
+
+function Directions({ url }: { url: string }) {
+  return (
+    <Pressable
+      onPress={() => Linking.openURL(url)}
+      accessibilityRole="button"
+      accessibilityLabel="Directions"
+      accessibilityHint="Opens Google Maps"
+      hitSlop={(sizes.hitArea - directionsHeight) / 2}
+      style={({ pressed }) => [styles.directions, pressed && styles.pressed]}
+    >
+      <Icon
+        name="directions"
+        size={sizes.icon.tiny}
+        color={colors.orchidDark}
+      />
+      <Text
+        variant="label"
+        color={colors.orchidDark}
+        style={styles.directionsLabel}
+      >
+        Directions
+      </Text>
+    </Pressable>
   );
 }
 
@@ -614,6 +655,9 @@ function CancelSheet({
   );
 }
 
+// The mockup's pill is 36 high; hit slop takes it to the 48 hit area.
+const directionsHeight = 36;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.ground },
   message: { paddingHorizontal: layout.pageMargin, gap: spacing.xs },
@@ -632,6 +676,17 @@ const styles = StyleSheet.create({
   facts: { gap: spacing.sm },
   fact: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   grow: { flex: 1 },
+  directions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    minHeight: directionsHeight,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.tint,
+  },
+  directionsLabel: { fontSize: 14 },
+  pressed: { opacity: 0.7 },
   start: { alignSelf: 'flex-start' },
   host: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   section: { gap: spacing.sm },

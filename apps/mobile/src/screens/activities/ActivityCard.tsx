@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Avatar, Card, Icon, Tag, Text } from '../../components';
+import { Card, Icon, Tag, Text } from '../../components';
 import {
   activityTypeLabels,
   hostLine,
@@ -9,6 +9,7 @@ import {
 } from '../../features/activities/model';
 import { formatWhen } from '../../features/activities/time';
 import { activityTones, photoTones, sizes, spacing } from '../../theme';
+import { MemberAvatar } from '../shared/MemberAvatar';
 
 type Props = { activity: BoardActivity; areaName: string; onPress: () => void };
 
@@ -51,7 +52,8 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
         </View>
         <View style={styles.bottom}>
           <View style={styles.host}>
-            <Avatar
+            <MemberAvatar
+              photoId={activity.hostPhotoId}
               name={activity.hostName}
               size="inline"
               tone={hostTone(activity)}

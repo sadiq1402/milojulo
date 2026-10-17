@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
-import { ScrollView } from 'react-native';
+import { Linking, ScrollView } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import {
@@ -17,6 +17,7 @@ import {
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import * as photos from '../src/features/photos/api';
 import * as reports from '../src/features/reports/api';
 import { areas, numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
@@ -27,6 +28,7 @@ jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
+jest.mock('../src/features/photos/api');
 // Keep the real reason list; only the call to the database is stood in.
 jest.mock('../src/features/reports/api', () => ({
   ...jest.requireActual('../src/features/reports/api'),
@@ -78,6 +80,7 @@ const boardActivity = (overrides: Partial<BoardActivity>): BoardActivity => ({
   isMine: false,
   circleId: null,
   circleName: null,
+  hostPhotoId: null,
   ...overrides,
 });
 
@@ -154,6 +157,7 @@ beforeEach(() => {
   jest.mocked(activities.cancelActivity).mockResolvedValue();
   jest.mocked(activities.fetchJoinRequests).mockResolvedValue([]);
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
+  jest.mocked(activities.fetchJoined).mockResolvedValue([]);
 });
 
 const cardFor = (title: string) =>
@@ -216,6 +220,20 @@ describe('the Activity Board', () => {
     expect(mine.getByText('Full')).toBeOnTheScreen();
   });
 
+  test("each card shows its host's photo", async () => {
+    jest
+      .mocked(activities.fetchBoard)
+      .mockResolvedValue([{ ...badminton, hostPhotoId: 'isha-1' }]);
+    jest
+      .mocked(photos.fetchPhotoUrls)
+      .mockResolvedValue({ 'isha-1': 'https://r2.example/isha-1.jpg' });
+    await openBoard();
+    const card = within(await cardFor('Badminton doubles'));
+    expect(await card.findByLabelText('Photo of Isha')).toHaveProp('source', {
+      uri: 'https://r2.example/isha-1.jpg',
+    });
+  });
+
   test('with nothing open, says so and points at posting one', async () => {
     jest.mocked(activities.fetchBoard).mockResolvedValue([]);
     await openBoard();
@@ -268,6 +286,64 @@ describe('the Activity Board', () => {
     await act(() => refreshControl.props.onRefresh());
     expect(await cardFor('Kabaddi practice')).toBeOnTheScreen();
     expect(screen.queryByText('Badminton doubles')).not.toBeOnTheScreen();
+  });
+});
+
+describe('the Joined screen', () => {
+  const going = { ...chai, requestStatus: 'accepted' as const };
+  const waiting = { ...badminton, requestStatus: 'requested' as const };
+
+  test("the Joined button counts the Activities I'm going to", async () => {
+    jest.mocked(activities.fetchJoined).mockResolvedValue([going, waiting]);
+    await openBoard();
+    expect(
+      await screen.findByRole('button', { name: 'Joined, 1 going' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('Going lists what I was accepted into; Waiting lists unanswered Join Requests', async () => {
+    jest.mocked(activities.fetchJoined).mockResolvedValue([going, waiting]);
+    await openBoard();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /^Joined/ }),
+    );
+    expect(await cardFor('Chai and board games')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /^Badminton doubles, / }),
+    ).toBeNull();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Waiting' }));
+    expect(await cardFor('Badminton doubles')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /^Chai and board games, / }),
+    ).toBeNull();
+    expect(screen.getByText("The host hasn't answered yet.")).toBeOnTheScreen();
+  });
+
+  test('with nothing joined, each tab says so', async () => {
+    await openBoard();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /^Joined/ }),
+    );
+    expect(
+      await screen.findByText("You're not going to any Activities yet."),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Waiting' }));
+    expect(
+      await screen.findByText('No Join Requests waiting.'),
+    ).toBeOnTheScreen();
+  });
+
+  test('tapping a card opens the Activity', async () => {
+    jest.mocked(activities.fetchJoined).mockResolvedValue([going]);
+    await openBoard();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: /^Joined/ }),
+    );
+    await fireEvent.press(await cardFor('Chai and board games'));
+    expect(
+      await screen.findByRole('header', { name: 'Badminton doubles' }),
+    ).toBeOnTheScreen();
+    expect(activities.fetchActivity).toHaveBeenCalledWith('chai');
   });
 });
 
@@ -630,6 +706,27 @@ describe('joining an Activity', () => {
     );
     expect(await screen.findByLabelText('Chat menu')).toBeOnTheScreen();
     expect(screen.getByRole('header', { name: 'Isha' })).toBeOnTheScreen();
+  });
+
+  test('an accepted joiner gets directions to the venue in Google Maps', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    jest.mocked(activities.fetchActivity).mockResolvedValue(accepted);
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Directions' }));
+    expect(openURL).toHaveBeenCalledWith(
+      'https://www.google.com/maps/dir/?api=1&destination=Baner%20Sports%20Complex%2C%20court%202%2C%20Baner%2C%20Pune',
+    );
+  });
+
+  test('someone not yet accepted gets no directions', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue(detail());
+    await openDetail('Badminton doubles');
+    expect(
+      await screen.findByText(
+        'The exact spot is shared once the host accepts you.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Directions' })).toBeNull();
   });
 
   test('an accepted joiner can withdraw before the start, after confirming', async () => {

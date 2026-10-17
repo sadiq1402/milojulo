@@ -123,8 +123,6 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003610', '00000000-0000-00
   'a Member waiting on a Join Request gets the host''s photos');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-0000-0000-000000003610'), 2,
   'the host gets the photos of a Member asking to join');
-select is(pg_temp.seen('00000000-0000-0000-0000-000000003611', '00000000-0000-0000-0000-000000003601'), 0,
-  'a declined Join Request does not count');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003612', '00000000-0000-0000-0000-000000003613'), 2,
   'two Members going to the same Activity get each other''s photos');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003612', '00000000-0000-0000-0000-000000003610'), 0,
@@ -135,6 +133,9 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003610', '00000000-0000-00
 update public.activities set status = 'cancelled' where id = '00000000-0000-0000-0000-0000000036a1';
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003610', '00000000-0000-0000-0000-000000003601'), 2,
   'a Join Request still counts after the Activity is cancelled');
+-- Checked once the Activity is off the board, where everyone sees its host's photos (#134).
+select is(pg_temp.seen('00000000-0000-0000-0000-000000003611', '00000000-0000-0000-0000-000000003601'), 0,
+  'a declined Join Request does not count');
 update public.activities set status = 'expired', starts_at = now() - interval '2 days'
 where id = '00000000-0000-0000-0000-0000000036a1';
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003612', '00000000-0000-0000-0000-000000003613'), 2,
