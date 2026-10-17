@@ -40,19 +40,22 @@ export function distanceBand(km: number): string {
   return km < 2 ? '<2 km' : `~${Math.round(km)} km`;
 }
 
-// The Areas to offer first: mine, then the nearest to it, always including the one chosen.
+// The Areas to offer first: mine, then the nearest open ones, always including the one chosen.
 export function areaShortlist(
   areas: Area[],
   homeId: string | null,
   chosenId: string | null,
   count: number,
 ): Area[] {
-  const from = areas.find(a => a.id === (homeId ?? chosenId)) ?? areas[0];
+  const open = areas.filter(area => area.active);
+  const find = (id: string | null) => open.find(area => area.id === id);
+  const from = find(homeId) ?? find(chosenId) ?? open[0];
   if (!from) {
     return [];
   }
-  const list = nearestAreas(from, areas, count).map(near => near.area);
-  const chosen = areas.find(a => a.id === chosenId);
+  const list = nearestAreas(from, open, count).map(near => near.area);
+  // An Activity keeps its Area even if that Area has since closed.
+  const chosen = areas.find(area => area.id === chosenId);
   return chosen && !list.includes(chosen)
     ? [...list.slice(0, count - 1), chosen]
     : list;

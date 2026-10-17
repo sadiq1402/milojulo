@@ -187,6 +187,35 @@ async function openDetail(title: string) {
   await screen.findByRole('header', { name: title });
 }
 
+// Baner and the five Areas nearest to it, with Wakad and Kharadi further out.
+function mockPuneAreas() {
+  const at = (lat: number) => ({ lat, lng: 73.8 });
+  jest.mocked(catalog.fetchAreas).mockResolvedValue(
+    areas(
+      {
+        baner: 'Baner',
+        aundh: 'Aundh',
+        balewadi: 'Balewadi',
+        pashan: 'Pashan',
+        sus: 'Sus',
+        bavdhan: 'Bavdhan',
+        wakad: 'Wakad',
+        kharadi: 'Kharadi',
+      },
+      {
+        baner: at(18.56),
+        aundh: at(18.561),
+        balewadi: at(18.562),
+        pashan: at(18.563),
+        sus: at(18.564),
+        bavdhan: at(18.565),
+        wakad: at(18.6),
+        kharadi: at(18.9),
+      },
+    ),
+  );
+}
+
 async function openCreate() {
   await openBoard();
   await fireEvent.press(
@@ -389,48 +418,20 @@ describe('the Joined screen', () => {
 
 describe('posting an Activity', () => {
   test('Area offers mine and the 5 nearest, and All areas for the rest', async () => {
-    const at = (lat: number) => ({ lat, lng: 73.8 });
-    jest.mocked(catalog.fetchAreas).mockResolvedValue(
-      areas(
-        {
-          baner: 'Baner',
-          aundh: 'Aundh',
-          balewadi: 'Balewadi',
-          pashan: 'Pashan',
-          sus: 'Sus',
-          bavdhan: 'Bavdhan',
-          wakad: 'Wakad',
-          kharadi: 'Kharadi',
-        },
-        {
-          baner: at(18.56),
-          aundh: at(18.561),
-          balewadi: at(18.562),
-          pashan: at(18.563),
-          sus: at(18.564),
-          bavdhan: at(18.565),
-          wakad: at(18.6),
-          kharadi: at(18.9),
-        },
-      ),
-    );
+    mockPuneAreas();
     await openCreate();
-    for (const name of [
-      'Baner',
-      'Aundh',
-      'Balewadi',
-      'Pashan',
-      'Sus',
-      'Bavdhan',
-    ]) {
-      expect(screen.getByRole('button', { name })).toBeOnTheScreen();
-    }
-    expect(screen.queryByRole('button', { name: 'Kharadi' })).toBeNull();
+    const nearby = ['Baner', 'Aundh', 'Balewadi', 'Pashan', 'Sus', 'Bavdhan'];
+    expect(
+      screen
+        .getAllByText(new RegExp(`^(${nearby.join('|')}|Kharadi)$`))
+        .map(chip => chip.props.children),
+    ).toEqual(nearby);
 
     await fireEvent.press(screen.getByRole('button', { name: 'All areas' }));
     expect(
       await screen.findByRole('header', { name: 'Where is it?' }),
     ).toBeOnTheScreen();
+    expect(screen.queryByText('Nearest to you')).not.toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('radio', { name: /Kharadi/ }));
     expect(
       screen.getByRole('button', { name: 'Kharadi', selected: true }),
@@ -1092,6 +1093,17 @@ describe('editing an Activity', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Edit' }));
     await screen.findByRole('header', { name: 'Edit Activity' });
   }
+
+  test('an Activity in a far Area keeps it among the Area chips', async () => {
+    mockPuneAreas();
+    jest
+      .mocked(activities.fetchActivity)
+      .mockResolvedValue({ ...myActivity, areaId: 'kharadi' });
+    await openEdit();
+    expect(
+      await screen.findByRole('button', { name: 'Kharadi', selected: true }),
+    ).toBeOnTheScreen();
+  });
 
   test('the form starts filled in and sends only what changed', async () => {
     await openEdit();

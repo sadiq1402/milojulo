@@ -16,6 +16,7 @@ type Props = {
   // An orchid-outlined chip that leads somewhere (All areas), with a chevron.
   action?: boolean;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   // Shown after the label, such as a Shared tag.
   badge?: ReactNode;
 };
@@ -29,6 +30,7 @@ export function Chip({
   opensPicker = false,
   action = false,
   accessibilityLabel,
+  accessibilityHint,
   badge,
 }: Props) {
   const ink = selected
@@ -42,6 +44,7 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       hitSlop={(sizes.hitArea - sizes.chip.height) / 2}
       style={[
         styles.chip,

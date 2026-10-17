@@ -71,6 +71,21 @@ describe('the Area shortlist', () => {
     expect(ids(areaShortlist(line, 'a', 'b', 3))).toEqual(['a', 'b', 'c']);
   });
 
+  test('offers only active Areas, apart from a chosen one that has since closed', () => {
+    const closing = line.map(area =>
+      area.id === 'b' ? { ...area, active: false } : area,
+    );
+    expect(ids(areaShortlist(closing, 'a', null, 3))).toEqual(['a', 'c', 'd']);
+    expect(ids(areaShortlist(closing, 'a', 'b', 3))).toEqual(['a', 'c', 'b']);
+  });
+
+  test('when my Area has closed, starts from the chosen one', () => {
+    const closed = line.map(area =>
+      area.id === 'a' ? { ...area, active: false } : area,
+    );
+    expect(ids(areaShortlist(closed, 'a', 'd', 2))).toEqual(['d', 'c']);
+  });
+
   test('with no Area of my own, starts from the chosen one, else the list', () => {
     expect(ids(areaShortlist(line, null, 'd', 2))).toEqual(['d', 'c']);
     expect(ids(areaShortlist(line, null, null, 2))).toEqual(['a', 'b']);

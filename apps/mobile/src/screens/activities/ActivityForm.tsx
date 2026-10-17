@@ -40,7 +40,7 @@ import {
 } from '../../features/activities/time';
 import { useSession } from '../../features/auth/SessionProvider';
 import { areaShortlist } from '../../features/catalog/nearest';
-import { useAreaList } from '../../features/catalog/queries';
+import { useAllAreas } from '../../features/catalog/queries';
 import { useProfileDraft } from '../../features/profileSetup/queries';
 import {
   colors,
@@ -143,9 +143,8 @@ export function ActivityForm({
   locked = false,
   circleName,
 }: Props) {
-  const areas = useAreaList();
-  const myAreaId =
-    useProfileDraft(useSession().session!.user.id).data?.areaId ?? null;
+  const areas = useAllAreas();
+  const draft = useProfileDraft(useSession().session!.user.id);
   const [pickingArea, setPickingArea] = useState(false);
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
@@ -304,11 +303,15 @@ export function ActivityForm({
         <>
           <View {...anchor('areaId')}>
             <ChipField label="Area" error={errors.areaId}>
-              {areaShortlist(
-                areas.data ?? [],
-                myAreaId,
-                values.areaId,
-                shortlistSize,
+              {/* Held until my Area is known, so the chips don't jump into place. */}
+              {(draft.isPending
+                ? []
+                : areaShortlist(
+                    areas.data ?? [],
+                    draft.data?.areaId ?? null,
+                    values.areaId,
+                    shortlistSize,
+                  )
               ).map(area => (
                 <Chip
                   key={area.id}
@@ -319,6 +322,7 @@ export function ActivityForm({
               ))}
               <Chip
                 label="All areas"
+                accessibilityHint="Opens the full list of Areas"
                 action
                 onPress={() => setPickingArea(true)}
               />
@@ -326,7 +330,7 @@ export function ActivityForm({
             <AreaSheet
               visible={pickingArea}
               title="Where is it?"
-              areas={areas.data ?? []}
+              areas={(areas.data ?? []).filter(area => area.active)}
               selected={values.areaId}
               onClose={() => setPickingArea(false)}
               onChoose={areaId => {
