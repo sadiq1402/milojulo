@@ -29,8 +29,6 @@ export type Area = CatalogItem<string> & {
   lng: number;
 };
 
-type AreaRow = Row<string> & { zone: Zone; lat: number; lng: number };
-
 // Areas have no sort order; alphabetical.
 export async function fetchAreas(): Promise<Area[]> {
   const { data, error } = await supabase
@@ -40,13 +38,14 @@ export async function fetchAreas(): Promise<Area[]> {
   if (error) {
     throw error;
   }
-  return (data as unknown as AreaRow[]).map(row => ({
+  // zone is checked to the five values and lat/lng are generated from a not-null centre.
+  return data.map(row => ({
     id: row.id,
     label: row.label,
     active: row.is_active,
-    zone: row.zone,
-    lat: row.lat,
-    lng: row.lng,
+    zone: row.zone as Zone,
+    lat: row.lat!,
+    lng: row.lng!,
   }));
 }
 

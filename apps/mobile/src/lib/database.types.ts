@@ -103,14 +103,14 @@ isOneToOne: true
                   ]
                 },"areas": {
                   Row: {
-                    "center": unknown,"created_at": string,"id": string,"is_active": boolean,"name": string
+                    "center": unknown,"created_at": string,"id": string,"is_active": boolean,"lat": number | null,"lng": number | null,"name": string,"zone": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "center": unknown,"created_at"?: string,"id": string,"is_active"?: boolean,"name": string
+                    "center": unknown,"created_at"?: string,"id": string,"is_active"?: boolean,"lat"?: never,"lng"?: never,"name": string,"zone": string
                   }
                   Update: {
-                    "center"?: unknown,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string
+                    "center"?: unknown,"created_at"?: string,"id"?: string,"is_active"?: boolean,"lat"?: never,"lng"?: never,"name"?: string,"zone"?: string
                   }
                   Relationships: [
                     
