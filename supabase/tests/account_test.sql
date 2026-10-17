@@ -177,11 +177,13 @@ select pg_temp.as_member('c1');
 select public.join_activity_request(pg_temp.id('d1act'));
 reset role;
 
--- Their Connection keeps c1 out of d1's Discover (decision 49), so b1 covers Discover.
+-- Their Connection keeps c1 out of d1's Discover (decision 49) and d1's Join Request keeps c1's Activity
+-- off d1's board, so b1 covers Discover and the board.
 select is(pg_temp.seen_by('d1', 'c1') || pg_temp.reached_by('d1', 'c1'),
-  '{profile,board,circle,chats,"join requests",photos}',
+  '{profile,circle,chats,"join requests",photos}',
   'before deleting, the Member shows on every surface');
-select ok('discover' = any (pg_temp.seen_by('b1', 'c1')), 'and in Discover for a Member they have no Connection with');
+select ok(pg_temp.seen_by('b1', 'c1') @> '{discover,board}',
+  'and in Discover and on the board for a Member they have no Connection with');
 
 select pg_temp.as_member('c1');
 select lives_ok($$ select public.delete_account() $$, 'a Member deletes their account');
