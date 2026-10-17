@@ -21,7 +21,7 @@ const toNames = <Id extends string | number>(items: CatalogItem<Id>[]) =>
     Id,
     string
   >;
-const activeOnly = <Id>(items: CatalogItem<Id>[]) =>
+const activeOnly = <Item extends { active: boolean }>(items: Item[]) =>
   items.filter(item => item.active);
 
 export function useAreaNames() {

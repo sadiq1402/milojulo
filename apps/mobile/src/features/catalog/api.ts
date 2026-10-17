@@ -20,11 +20,35 @@ async function list<Id>(
   }));
 }
 
+export type Zone = 'west' | 'pimpri_chinchwad' | 'central' | 'east' | 'south';
+
+// An Area with its zone and centre, for the setup picker and the nearest-Area suggestion.
+export type Area = CatalogItem<string> & {
+  zone: Zone;
+  lat: number;
+  lng: number;
+};
+
+type AreaRow = Row<string> & { zone: Zone; lat: number; lng: number };
+
 // Areas have no sort order; alphabetical.
-export const fetchAreas = () =>
-  list<string>(
-    supabase.from('areas').select('id, label:name, is_active').order('name'),
-  );
+export async function fetchAreas(): Promise<Area[]> {
+  const { data, error } = await supabase
+    .from('areas')
+    .select('id, label:name, is_active, zone, lat, lng')
+    .order('name');
+  if (error) {
+    throw error;
+  }
+  return (data as unknown as AreaRow[]).map(row => ({
+    id: row.id,
+    label: row.label,
+    active: row.is_active,
+    zone: row.zone,
+    lat: row.lat,
+    lng: row.lng,
+  }));
+}
 
 export const fetchTags = () =>
   list<number>(
