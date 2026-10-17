@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(18);
+select plan(20);
 
 \set gone '00000000-0000-0000-0000-00000000b601'
 \set ravi '00000000-0000-0000-0000-00000000b602'
@@ -13,6 +13,8 @@ insert into public.photos (user_id, object_key, position, uploaded_at) values
   (:'gone', 'gone/live.jpg', 3, now()),
   (:'gone', 'gone/reported.jpg', 4, now()),
   (:'ravi', 'ravi/own.jpg', 3, now());
+update public.photos set object_key = 'gone/taken-down.jpg', removed_at = now()
+where user_id = :'gone' and position = 1;
 insert into public.photo_uploads (user_id, position, object_key) values (:'gone', 1, 'gone/new.jpg');
 
 -- Chat media both ways, one message reported, and an upload slot never confirmed.
@@ -45,6 +47,10 @@ select ok((select bool_and(k = any (array(select key from keys)))
   'their photos and uploads, and the chat media on both sides of their chats, are erased');
 select ok(not ('gone/reported.jpg' = any (array(select key from keys))), 'a reported photo''s file is kept as evidence');
 select ok(not (:'reported_key' = any (array(select key from keys))), 'a reported message''s media is kept as evidence');
+select ok('gone/taken-down.jpg' = any (array(select key from keys)),
+  'a photo taken down without a report is erased: no row would point at it afterwards');
+select ok('gone/new.jpg' = any (array(select key from keys)) and :'unsent_key' = any (array(select key from keys)),
+  'an upload slot also gives its live key, in case confirming stopped halfway');
 select ok(not ('ravi/own.jpg' = any (array(select key from keys))), 'the other Member''s photos are untouched');
 
 select lives_ok(format($$ select public.record_erasure(%L, now() - interval '1 day', 7) $$, :'gone'),

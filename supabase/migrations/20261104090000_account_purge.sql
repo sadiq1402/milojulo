@@ -33,11 +33,13 @@ as $$
     select c.id from public.connections c where member in (c.requester_id, c.addressee_id)
   ), keys as (
     select p.object_key from public.photos p where p.user_id = member
+    -- Upload slots: the staged file, and the live one in case confirming stopped halfway.
     union select 'uploads/' || u.object_key from public.photo_uploads u where u.user_id = member
+    union select u.object_key from public.photo_uploads u where u.user_id = member
     union select m.media_key from public.messages m where m.connection_id in (select id from chats)
-      and m.media_key is not null
+      and m.media_key is not null and m.media_deleted_at is null
     union select u.media_key from public.chat_uploads u where u.connection_id in (select id from chats)
-      and u.confirmed_at is not null
+      and u.used_at is null
     union select 'uploads/' || u.media_key from public.chat_uploads u where u.connection_id in (select id from chats)
       and u.confirmed_at is null
   )
