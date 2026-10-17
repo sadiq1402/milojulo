@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        function: [_shared, media, push, account-purge]
+        function: [_shared, media, push, account-purge, purge-chat-media]
     defaults:
       run:
         working-directory: supabase/functions/${{ matrix.function }}

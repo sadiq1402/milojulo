@@ -54,3 +54,4 @@ jobs:
           supabase functions deploy media --project-ref "$PROJECT_REF"
           supabase functions deploy push --project-ref "$PROJECT_REF"
           supabase functions deploy account-purge --project-ref "$PROJECT_REF"
+          supabase functions deploy purge-chat-media --project-ref "$PROJECT_REF"
