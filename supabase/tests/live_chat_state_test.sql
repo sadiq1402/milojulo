@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(8);
+select plan(10);
 
 -- The events a Member can see on their own topic, as (event, Connection).
 create function pg_temp.events_for(member uuid) returns table (event text, connection_id text)
@@ -38,11 +38,9 @@ select results_eq(format($$ select event, connection_id from pg_temp.events_for(
   'the answer to a Mode Change reaches the proposer');
 
 select pg_temp.act_as_member(:'m2');
-select is_empty(format($$ select 1 from pg_temp.events_for(%L) where event = 'mode-change'
-                          offset 1 $$, :'m2'),
+select results_eq(format($$ select count(*)::int from pg_temp.events_for(%L) $$, :'m2'), array[3],
   'the Member who answered is not sent their own answer');
 
-select pg_temp.act_as_member(:'m2');
 select is_empty(format($$ select 1 from pg_temp.events_for(%L) $$, :'m1'),
   'a Member cannot see the other side''s events');
 
@@ -60,6 +58,22 @@ where connection_id = :'chat' and user_id = :'m2';
 select pg_temp.act_as_member(:'m1');
 select results_eq(format($$ select count(*)::int from pg_temp.events_for(%L) $$, :'m1'), array[1],
   'nor to the blocked Member');
+
+reset role;
+insert into public.connection_mode_changes (connection_id, proposed_by, from_mode, to_mode)
+values (:'chat', :'m1', 'activities', 'friends');
+select pg_temp.act_as_member(:'m2');
+select results_eq(format($$ select count(*)::int from pg_temp.events_for(%L) $$, :'m2'), array[3],
+  'a Mode Change proposal does not reach a Member across a Block');
+
+-- With no actor (a service or scheduled update), still nothing across the Block.
+reset role;
+select set_config('request.jwt.claims', '', true);
+update public.connection_mode_changes set outcome = 'lapsed', decided_at = now()
+where connection_id = :'chat' and outcome is null;
+select pg_temp.act_as_member(:'m2');
+select results_eq(format($$ select count(*)::int from pg_temp.events_for(%L) $$, :'m2'), array[3],
+  'a change with no actor does not reach a Member across a Block');
 
 select pg_temp.act_as_anon();
 select is_empty(format($$ select 1 from pg_temp.events_for(%L) $$, :'m2'),

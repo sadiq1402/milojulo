@@ -10,7 +10,9 @@ as $$
   from public.connection_members m
   where m.connection_id = send_to_other_members.connection_id
     and m.user_id is distinct from actor
-    and (actor is null or not public.is_blocked(actor, m.user_id));
+    and not exists (select 1 from public.connection_members o
+                    where o.connection_id = m.connection_id and o.user_id <> m.user_id
+                      and public.is_blocked(o.user_id, m.user_id));
 $$;
 
 revoke execute on function public.send_to_other_members(uuid, uuid, text) from public, anon, authenticated;
@@ -35,7 +37,7 @@ revoke execute on function public.broadcast_member_change() from public, anon, a
 create trigger broadcast_on_member_change after update of last_read_at, media_consent
   on public.connection_members for each row execute function public.broadcast_member_change();
 
--- A proposal comes from its proposer, an answer from whoever answered (null: a lapse, both sides).
+-- A proposal comes from its proposer, an answer or lapse from whoever's call recorded it.
 create function public.broadcast_mode_change() returns trigger
 language plpgsql security definer
 set search_path = ''
@@ -49,5 +51,9 @@ $$;
 
 revoke execute on function public.broadcast_mode_change() from public, anon, authenticated;
 
-create trigger broadcast_on_mode_change after insert or update of outcome
+create trigger broadcast_on_mode_proposal after insert
   on public.connection_mode_changes for each row execute function public.broadcast_mode_change();
+
+create trigger broadcast_on_mode_outcome after update of outcome on public.connection_mode_changes
+  for each row when (new.outcome is distinct from old.outcome)
+  execute function public.broadcast_mode_change();
