@@ -80,7 +80,7 @@ select results_eq(
   $$ select my_request_id, my_request_status, connection_id, venue_detail from public.get_activity(pg_temp.id('trek')) $$,
   $$ values (pg_temp.id('e2 trek'), 'requested'::public.request_status, null::uuid, null::varchar) $$,
   'a waiting requester sees their request on the Activity, but not the venue');
-select results_eq($$ select spots_left from public.activity_board() where id = pg_temp.id('trek') $$,
+select results_eq($$ select spots_left from public.get_activity(pg_temp.id('trek')) $$,
   $$ values (3) $$, 'a waiting request takes no spot');
 
 select pg_temp.as_member('e1');
