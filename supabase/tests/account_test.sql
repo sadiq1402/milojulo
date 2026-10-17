@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(57);
+select plan(59);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000020' || suffix)::uuid $$;
@@ -177,9 +177,11 @@ select pg_temp.as_member('c1');
 select public.join_activity_request(pg_temp.id('d1act'));
 reset role;
 
+-- Their Connection keeps c1 out of d1's Discover (decision 49), so b1 covers Discover.
 select is(pg_temp.seen_by('d1', 'c1') || pg_temp.reached_by('d1', 'c1'),
-  '{discover,profile,board,circle,chats,"join requests",photos}',
+  '{profile,board,circle,chats,"join requests",photos}',
   'before deleting, the Member shows on every surface');
+select ok('discover' = any (pg_temp.seen_by('b1', 'c1')), 'and in Discover for a Member they have no Connection with');
 
 select pg_temp.as_member('c1');
 select lives_ok($$ select public.delete_account() $$, 'a Member deletes their account');
@@ -192,6 +194,7 @@ reset role;
 
 select is(pg_temp.seen_by('d1', 'c1') || pg_temp.reached_by('d1', 'c1'), '{}',
   'a deleted Member leaves Discover, profile view, the board, Circles, chat lists, Join Requests and photo links at once');
+select is(pg_temp.seen_by('b1', 'c1'), '{}', 'including the Discover of Members with no Connection');
 select pg_temp.as_member('d1');
 select is_empty(format($$ select 1 from public.activity_join_requests(%L) $$, pg_temp.id('d1act')),
   'and their Join Request leaves the host''s list');
