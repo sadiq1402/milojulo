@@ -58,6 +58,8 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => jest.restoreAllMocks());
+
 async function openChats() {
   const app = await renderApp(me);
   await fireEvent.press(await screen.findByRole('tab', { name: /^Inbox/ }));
@@ -68,26 +70,56 @@ async function openChats() {
 test('on a cold start the Inbox shows what it had last time while it refreshes', async () => {
   const first = await openChats();
   await screen.findByRole('button', { name: /^Isha, Count me in/ });
-  await untilSaved(cache => cache.includes('Count me in'));
+  await untilSaved(cache => cache.includes('Isha'));
   await first.unmount();
 
   jest.mocked(chat.fetchConversations).mockReturnValue(new Promise(() => {}));
   await openChats();
   expect(
-    await screen.findByRole('button', { name: /^Isha, Count me in/ }),
+    await screen.findByRole('button', { name: /^Isha/ }),
   ).toBeOnTheScreen();
+});
+
+test('chat text is never kept on the phone', async () => {
+  await openChats();
+  await untilSaved(cache => cache.includes('Isha'));
+  expect(await saved()).not.toContain('Count me in');
+});
+
+test('a cold start with the session already gone brings none of the last account back', async () => {
+  const first = await openChats();
+  await untilSaved(cache => cache.includes('Isha'));
+  await first.unmount();
+
+  // Phone storage is slow: the restore reads the old copy before the wipe lands, and finishes after.
+  const sleep = (ms: number) =>
+    new Promise<void>(resolve => setTimeout(resolve, ms));
+  const { getItem, removeItem } = storage;
+  jest.spyOn(storage, 'getItem').mockImplementation(async key => {
+    const value = await getItem(key);
+    await sleep(100);
+    return value;
+  });
+  jest.spyOn(storage, 'removeItem').mockImplementation(async key => {
+    await sleep(10);
+    await removeItem(key);
+  });
+  const { client } = await renderApp(null);
+  await screen.findByRole('button', { name: 'Get started' });
+  await act(() => sleep(300));
+  expect(client.getQueryData(['conversations'])).toBeUndefined();
 });
 
 test('signed media links are never kept on the phone', async () => {
   await openChats();
   await screen.findByLabelText('Photo of Isha');
-  await untilSaved(cache => cache.includes('Count me in'));
+  await untilSaved(cache => cache.includes('Isha'));
   expect(await saved()).not.toContain('X-Amz-Signature');
 });
 
 test('signing out leaves nothing kept on the phone', async () => {
   const app = await openChats();
-  await untilSaved(cache => cache.includes('Count me in'));
+  await untilSaved(cache => cache.includes('Isha'));
   // Wiped at once, not on the next throttled save, so closing the app right after leaves nothing.
   await act(async () => {
     app.setSession(null);

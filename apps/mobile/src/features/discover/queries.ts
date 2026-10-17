@@ -16,6 +16,7 @@ import type { RangeKm } from './range';
 
 export const discoverKeys = {
   all: ['discover'],
+  feeds: ['discover', 'feed'],
   feed: (modes: Mode[], rangeKm: RangeKm | null) => [
     'discover',
     'feed',
