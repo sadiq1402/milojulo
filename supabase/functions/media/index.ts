@@ -2,7 +2,7 @@
 // database functions and handler.ts; this file only wires in Supabase, R2 and the clock.
 import { createClient } from '@supabase/supabase-js';
 import { createHandler, type Db, Refusal } from './handler.ts';
-import { createR2 } from './r2.ts';
+import { createR2 } from '../_shared/r2.ts';
 
 function env(name: string): string {
   const value = Deno.env.get(name);
