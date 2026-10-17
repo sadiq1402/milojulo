@@ -18,7 +18,7 @@ import {
 
 type Functions = Database['public']['Functions'];
 // Shared by every list of Activities; only the board says when each leaves it.
-type BoardRow = Omit<
+type ActivityRow = Omit<
   Functions['activity_board']['Returns'][number],
   'visible_until'
 >;
@@ -76,7 +76,7 @@ function refusal(error: { message: string }): ActivityError {
 
 // Generated function types drop nullability; description and ends_at can be null.
 // Exported so the Circle feed, which returns the same board rows, reuses it.
-export function toBoardActivity(row: BoardRow): BoardActivity {
+export function toBoardActivity(row: ActivityRow): BoardActivity {
   return {
     id: row.id,
     hostId: row.host_id,
