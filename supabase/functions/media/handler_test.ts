@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertMatch } from '@std/assert';
 import { createHandler, type Db, Refusal } from './handler.ts';
-import { createR2, type StoredObject } from './r2.ts';
+import { createR2, type StoredObject } from '../_shared/r2.ts';
 
 const ASHA = '00000000-0000-0000-0000-0000000000a1';
 const PHOTO = '00000000-0000-0000-0000-0000000000f1';

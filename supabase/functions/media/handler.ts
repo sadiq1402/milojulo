@@ -1,4 +1,4 @@
-import type { Storage, StoredObject } from './r2.ts';
+import type { Storage, StoredObject } from '../_shared/r2.ts';
 
 // A refusal raised by a database function (its exact message); anything else is unexpected.
 export class Refusal extends Error {}

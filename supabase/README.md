@@ -46,6 +46,8 @@ npx supabase functions deploy media --project-ref <ref>
 
 - `expire-activities` (every 15 minutes): SQL only.
 - `purge-chat-media` (daily, 21:30 UTC = 03:00 India time, #20): calls the `purge-chat-media` Edge Function over `pg_net` with the service role. The function itself is not built yet, so until it is deployed each run gets a 404 (harmless; see `net._http_response`).
+- `account-purge` (hourly at :15, #96): calls the `account-purge` Edge Function the same way. It needs the R2 secrets the `media` function uses (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`); the R2 key must be allowed to delete objects.
+- `send-meet-nudges` (daily, 05:30 UTC = 11:00 India time, #50): SQL only.
 
 **Vault secrets (founder, once per project):** the job reads the project URL and service role key from Vault, so neither is in git. In the dashboard SQL editor of the hosted project:
 
