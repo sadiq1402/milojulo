@@ -41,7 +41,7 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 ### Catalogs (seeded by migration, read-only to signed-in users, admin writes)
 | Table | Columns |
 |---|---|
-| `areas` | `id text pk` (slug: baner, wakad, ...), `name`, `center geography(Point)` (area centroid, used for distance), `is_active` |
+| `areas` | `id text pk` (slug: baner, wakad, ...), `name`, `center geography(Point)` (area centroid, used for distance), `is_active`, `zone` (west, pimpri_chinchwad, central, east, south; groups the picker), `lat` and `lng` (generated from `center`, so the app can suggest the nearest Area on the phone). 55 Pune Areas (decision 50). Signed-in people read it; signed-out visitors see nothing |
 | `tags` | `id smallint identity pk`, `slug unique`, `label`, `kind tag_kind`, `sort_order`, `is_active` |
 | `industries` | `id smallint identity pk`, `slug unique`, `label`, `sort_order`, `is_active` |
 | `prompt_questions` | `id smallint identity pk`, `text`, `sort_order`, `is_active` |

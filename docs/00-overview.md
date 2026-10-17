@@ -24,7 +24,7 @@ Modern, playful, inclusive, safe, social, non-judgmental, Indian but not traditi
 Avoid: hearts and cupid imagery beyond the logo's heart (decision 32), matrimony-style visuals, childish characters.
 
 ## Audience and place
-Pune first, with open sign-up (decision 27). Young adults (18+) in the IT corridors and student areas: Hinjewadi, Wakad, Baner, Balewadi, Kharadi. Beta starts in two neighbourhood clusters, a few hundred approved users.
+Pune first, with open sign-up (decision 27). Young adults (18+) in the IT corridors and student areas, from Hinjewadi, Wakad, Baner, Balewadi and Kharadi out to 55 Pune neighbourhoods (decision 50). Beta starts in two neighbourhood clusters, a few hundred approved users.
 
 ## Modes
 Friends, Activities, Dating, Serious, Casual, Networking, plus Circles (small local communities). Discovery only shows people whose chosen modes overlap with yours. Casual carries an explicit adult-intent label and consent-aware messaging.

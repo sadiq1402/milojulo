@@ -66,13 +66,15 @@ async function promptQuestionIds(): Promise<number[]> {
 test('setup offers the active catalogs in order', async () => {
   await newAccountPastConsent();
   const areas = await fetchAreas();
-  expect(areas.map(area => area.label)).toEqual([
-    'Balewadi',
-    'Baner',
-    'Hinjewadi',
-    'Kharadi',
-    'Wakad',
-  ]);
+  const labels = areas.map(area => area.label);
+  expect(areas).toHaveLength(55);
+  expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
+  expect(areas.find(area => area.id === 'kothrud')).toMatchObject({
+    label: 'Kothrud',
+    zone: 'central',
+    lat: 18.507,
+    lng: 73.808,
+  });
   expect((await fetchIndustries()).length).toBeGreaterThan(0);
 });
 

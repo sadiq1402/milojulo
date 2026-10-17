@@ -10,12 +10,24 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, radius, shadow, sizes } from '../theme';
 
-type Props = { visible: boolean; onClose: () => void; children: ReactNode };
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  // Always at its full height, so a list filtered while it's open doesn't make it jump.
+  full?: boolean;
+  children: ReactNode;
+};
 
-export function BottomSheet({ visible, onClose, children }: Props) {
+export function BottomSheet({
+  visible,
+  onClose,
+  full = false,
+  children,
+}: Props) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const offset = useRef(new Animated.Value(height)).current;
+  const tallest = (height * sizes.sheet.maxHeightPct) / 100;
 
   useEffect(() => {
     if (visible) {
@@ -47,8 +59,8 @@ export function BottomSheet({ visible, onClose, children }: Props) {
           accessibilityViewIsModal
           style={[
             styles.sheet,
+            full ? { height: tallest } : { maxHeight: tallest },
             {
-              maxHeight: (height * sizes.sheet.maxHeightPct) / 100,
               paddingBottom: sizes.sheet.paddingTop + insets.bottom,
               transform: [{ translateY: offset }],
             },

@@ -26,8 +26,8 @@ import {
 
 type Step = 'loading' | 'prompt' | 'off' | 'app';
 
-// In front of a Member's tabs: asks for location when due (a new Member right after setup, an
-// existing one on the first open after #105), shows the area fallback once if refused, and
+// In front of a Member's tabs: asks for location when due (a new Member who didn't answer in
+// setup's Area step, an existing one on the first open after #105), shows the area fallback once if refused, and
 // sends the phone's location on each app open, at most every few hours. Foreground only.
 export function LocationGate({ children }: { children: ReactNode }) {
   const userId = useSession().session!.user.id;

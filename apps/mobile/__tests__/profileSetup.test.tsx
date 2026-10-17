@@ -7,11 +7,14 @@ import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import * as location from '../src/features/location/api';
+import * as device from '../src/features/location/device';
+import { emptyRecord, saveRecord } from '../src/features/location/prompt';
 import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import { SetupError } from '../src/features/profileSetup/model';
 import * as catalog from '../src/features/catalog/api';
-import { numbered } from '../test/catalog';
+import { areas, numbered } from '../test/catalog';
 import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -21,6 +24,7 @@ jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
+jest.mock('../src/features/location/api');
 jest.mock('../src/features/photos/api');
 jest.mock('../src/features/profileSetup/api');
 
@@ -47,7 +51,27 @@ beforeEach(() => {
   jest.mocked(profileSetup.savePrompts).mockResolvedValue();
   jest.mocked(profileSetup.saveModes).mockResolvedValue();
   jest.mocked(profileSetup.saveInterests).mockResolvedValue();
+  jest.mocked(location.setLocation).mockResolvedValue();
+  jest.spyOn(device, 'hasPermission').mockResolvedValue(false);
+  jest.spyOn(device, 'requestPermission').mockResolvedValue(false);
+  jest.spyOn(device, 'currentPosition').mockRejectedValue(new Error('no fix'));
 });
+
+// What the Member's tabs load once setup is done.
+function mockMemberTabs() {
+  jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
+  jest.mocked(chat.fetchConversations).mockResolvedValue([]);
+  jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
+  jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+    modes: ['friends'],
+    paused: false,
+    rangeKm: 10,
+    inServiceRegion: true,
+  });
+  jest
+    .mocked(discover.fetchFeedPage)
+    .mockResolvedValue({ cards: [], nextCursor: null });
+}
 
 async function open() {
   await renderApp(sessionFor('asha@example.com'));
@@ -62,12 +86,17 @@ describe('basics', () => {
     await open();
     expect(await header('What should we call you?')).toBeOnTheScreen();
     expect(screen.getByLabelText('Step 1 of 5')).toBeOnTheScreen();
-    expect(screen.getByText('We only store your Area.')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'No one sees your location. Others see a rounded distance, like "~3 km".',
+      ),
+    ).toBeOnTheScreen();
     expect(button('Next')).toBeDisabled();
 
     await fireEvent.changeText(screen.getByLabelText('First name'), ' Asha ');
     expect(button('Next')).toBeDisabled();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Wakad' }));
+    await fireEvent.press(button('Choose from the list'));
+    await fireEvent.press(await screen.findByRole('radio', { name: 'Wakad' }));
     await fireEvent.press(button('Next'));
 
     expect(await header('Add 2 to 4 photos')).toBeOnTheScreen();
@@ -94,6 +123,126 @@ describe('basics', () => {
   });
 });
 
+describe('the Area step', () => {
+  // Centres as in the catalog; the test phone sits in Aundh.
+  const pune = areas(
+    {
+      aundh: 'Aundh',
+      baner: 'Baner',
+      kondhwa: 'Kondhwa',
+      'koregaon-park': 'Koregaon Park',
+      kothrud: 'Kothrud',
+      'pimple-nilakh': 'Pimple Nilakh',
+    },
+    {
+      aundh: { zone: 'central', lat: 18.558, lng: 73.808 },
+      baner: { zone: 'west', lat: 18.559, lng: 73.786 },
+      kondhwa: { zone: 'south', lat: 18.465, lng: 73.89 },
+      'koregaon-park': { zone: 'central', lat: 18.536, lng: 73.894 },
+      kothrud: { zone: 'central', lat: 18.507, lng: 73.808 },
+      'pimple-nilakh': { zone: 'pimpri_chinchwad', lat: 18.58, lng: 73.808 },
+    },
+  );
+  const inAundh = { lat: 18.556, lng: 73.807 };
+
+  async function openAt(point: { lat: number; lng: number } | null) {
+    mockProfileSetup({ displayName: 'Asha' });
+    jest.mocked(catalog.fetchAreas).mockResolvedValue(pune);
+    jest.spyOn(device, 'requestPermission').mockResolvedValue(!!point);
+    if (point) {
+      jest.spyOn(device, 'currentPosition').mockResolvedValue(point);
+    }
+    await open();
+    await header('What should we call you?');
+    await fireEvent.press(button('Use my location'));
+  }
+
+  test('the nearest Area within 3 km is chosen, and Next saves it', async () => {
+    await openAt(inAundh);
+    expect(await screen.findByText('Aundh')).toBeOnTheScreen();
+    expect(screen.getByText("Looks like you're near here")).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('header', { name: 'Choose your area' }),
+    ).toBeNull();
+    await fireEvent.press(button('Next'));
+    await header('Add 2 to 4 photos');
+    expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
+      displayName: 'Asha',
+      areaId: 'aundh',
+    });
+  });
+
+  test('further than 3 km, the list opens with nothing chosen and the nearest on top', async () => {
+    await openAt({ lat: 18.6, lng: 73.7 });
+    expect(await header('Choose your area')).toBeOnTheScreen();
+    expect(screen.queryByRole('radio', { checked: true })).toBeNull();
+    expect(
+      screen.getByRole('header', { name: 'Nearest to you' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('radio', { name: 'Baner, ~10 km' }),
+    ).toBeOnTheScreen();
+    expect(button('Next')).toBeDisabled();
+  });
+
+  test('a refused permission opens the list, and the location prompt is not shown again after setup', async () => {
+    await openAt(null);
+    expect(await header('Choose your area')).toBeOnTheScreen();
+    expect(screen.queryByText('Nearest to you')).toBeNull();
+    expect(screen.getByRole('header', { name: 'West' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Kothrud' }));
+    expect(await screen.findByText('Kothrud')).toBeOnTheScreen();
+    expect(screen.queryByText("Looks like you're near here")).toBeNull();
+    expect(location.setLocation).not.toHaveBeenCalled();
+
+    // Setup done: the Member's tabs open without asking for location again.
+    await screen.unmount();
+    mockMemberTabs();
+    await open();
+    expect(
+      await screen.findByRole('tab', { name: 'Discover', selected: true }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('See who’s nearby')).toBeNull();
+  });
+
+  test('"Change" overrides the suggestion', async () => {
+    await openAt(inAundh);
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Change' }),
+    );
+    expect(await header('Choose your area')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('radio', { name: 'Aundh, <2 km', checked: true }),
+    ).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Kothrud' }));
+    expect(await screen.findByText('Kothrud')).toBeOnTheScreen();
+    expect(screen.queryByText("Looks like you're near here")).toBeNull();
+    await fireEvent.press(button('Next'));
+    await header('Add 2 to 4 photos');
+    expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
+      displayName: 'Asha',
+      areaId: 'kothrud',
+    });
+  });
+
+  test('searching filters by name, any case, with the zone and a hint', async () => {
+    await openAt(null);
+    await header('Choose your area');
+    await fireEvent.changeText(screen.getByLabelText('Search areas'), 'KO');
+    expect(
+      screen.getAllByRole('radio').map(row => row.props.accessibilityLabel),
+    ).toEqual(['Kondhwa, South', 'Koregaon Park, Central', 'Kothrud, Central']);
+    expect(
+      screen.getByText(
+        'Not listed? Pick the closest area. More of Pune is coming.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'Central' })).toBeNull();
+    // The matched letters are picked out in each name.
+    expect(screen.getAllByText('Ko')).toHaveLength(3);
+  });
+});
+
 describe('resuming', () => {
   test('a returning Member opens at the first step not yet done', async () => {
     mockProfileSetup(basics, twoPhotos);
@@ -112,9 +261,8 @@ describe('resuming', () => {
     await fireEvent.press(button('Back'));
     await header('What should we call you?');
     expect(screen.getByLabelText('First name')).toHaveDisplayValue('Asha');
-    expect(
-      await screen.findByRole('button', { name: 'Baner', selected: true }),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText('Baner')).toBeOnTheScreen();
+    expect(button('Change')).toBeOnTheScreen();
   });
 
   test('a Dating Mode without its preferences reopens the Modes step', async () => {
@@ -408,6 +556,7 @@ describe('interests and submit', () => {
 
   test('submitting saves interests and availability, then lands on Discover', async () => {
     mockProfileSetup(complete, twoPhotos);
+    jest.spyOn(device, 'hasPermission').mockResolvedValue(true);
     jest.mocked(chat.fetchConversations).mockResolvedValue([]);
     jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
     jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
@@ -439,6 +588,33 @@ describe('interests and submit', () => {
       availability: ['weekends'],
     });
     expect(profileSetup.submitProfile).toHaveBeenCalled();
+  });
+
+  test('with location allowed in setup, submitting sends it before the first feed loads', async () => {
+    mockProfileSetup(complete, twoPhotos);
+    await saveRecord(userId, { ...emptyRecord, answer: 'allowed' });
+    jest.spyOn(device, 'hasPermission').mockResolvedValue(true);
+    jest
+      .spyOn(device, 'currentPosition')
+      .mockResolvedValue({ lat: 18.556, lng: 73.807 });
+    jest.mocked(profileSetup.submitProfile).mockImplementation(async () => {
+      mockMemberTabs();
+    });
+    await open();
+    await header('What do you enjoy?');
+    await fireEvent.press(button('Finish and submit'));
+
+    expect(
+      await screen.findByRole('tab', { name: 'Discover', selected: true }),
+    ).toBeOnTheScreen();
+    await waitFor(() => expect(discover.fetchFeedPage).toHaveBeenCalled());
+    expect(location.setLocation).toHaveBeenCalledTimes(1);
+    expect(location.setLocation).toHaveBeenCalledWith(18.556, 73.807);
+    expect(
+      jest.mocked(location.setLocation).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      jest.mocked(discover.fetchFeedPage).mock.invocationCallOrder[0],
+    );
   });
 
   test('a refusal opens the step that fixes it, with the reason', async () => {

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { useRefreshAccountStage } from '../../features/account/useAccountStage';
 import { useSession } from '../../features/auth/SessionProvider';
+import { sendLocationAfterSetup } from '../../features/location/setup';
 import { useMyPhotos } from '../../features/photos/queries';
 import {
   firstIncompleteStep,
@@ -19,7 +20,8 @@ import { PromptsStep } from './PromptsStep';
 import type { Notice } from './SetupStepScreen';
 
 // Five steps, each saved as it's left; a returning Member resumes at the first one unfinished.
-// Submitting refreshes the account stage, which swaps in the tabs on Discover.
+// Submitting sends the phone's location when allowed, then refreshes the account stage, which
+// swaps in the tabs on Discover.
 export function ProfileSetupScreen() {
   const { session } = useSession();
   const userId = session!.user.id;
@@ -121,7 +123,10 @@ export function ProfileSetupScreen() {
       return (
         <InterestsStep
           {...props}
-          submit={submitProfile}
+          submit={async () => {
+            await submitProfile();
+            await sendLocationAfterSetup(userId);
+          }}
           onDone={() => refreshStage()}
           onRefused={(refusedAt, message) => go(refusedAt, message)}
         />
