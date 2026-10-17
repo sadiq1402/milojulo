@@ -24,6 +24,7 @@ export const colors = {
   tagNeutralInk: '#4A2F55', // Text on a plain tag
   selected: '#FFF1F8', // Selected option card, match note
   handle: '#EBD3E2', // Bottom-sheet handle
+  radio: '#D9BCCE', // Unselected radio ring in a list row
   track: '#F6DFEC', // Unfilled progress segment
   warnInk: '#8B1D1D', // Text on warnTint
   scrim: 'rgba(43,18,51,0.5)', // Behind bottom sheets

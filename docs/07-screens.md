@@ -9,7 +9,10 @@ Static HTML mockups: design/reference-html/screens/*.dc.html (390 x 844 each; Ad
 | | Email (Email) | Email entry; note that email verified only confirms an inbox |
 | | Verify code (Otp) | 6 boxes, resend timer |
 | | Age and consent (AgeConsent) | DOB (18+), itemised data notice, consent and terms checkboxes |
-| Profile setup | Basics (Setup1Basics) | First name, area chips |
+| Profile setup | Basics (Setup1Basics) | First name; Area from "Use my location" or the list (#142) |
+| | Area suggested (Setup1AreaSuggested) | Nearest Area within 3 km chosen, "Change" opens the list |
+| | Area list (Setup1AreaPicker) | Sheet: search, nearest 3 with distance bands (with location), then zones A to Z |
+| | Area search (Setup1AreaSearch) | Flat filtered list, matched letters highlighted, zone on the right, "Not listed?" hint |
 | | Photos (Setup2Photos) | 2 to 4 photo slots (4:5), review notice |
 | | Prompts (Setup3Prompts) | Two prompts, 140 chars |
 | | Modes (Setup4Modes) | Six option rows incl. Casual note |
