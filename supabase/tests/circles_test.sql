@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(63);
+select plan(66);
 
 -- Shared id helpers (as in join_requests_test).
 create function pg_temp.m(suffix text) returns uuid
@@ -108,6 +108,23 @@ select throws_ok($$ select public.admin_edit_circle(pg_temp.id('cup'), 'x', 'ban
   null::text, null::text, 'anon cannot edit a circle');
 select throws_ok($$ select public.admin_archive_circle(pg_temp.id('cup')) $$,
   null::text, null::text, 'anon cannot archive a circle');
+reset role;
+
+-- Every Circle admin action is in the audit log (#169); refused ones leave nothing.
+select pg_temp.act_as_admin(pg_temp.m('ad'));
+select results_eq(
+  $$ select admin_id, action, target_type, note from public.admin_actions
+     where target_id = pg_temp.id('cup') order by action $$,
+  $$ values (pg_temp.m('ad'), 'create_circle'::text, 'circle'::text, 'Baner Cup'::text),
+            (pg_temp.m('ad'), 'edit_circle', 'circle', 'Baner Badminton Cup') $$,
+  'creating and editing a Circle are in the audit log');
+select results_eq(
+  $$ select action, note from public.admin_actions where target_id = pg_temp.id('arch0') order by action $$,
+  $$ values ('archive_circle'::text, null::text), ('create_circle', 'Archive Me') $$,
+  'archiving a Circle is in the audit log');
+select is((select count(*) from public.admin_actions where target_type = 'circle'
+           and note in ('Sneaky', 'Ghost', 'Hacked')), 0::bigint,
+  'refused Circle actions leave no audit entry');
 reset role;
 
 -- ============ browse_circles ============
