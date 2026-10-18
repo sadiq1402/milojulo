@@ -9,4 +9,4 @@ Until it exists, moderation runs through the Supabase dashboard and the SQL func
 
 Each writes an entry to the append-only `admin_actions` audit log, which only admins can read.
 
-These functions check `is_admin()` against the caller's JWT, so they refuse a plain SQL editor session (which has no JWT). They must be called as a signed-in admin, or in SQL with role `authenticated` and `request.jwt.claims` set for an admin user, as `supabase/tests/helpers/act_as.psql` does. There is no written runbook for this yet.
+These functions check `is_admin()` against the caller's JWT, so they refuse a plain SQL editor session (which has no JWT). They must be called as a signed-in admin, or in SQL with role `authenticated` and `request.jwt.claims` set for an admin user, as `supabase/tests/helpers/act_as.psql` does. How to do that from the dashboard, with the queue queries: docs/runbooks/moderation.md.
