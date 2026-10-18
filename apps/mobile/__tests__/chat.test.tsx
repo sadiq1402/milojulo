@@ -186,6 +186,25 @@ describe('chat list', () => {
     );
   });
 
+  test('a taken-down message on my Member channel refreshes the Inbox preview', async () => {
+    await openInbox();
+    await screen.findByRole('button', { name: /^Isha, Count me in/ });
+    jest
+      .mocked(chat.fetchConversations)
+      .mockResolvedValue([{ ...isha, lastMessage: null }, kabir, rohan]);
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'message-removed',
+        payload: { connection_id: 'conn-isha', id: 'm9' },
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: /^Isha, Count me in/ }),
+      ).toBeNull(),
+    );
+  });
+
   test('lists accepted and closed chats with preview and unread, but not pending requests', async () => {
     await openInbox();
     expect(
@@ -388,6 +407,58 @@ describe('a chat', () => {
       }),
     );
     expect(await screen.findByText('Seen')).toBeOnTheScreen();
+  });
+
+  test('a message an admin takes down leaves the open chat at once', async () => {
+    jest
+      .mocked(chat.fetchMessages)
+      .mockResolvedValue([
+        message({ id: 'm1', body: 'Something nasty' }),
+        message({ id: 'm2', senderId: myId, body: 'Coffee?' }),
+      ]);
+    await openChatWith('Isha');
+    await screen.findByText('Something nasty');
+    await act(() => live!.onRemoved('m1'));
+    await waitFor(() =>
+      expect(screen.queryByText('Something nasty')).not.toBeOnTheScreen(),
+    );
+    expect(screen.getByText('Coffee?')).toBeOnTheScreen();
+  });
+
+  test('my own message taken down leaves my open chat too', async () => {
+    jest.mocked(chat.sendMessage).mockResolvedValue();
+    await openChatWith('Isha');
+    jest
+      .mocked(chat.fetchMessages)
+      .mockResolvedValue([
+        message({ id: 'new-1', senderId: myId, body: 'Something nasty' }),
+      ]);
+    await fireEvent.changeText(
+      screen.getByLabelText('Message'),
+      'Something nasty',
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Send' }));
+    await waitFor(() =>
+      expect(screen.queryByText('Sending…')).not.toBeOnTheScreen(),
+    );
+    await act(() => live!.onRemoved('new-1'));
+    await waitFor(() =>
+      expect(screen.queryByText('Something nasty')).not.toBeOnTheScreen(),
+    );
+  });
+
+  test('a catch-up that read a message before its takedown does not bring it back', async () => {
+    jest
+      .mocked(chat.fetchMessages)
+      .mockResolvedValue([message({ id: 'm1', body: 'Something nasty' })]);
+    await openChatWith('Isha');
+    await screen.findByText('Something nasty');
+    await act(() => live!.onRemoved('m1'));
+    await act(() => live!.onStatus?.('live'));
+    await waitFor(() => expect(chat.fetchMessages).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.queryByText('Something nasty')).not.toBeOnTheScreen(),
+    );
   });
 
   test('an Activity card message shows as a card', async () => {

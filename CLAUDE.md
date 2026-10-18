@@ -49,7 +49,7 @@ Follow docs/05-ui-standards.md for every dimension (touch targets 48, pill butto
 
 ## Current phase
 V1 is built: the database (issue #1, tickets #2 to #20) and the mobile app (issue #33) were closed as complete on 2026-10-18. Android dev builds go to testers through Firebase App Distribution on every merge that touches `apps/mobile` (.github/workflows/android-distribute.yml). What remains before the beta:
-- Open issues: #163 (remove a taken-down message from open chats live), and, waiting on founder input, #70 (Turnstile), #71 (disposable-email blocklist), #98 (web account deletion page, a Google Play requirement) and #160 (report evidence retention). #137 (media cache through a Cloudflare Worker) is parked.
+- Open issues: #169 (Circle admin actions in the audit log), #170 (Node 22 in the Android release workflow), #171 (moderation runbook), and, waiting on founder input, #70 (Turnstile), #71 (disposable-email blocklist), #98 (web account deletion page, a Google Play requirement) and #160 (report evidence retention). #137 (media cache through a Cloudflare Worker) is parked.
 - Beta prep in docs/10-build-plan.md: final terms, guidelines and data notice (the app links placeholders), Google Play listing and Data safety form, a release signing key, a k6 load test, Supabase Pro.
 - Open questions in docs/09-open-questions.md.
 Plan and lessons in tasks/todo.md.

@@ -202,23 +202,25 @@ export async function fetchChatState(connectionId: string): Promise<ChatState> {
 
 export type ChatStatus = LiveStatus;
 
-// New messages in one Connection, from the Member's private channel.
+// New and taken-down messages in one Connection, from the Member's private channel.
 export function subscribeToChat(
   connectionId: string,
   handlers: {
     onMessage: (message: Message) => void;
+    onRemoved: (messageId: string) => void;
     onStatus?: (status: ChatStatus) => void;
   },
 ): () => void {
   return listenToMember({
     onEvent: ({ event, payload }) => {
       const row = payload as MessageRow & { removed_at: string | null };
-      if (
-        event === 'message' &&
-        row.connection_id === connectionId &&
-        !row.removed_at
-      ) {
+      if (row.connection_id !== connectionId) {
+        return;
+      }
+      if (event === 'message' && !row.removed_at) {
         handlers.onMessage(toMessage(row));
+      } else if (event === 'message-removed') {
+        handlers.onRemoved(row.id);
       }
     },
     onStatus: handlers.onStatus,
