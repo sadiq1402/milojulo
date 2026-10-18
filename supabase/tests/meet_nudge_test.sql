@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(12);
+select plan(15);
 
 -- The meet nudges queued for a Member, as (title, other Member).
 create function pg_temp.nudges(member uuid) returns table (title text, other text)
@@ -35,6 +35,8 @@ $$;
 \set meera '00000000-0000-0000-0000-00000000a506'
 \set rohan '00000000-0000-0000-0000-00000000a507'
 \set dev '00000000-0000-0000-0000-00000000a508'
+\set tara '00000000-0000-0000-0000-00000000a509'
+\set arjun '00000000-0000-0000-0000-00000000a50a'
 
 select pg_temp.chat(:'asha', :'ravi', 8, array[:'asha', :'ravi']::uuid[]);
 select pg_temp.chat(:'isha', :'kabir', 8, array[:'isha']::uuid[]);
@@ -84,6 +86,23 @@ update public.profiles set notify_messages = true where id = :'meera';
 select public.send_meet_nudges();
 select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'meera'), array[1],
   'a Member with message notifications off is asked once they turn them back on');
+
+-- Paused is a wait too (decision 53): the Member is asked once they're back.
+select pg_temp.chat(:'tara', :'arjun', 8, array[:'tara', :'arjun']::uuid[]);
+select pg_temp.act_as_member(:'tara');
+select public.set_paused(true);
+reset role;
+select public.send_meet_nudges();
+select is_empty(format($$ select * from pg_temp.nudges(%L) $$, :'tara'),
+  'a Paused Member is not nudged');
+select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'arjun'), array[1],
+  'the other side of a Paused Member''s chat still is');
+select pg_temp.act_as_member(:'tara');
+select public.set_paused(false);
+reset role;
+select public.send_meet_nudges();
+select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'tara'), array[1],
+  'a Member is asked once they unpause');
 
 -- An Activity Connection is asked about by its Activity's prompt instead.
 select pg_temp.chat(:'dev', :'asha', 8, array[:'dev', :'asha']::uuid[]) as activity_chat \gset
