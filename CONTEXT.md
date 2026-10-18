@@ -132,7 +132,10 @@ A Member flagging a profile, photo, message or Activity to admins, with a reason
 Hiding a profile, photo or Activity automatically once 3 different Members have reported it within 7 days, until an admin restores or removes it.
 
 **Takedown**:
-An admin removing a photo, message or Activity after the fact; always logged.
+An admin removing a photo, message or Activity after the fact; always logged. A profile is never taken down; the Member is Banned.
+
+**Restore**:
+An admin clearing Auto-hide from a profile, photo or Activity; always logged.
 
 **Flagged Message**:
 A delivered message that matched the word filter and was copied into the admin queue. Profile text and Activities that match are rejected instead.
