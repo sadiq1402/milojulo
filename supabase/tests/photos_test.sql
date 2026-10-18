@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(10);
+select plan(12);
 
 select pg_temp.create_member('00000000-0000-0000-0000-0000000000b1');
 select pg_temp.create_member('00000000-0000-0000-0000-0000000000b2');
@@ -32,6 +32,8 @@ select throws_ok($$ update public.photos set hidden_at = null, removed_at = null
   'a Member cannot change a photo''s moderation columns');
 select lives_ok($$ update public.photos set position = 3 - position $$,
   'a Member can reorder photos, swapping the cover');
+select throws_ok($$ delete from public.photos where position = 2 $$, '42501', null,
+  'a Member cannot delete a photo row directly; the photo-delete function removes the row and its file');
 select results_eq(
   'select object_key from public.photos where position = 1',
   $$ values ('b1/two.jpg') $$,
@@ -40,7 +42,7 @@ select results_eq(
 reset role;
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000b2');
 select is_empty('select 1 from public.photos', 'another Member cannot read someone''s photos');
-delete from public.photos;
+select throws_ok($$ delete from public.photos $$, '42501', null, 'another Member cannot delete photo rows');
 update public.photos set position = 3 - position;
 reset role;
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000b1');

@@ -19,7 +19,10 @@ select results_eq('select object_key from public.photos order by position',
             ('00000000-0000-0000-0000-000000003701/1.jpg') $$,
   'the two photos swap positions and the others stay put');
 
+-- Postgres fixture: the photo at position 3 is gone (photo-delete does this in the app).
+reset role;
 delete from public.photos where object_key = 'asha/3.jpg';
+select pg_temp.act_as_member('00000000-0000-0000-0000-000000003701');
 select lives_ok(format($$ select public.move_photo(%L, 3::smallint) $$, :'p1'),
   'a Member moves a photo to a free position');
 select is((select position from public.photos where id = :'p1'), 3::smallint, 'the photo now sits in the free position');
