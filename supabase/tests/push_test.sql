@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(40);
+select plan(46);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000000' || suffix)::uuid $$;
@@ -222,6 +222,73 @@ select results_eq(
   $$ select url, headers->>'Authorization', convert_from(body, 'utf8')::jsonb from net.http_request_queue order by id desc limit 1 $$,
   format($$ values ('https://example.test/functions/v1/push', 'Bearer service-key', '{"id": %s}'::jsonb) $$, :'qid'),
   'with them each queued push calls the push function with its id');
+
+-- Retrying what FCM couldn't take: the job re-sends a push still queued after a minute that was
+-- never handed over, or handed over more than 5 minutes ago, and drops ones over an hour old.
+delete from public.push_queue;
+insert into public.push_queue (recipient_id, title, body, data, created_at) values
+  (pg_temp.m('f1'), 'fresh', 'b', '{}', now()),
+  (pg_temp.m('f1'), 'in flight', 'b', '{}', now() - interval '10 minutes'),
+  (pg_temp.m('f1'), 'waiting', 'b', '{}', now() - interval '10 minutes'),
+  (pg_temp.m('f1'), 'stale', 'b', '{}', now() - interval '61 minutes');
+-- Postgres fixture: when each was handed to the push function (the insert trigger just did all four).
+update public.push_queue set handed_over_at = now() - interval '2 minutes' where title = 'in flight';
+update public.push_queue set handed_over_at = now() - interval '6 minutes' where title = 'waiting';
+select id as waiting from public.push_queue where title = 'waiting' \gset
+select max(id) as last_call from net.http_request_queue \gset
+select public.retry_queued_pushes();
+select results_eq(
+  format($$ select convert_from(body, 'utf8')::jsonb from net.http_request_queue where id > %s $$, :'last_call'),
+  format($$ values ('{"id": %s}'::jsonb) $$, :'waiting'),
+  'a push handed over 5 minutes ago and still queued is sent again; a fresh or in-flight one is not');
+select results_eq($$ select title from public.push_queue order by title $$,
+  $$ values ('fresh'), ('in flight'), ('waiting') $$, 'a push queued over an hour ago is dropped');
+
+-- Never handed over (no Vault secrets at the time): sent once it has waited a minute.
+delete from public.push_queue;
+delete from vault.secrets where name in ('project_url', 'service_role_key');
+insert into public.push_queue (recipient_id, title, body, data, created_at)
+values (pg_temp.m('f1'), 'unsent', 'b', '{}', now() - interval '2 minutes') returning id as unsent \gset
+select vault.create_secret('https://example.test', 'project_url');
+select vault.create_secret('service-key', 'service_role_key');
+select max(id) as last_call from net.http_request_queue \gset
+select public.retry_queued_pushes();
+select results_eq(
+  format($$ select convert_from(body, 'utf8')::jsonb from net.http_request_queue where id > %s $$, :'last_call'),
+  format($$ values ('{"id": %s}'::jsonb) $$, :'unsent'),
+  'a push never handed over is sent once it has waited a minute');
+
+-- A retry is dropped when the recipient no longer wants it.
+select pg_temp.create_visible_member(pg_temp.m(s)) from unnest(array['e1', 'e2', 'e3', 'e4', 'e5', 'e6']) s;
+select pg_temp.accepted_pair(pg_temp.m('e5'), pg_temp.m('e6'), create_members => false) as chat \gset
+delete from public.push_queue;
+insert into public.push_queue (recipient_id, title, body, data, created_at) values
+  (pg_temp.m('e1'), 'banned', 'b', '{"kind": "message"}', now() - interval '10 minutes'),
+  (pg_temp.m('e2'), 'messages off', 'b', '{"kind": "message"}', now() - interval '10 minutes'),
+  (pg_temp.m('e3'), 'activities off', 'b', '{"kind": "join_request"}', now() - interval '10 minutes'),
+  (pg_temp.m('e4'), 'still wanted', 'b', '{"kind": "join_request"}', now() - interval '10 minutes'),
+  (pg_temp.m('e5'), 'muted chat', 'b', jsonb_build_object('kind', 'message', 'connectionId', :'chat'), now() - interval '10 minutes'),
+  (pg_temp.m('e6'), 'closed chat', 'b', jsonb_build_object('kind', 'message', 'connectionId', :'chat'), now() - interval '10 minutes');
+update public.push_queue set handed_over_at = now() - interval '6 minutes';
+update public.profiles set status = 'banned' where id = pg_temp.m('e1');
+update public.profiles set notify_messages = false where id = pg_temp.m('e2');
+update public.profiles set notify_activities = false where id = pg_temp.m('e3');
+update public.profiles set notify_messages = false where id = pg_temp.m('e4');
+update public.connection_members set muted = true where user_id = pg_temp.m('e5');
+select public.retry_queued_pushes();
+select results_eq($$ select title from public.push_queue order by title $$,
+  $$ values ('closed chat'), ('still wanted') $$,
+  'a retry is dropped for a banned recipient, a setting turned off or a muted chat');
+select pg_temp.act_as_member(pg_temp.m('e6'));
+select public.close_connection(:'chat');
+reset role;
+select public.retry_queued_pushes();
+select results_eq($$ select title from public.push_queue order by title $$,
+  $$ values ('still wanted') $$, 'and once its Connection has closed');
+
+select pg_temp.act_as_member(pg_temp.m('f1'));
+select throws_ok($$ select public.retry_queued_pushes() $$, '42501', null, 'a Member cannot retry pushes');
+reset role;
 
 select * from finish();
 rollback;

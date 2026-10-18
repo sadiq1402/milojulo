@@ -52,6 +52,7 @@ npx supabase functions deploy media --project-ref <ref>
 - `purge-chat-media` (daily, 21:30 UTC = 03:00 India time, #20): calls the `purge-chat-media` Edge Function over `pg_net` with the service role. The function (#97) deletes up to 100 s of work per run (batches of 500, 8 deletes at a time); anything left, or a file whose delete failed, is picked up the next night. It uses the `media` function's R2 secrets and needs delete permission.
 - `account-purge` (hourly at :15, #96): calls the `account-purge` Edge Function the same way. It needs the R2 secrets the `media` function uses (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`); the R2 key must be allowed to delete objects.
 - `send-meet-nudges` (daily, 05:30 UTC = 11:00 India time, #50): SQL only (`send_meet_nudges()`); its pushes go through `push_queue` like any other.
+- `retry-queued-pushes` (every 5 minutes, #167): SQL only (`retry_queued_pushes()`); hands pushes still queued after a minute to the push function again (same Vault secrets) and drops ones an hour old.
 
 **Vault secrets (founder, once per project):** the two purge jobs and push dispatch read the project URL and service role key from Vault, so neither is in git. In the dashboard SQL editor of the hosted project:
 
@@ -66,7 +67,7 @@ If the nightly purge seems not to run, check `select * from cron.job_run_details
 
 ## Push notifications (#36)
 
-A trigger on `push_queue` hands each new row to the `push` Edge Function over `pg_net`, using the same Vault secrets as the purge jobs above (`project_url`, `service_role_key`); without them pushes wait in `push_queue` and nothing is sent (nothing re-sends them later). The function needs a Firebase service account (Firebase console → Project settings → Service accounts → Generate new private key). Store the whole JSON as one secret, never in the repo:
+A trigger on `push_queue` hands each new row to the `push` Edge Function over `pg_net`, using the same Vault secrets as the purge jobs above (`project_url`, `service_role_key`); without them pushes wait in `push_queue`. The `retry-queued-pushes` job (every 5 minutes) sends again anything still queued after a minute, and drops pushes an hour old. The function needs a Firebase service account (Firebase console → Project settings → Service accounts → Generate new private key). Store the whole JSON as one secret, never in the repo:
 
 ```bash
 printf 'FCM_SERVICE_ACCOUNT=%s\n' "$(jq -c . service-account.json)" > /tmp/push.env
