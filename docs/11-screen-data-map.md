@@ -1,55 +1,68 @@
 # Screen to data map
 
-Use this to design the database from the screens. docs/12-db-schema.md is the resulting schema and wins where they differ (notably: no pre-approval, Connections carry a Mode). Mockups are in design/reference-html/screens/ (names in brackets). Content in the mockups (names, areas, times) is sample data, not real data. Fields marked NEW are not in the 17-table model in docs/03-data-model-rls.md yet.
+Use this to design the database from the screens. docs/12-db-schema.md is the resulting schema and wins where they differ (notably: no pre-approval, Connections carry a Mode). Mockups are in design/reference-html/screens/ (names after the semicolon in the first column). Content in the mockups (names, areas, times) is sample data, not real data. The per-screen table below reflects what the app calls today.
 
 ## Enumerations seen on the screens
-- area: baner, wakad, hinjewadi, balewadi, kharadi (catalog with a coarse location cell)
+- area: 55 Pune neighbourhoods in five zones (west, pimpri_chinchwad, central, east, south; decision 50), catalog `areas` with a centre point
 - mode: friends, activities, networking, dating, serious, casual
 - availability slot: weekday_evenings, weekends, early_mornings
 - activity type: sports, food_chai, outdoors, games, learning
 - activity timing tab (derived from starts_at): tonight, this_weekend, later
-- report reason: fake_or_spam, harassment, inappropriate_content, underage, felt_unsafe, other
+- report reason: fake_or_spam, harassment, inappropriate_content, underage, felt_unsafe, other (plus system-only word_filter)
 - report target type: profile, message, activity, photo
 - account status: active, banned (paused is a separate timestamp; no pending/approved since decision 15)
 - photo: no status enum; live once uploaded, unless hidden or removed
 - connection status: requested, accepted, declined, closed
 - activity request status: requested, accepted, declined, cancelled, withdrawn
-- message type: text, image, video, voice, activity_card (NEW)
+- message type: text, image, video, voice, activity_card
 
 ## Per screen
-| Screen (file) | Reads | Writes | Notes and gaps |
+Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/src/features/*/api.ts. "media fn" is the `media` Edge Function (actions in brackets). Every photo shown is signed in a batch through media fn (`photo-urls`); every screen listens on the Member's private Realtime topic `member:<id>` (features/live).
+
+| Screen (app file; mockup) | Reads | Writes | Notes and gaps |
 |---|---|---|---|
-| Welcome (Main) | none | none | Static |
-| Invite code (InviteCode) | none | none | **Dropped** (decision 27: open sign-up) |
-| Email, Verify code (Email, Otp) | auth | auth.users | Supabase Auth only |
-| Age and consent (AgeConsent) | consent document versions NEW (terms, guidelines, data notice) | profiles row (created here) with date_of_birth; consents (document, version, accepted_at) x3 | Reject under 18; a refusal leaves no profile. Never expose DOB to others; expose age only |
-| Profile basics (Setup1Basics) | areas | profiles.display_name, area | |
-| Photos (Setup2Photos) | photos | photos (R2 key, position NEW, uploaded_at; position 1 is the cover) | 2 to 4 photos, 4:5 |
-| Prompts (Setup3Prompts) | prompt_questions NEW | profile_prompts NEW (user, question, answer up to 140 chars) | Two answers required |
-| Modes (Setup4Modes) | enum | profiles.modes (array of modes) | Casual shows an adult-intent note. A Dating Mode adds a setup step for own gender and Dating Preferences (screen to design) |
-| Interests (Setup5Interests) | tags | profile_tags; availability (slots) | About 40 curated tags |
-| Under review (UnderReview) | none | none | Dropped (decision 15): `submit_profile()` sets submitted_at and the Member goes straight to Discover |
-| Discover (Discover) | discover_feed(): user id, display name, age (from DOB), area, modes, cover photo (signed URL), why-you-match text (computed), shared tags (computed) | none | Filter by mode; cursor pagination; excludes blocked, unapproved, paused. Photo URLs signed in one batch |
-| Profile (ProfileDetail) | profile via function: photos (all live), name, age, area, modes, why you match, prompts, tags, availability | none | No DOB, no exact location |
-| Send request (SendRequest) | requests sent in the last 24 h (cap 10); Eligible Modes for the pair | connections (to_user, mode, note, status requested) | Cap enforced in the function; note optional; Mode picker to design |
-| Inbox: requests (Inbox) | incoming connections (sender summary, note, created_at); sent (status) | respond_request: accepted or declined | Accept opens chat |
-| Inbox: chats (Chats) | per connection: other user's name and avatar, last message preview and time, unread flag | none | Needs read state per participant: last_read_at NEW (on connection participant rows) |
-| Chat (Chat) | messages (type, body, media key, created_at); other user header; shared activity card | messages insert; last_read_at; allows_media (Casual); Mode Change proposals; typing via Broadcast (not stored) | NEW message columns: type, media_duration_ms (voice 0:14), media_width, media_height, media_mime, activity_id (for activity card) |
-| Activities (Activities) | open activities: title, area, starts_at, host name and avatar, spots left (capacity minus accepted requests) | none | Tabs derived from starts_at; expiry job removes past activities |
-| Activity (ActivityDetail) | activity, host, description, spots, safety copy; exact venue only for accepted participants | activity_requests (requested) | NEW activities.venue_detail revealed after the host accepts; activities.description |
-| New activity (CreateActivity) | enums | activities (host, title, type, area, starts_at, ends_at, capacity, description optional, circle_id optional) | The form now has an optional Details field (activities.description). The post expires automatically (pg_cron) |
-| Circles (Circles) | circles (name, area, interest, short description); my membership | none | No member counts shown by design |
-| Circle (CircleDetail) | circle; upcoming activities with circle_id; member avatars (visible, unblocked only) | circle_members (join) | Post an activity to a circle uses activities.circle_id. Members are tappable: they open the member's profile, where a connection request starts a 1:1 chat. No group chat in V1 |
-| After you meet (MeetFeedback) | activity or connection context | meetup_feedback (did_meet, keep_connection) | Private until both say yes; function computes mutual keep |
-| Report (Report) | target summary | reports (target type, target id, reason, details optional); optional block | The sheet now has an optional free-text field (reports.details). Keep a snapshot of reported content NEW (reports.evidence) so deleted messages stay reviewable |
-| Safety Centre (SafetyCentre) | static copy | none (Contact support opens the email app or a support form) | The support address itself is still to be set once the domain exists |
-| Me (Me) | own profile, status, photos | none | Shows a notice if a photo was taken down |
-| Settings (Settings) | visibility and pause (profiles.status), notification prefs NEW, blocked list, consents | profiles.status (paused), notification_settings NEW (requests_messages, activity_updates), consents (withdraw), data_requests NEW ("request a copy") | |
-| Delete account (DeleteAccount) | none | deletion request: mark account, purge job removes rows and R2 objects | Keep minimal safety records for a limited period; the exact retention period is a legal decision and is not shown on the screen. Link to the privacy notice |
-| Moderation queue (Admin) | reports with target, reporter, reason, age, response target (created_at + 24 h), status; auto-hidden profiles, photos and Activities; recently joined Members (spot checks); users; admin_actions | reports.status and handler; profiles.status (ban); photos/messages removed_at; hidden_at cleared; admin_actions (action, target, note) | Internal note field: store on admin_actions or reports.internal_note NEW |
+| Welcome (gettingIn/WelcomeScreen; Main) | none | none | Static |
+| Invite code (no screen; InviteCode) | none | none | **Dropped** (decision 27: open sign-up) |
+| Email, Verify code (gettingIn/EmailScreen, OtpScreen; Email, Otp) | auth | auth.users | Supabase Auth email OTP only |
+| Age and consent (gettingIn/AgeConsentScreen; AgeConsent) | `consent_documents` (newest per kind with effective_at ≤ now) | `accept_consents(birth_date, document_ids)`: creates the profile row with date_of_birth, and the three consents | Reject under 18; a refusal leaves no profile. Never expose DOB to others; expose age only |
+| Reconsent (gettingIn/ReconsentScreen; no mockup) | `needs_reconsent()`, `consent_documents` | `accept_consents()` | Shown when a current document is not accepted or was withdrawn; offers Delete account |
+| Location (location/LocationScreens; no mockup) | `in_service_region()` | `set_location(lat, lng)` | Member Location (decision 40); without permission the Area centre is used |
+| Profile basics (profileSetup/BasicsStep; Setup1Basics) | `areas` (name, zone, lat, lng; nearest suggested) | `profiles.display_name`, `area_id` (direct update) | |
+| Photos (profileSetup/PhotosStep; Setup2Photos) | `photos` (own: id, position; not hidden or removed) | media fn (`photo-upload`, `photo-confirm`, `photo-delete`); `move_photo(photo_id, new_position)` | 2 to 4 photos, 4:5; position 1 is the cover |
+| Prompts (profileSetup/PromptsStep; Setup3Prompts) | `prompt_questions`, own `profile_prompts` | `profile_prompts` insert/update (question, answer up to 140 chars) | Two answers required |
+| Modes (profileSetup/ModesStep; Setup4Modes) | `industries` | `profiles.modes`, `gender`, `pref_age_min`, `pref_age_max`, `pref_genders`, `pref_max_km`, `profession`, `industry_id`, `career_stage` | Casual shows an adult-intent note. Gender and Dating Preferences appear on this step when a Dating Mode is chosen; Networking fields likewise |
+| Interests (profileSetup/InterestsStep; Setup5Interests) | `tags` | `profile_tags`; `profiles.availability` | About 40 curated tags |
+| Profile setup end (profileSetup/ProfileSetupScreen) | own `profiles`, `profile_prompts`, `profile_tags` | `submit_profile()` | Sets submitted_at; the Member goes straight to Discover |
+| Under review (no screen; UnderReview) | none | none | Dropped (decision 15) |
+| Discover (discover/DiscoverScreen, FeedCard, DiscoverSheets; Discover) | `discover_feed(mode_filter, page_size, after)`: user_id, display_name, age, area_id, modes, their_modes, distance_band, cover_photo_id, shared_tag_ids, why_you_match, cursor; own `profiles` (modes, paused_at, discover_range_km); `in_service_region()` | `profiles.discover_range_km`; `set_paused(false)` (paused notice) | Filter by Mode; cursor pagination; excludes blocked and not-visible Members |
+| Profile (profile/ProfileScreen; ProfileDetail) | `get_profile(member_id)`: photo_ids, name, age, area, modes, their_modes, distance_band, why_you_match, prompts, tag_ids, availability, request_modes | none (menu: Report, Block) | No DOB, no exact location. Profession, industry and career stage are not returned |
+| Send request (requests/SendRequestSheet; SendRequest) | `request_modes` from `get_profile()` | `send_request(to_member, mode, note)` | Request Cap enforced in the function (no read of sent requests); note optional |
+| Inbox (inbox/InboxScreen, requests/RequestList; Inbox, Chats) | `my_connections()` (requests both ways with note, chats with last message and unread_count); `my_join_requests()` | `respond_request(connection_id, accept)`; `respond_activity_request(request_id, accept)` | Requests and chats on one screen; accept opens chat |
+| Chat (chat/ChatScreen; Chat) | `messages` (not removed); `connection_members` (last_read_at, muted); `connection_mode_changes`; `chat_media_state(connection_id)`; `get_profile()` for the header; media fn (`chat-urls`) | `messages` insert (client id); `connection_members.last_read_at`, `muted`; `set_media_consent()`; `propose_mode_change()`, `respond_mode_change()`; media fn (`chat-upload`, `chat-confirm`); `close_connection()`, `block_user()`; "We met": `submit_meetup_feedback()` | Shows activity_card messages, but nothing in the app or database creates them yet. Typing is not built |
+| Activities (activities/ActivitiesScreen, MeetPrompts; Activities) | `activity_board()`: host name and photo, title, area, starts_at, spots_left, starts_when, circle_name, visible_until; `pending_meetup_feedback()` | none | Tabs from starts_at; the board drops each Activity at visible_until |
+| Joined (activities/JoinedScreen; no mockup) | `joined_activities()` | none | The caller's waiting and accepted Join Requests |
+| Activity (activities/ActivityDetailScreen; ActivityDetail) | `get_activity(activity_id)` (venue_detail only for host and accepted joiners); host: `activity_join_requests(activity_id)` | `join_activity_request()`, `withdraw_activity_request()`, host: `respond_activity_request()`, `cancel_activity()` | |
+| New activity (activities/CreateActivityScreen; CreateActivity) | `browse_circles()` (circle picker), `areas` | `post_activity(title, type, area_id, starts_at, ends_at, capacity, description, venue_detail, circle_id)` | Expires automatically (pg_cron `expire-activities`) |
+| Edit activity (activities/EditActivityScreen; no mockup) | `get_activity()` | `update_activity(...)` | Locked once someone is accepted: only description and more spots |
+| Circles (circles/CirclesScreen; Circles) | `browse_circles()`: name, area, tag, description, member_count, i_am_member | none | The app shows member counts |
+| Circle (circles/CircleDetailScreen; CircleDetail) | `get_circle()`, `circle_members_of()`, `circle_activities()` | `join_circle()`, `leave_circle()` | Posting to a circle uses `post_activity(circle_id)`. Members open the member's profile; a request starts a 1:1 chat. No group chat in V1 |
+| After you meet (meetFeedback/MeetFeedbackScreen; MeetFeedback) | own `meetup_feedback` (already answered?) | `submit_meetup_feedback(other_user, did_meet, keep, activity)` | Private; `kept_connections()` (admin) computes mutual keeps |
+| Report (reports/ReportScreen; Report) | target summary from the screen it came from | `report(target_type, target_id, reason, details)`; optional `block_user()` | `report()` snapshots the content into reports.evidence |
+| Safety Centre (me/SafetyCentreScreen; SafetyCentre) | static copy | none | Contact support opens the email app to support@milojulo.in |
+| Me (me/MeScreen; Me) | own `profiles`, `photos`, catalogs | sign out (deletes this phone's `device_tokens` row) | No notice for a taken-down photo yet (the mockup shows one) |
+| Edit profile (me/EditProfileScreen; no mockup) | as the setup steps | as the setup steps | Reuses one setup step at a time |
+| Settings (me/SettingsScreen; Settings) | own `profiles` (paused_at, notify_messages, notify_activities) | `set_paused()`; `profiles.notify_messages`, `notify_activities` | Links to Blocked people, Consents, Data copy, Delete account |
+| Blocked people (me/BlockedPeopleScreen; no mockup) | `my_blocks()` | `blocks` delete (unblock) | |
+| Consents (account/ConsentSettingsScreen; no mockup) | `consents` with `consent_documents` (kind, version) | `withdraw_consent(document_id)`; `accept_consents()` to accept again | Withdrawing hides the profile (decision 37) |
+| Data copy (account/DataCopyScreen; no mockup) | `data_requests` | `request_data_copy()` | The founder completes access requests |
+| Delete account (account/DeleteAccountScreen; DeleteAccount) | none | `delete_account()`; the `account-purge` function erases later | Retention period is a legal decision, not shown. Link to the privacy notice |
+| Push (features/push, no screen) | none | `register_device_token(token, platform)` | |
+| Moderation queue (no screen; Admin) | dashboard: `reports`, `admin_actions`, Auto-hidden rows | `admin_takedown()`, `admin_ban()`, `admin_restore()` | No admin page yet; the founder uses the Supabase dashboard |
 
 ## Additions to the 17-table model (found from the screens)
-New tables: `areas`, `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails). That brings the schema to about 26 tables (docs/12 has the final count).
+Historical: the list the schema was designed from. docs/12-db-schema.md ("Changes from docs/03 and docs/11") says what was built instead (for example no approved_at, coarse_cell, is_primary or notification_settings).
+
+New tables: `areas`, `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails; not built, #71). That brings the schema to about 26 tables (docs/12 has the final count: 33).
 
 New columns:
 - profiles: submitted_at, approved_at, approved_by, paused_at, banned_reason, preferences (age_min, age_max, interested_in, max_distance_km), profession, industry, area_id, coarse_cell.

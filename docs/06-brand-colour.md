@@ -50,4 +50,4 @@ Surveys (mostly Western, informal) show women lean toward purple and softer tint
 - Still to do: trademark search (IP India device/logo search, reverse image search, adjacent classes, probably apps, software and social/dating services). The word "Milo" is crowded (Nestlé MILO beverages; a MILO software filing by Zuora; other apps named Milo), so check "MiloJulo" as a whole. Not legal advice.
 
 ## Fonts
-Bricolage Grotesque (display) and Figtree (text), both Google Fonts.
+Bricolage Grotesque (display) and Figtree (text), both Google Fonts. The Android app bundles static TTFs with their OFL licences in apps/mobile/android/app/src/main/assets/fonts: Bricolage Grotesque Bold, and Figtree Regular, Medium, SemiBold and Bold (the weights design/tokens.ts uses). iOS doesn't register them yet (no `UIAppFonts`; needs macOS).

@@ -1,11 +1,16 @@
 erDiagram
-    %% V1 schema, see docs/12-db-schema.md. auth.users 1:1 profiles; all user FKs point at profiles.
+    %% V1 schema (33 tables), see docs/12-db-schema.md. auth.users 1:1 profiles; user FKs point at profiles,
+    %% except photos.removed_by and reports.handled_by (auth.users). admin_actions.admin_id,
+    %% circles.created_by and completed_erasures.member_id have no FK.
 
     areas {
         text id PK
         text name
         geography center
         bool is_active
+        text zone
+        float8 lat "generated"
+        float8 lng "generated"
     }
     tags {
         smallint id PK
@@ -38,8 +43,14 @@ erDiagram
     banned_terms {
         text term PK
     }
-    blocked_email_domains {
-        text domain PK
+    service_regions {
+        smallint id PK
+        text name UK
+        float8 min_lat
+        float8 max_lat
+        float8 min_lng
+        float8 max_lng
+        bool active
     }
 
     profiles {
@@ -48,6 +59,7 @@ erDiagram
         date date_of_birth "never exposed"
         gender gender "nullable"
         text area_id FK
+        smallint discover_range_km "2,5,10,25,50 or null"
         mode_array modes
         availability_slot_array availability
         varchar profession "display-only"
@@ -66,6 +78,13 @@ erDiagram
         timestamptz banned_at
         text banned_reason
         timestamptz deleted_at
+    }
+    member_locations {
+        uuid user_id PK, FK
+        geography point "offset, latest only"
+        float8 offset_m
+        float8 offset_azimuth
+        timestamptz updated_at
     }
     profile_prompts {
         uuid user_id PK, FK
@@ -88,7 +107,13 @@ erDiagram
         timestamptz uploaded_at "null until confirmed"
         timestamptz hidden_at
         timestamptz removed_at
-        uuid removed_by FK
+        uuid removed_by FK "auth.users"
+    }
+    photo_uploads {
+        uuid id PK "becomes photo id"
+        uuid user_id FK
+        smallint position "unique per user"
+        text object_key
     }
     consents {
         uuid user_id PK, FK
@@ -101,6 +126,13 @@ erDiagram
         uuid user_id FK
         text platform
         timestamptz last_seen_at
+    }
+    push_queue {
+        bigint id PK
+        uuid recipient_id FK
+        text title
+        text body
+        jsonb data
     }
 
     connections {
@@ -120,7 +152,7 @@ erDiagram
         uuid user_id PK, FK
         timestamptz last_read_at
         bool muted
-        bool allows_media "Casual media consent"
+        bool media_consent "Casual media consent"
     }
     connection_mode_changes {
         uuid id PK
@@ -129,7 +161,7 @@ erDiagram
         mode from_mode
         mode to_mode
         timestamptz proposed_at
-        mode_change_outcome outcome "null while open"
+        mode_change_outcome outcome "null while open; accepted, declined, lapsed"
         timestamptz decided_at
     }
     messages {
@@ -148,6 +180,22 @@ erDiagram
         timestamptz removed_at
         timestamptz created_at
     }
+    chat_uploads {
+        uuid id PK
+        text media_key UK
+        uuid sender_id FK
+        uuid connection_id FK
+        message_type kind "image, video, voice"
+        text mime
+        int size
+        timestamptz confirmed_at
+        timestamptz used_at
+    }
+    meet_nudges {
+        uuid connection_id PK, FK
+        uuid user_id PK, FK
+        timestamptz sent_at
+    }
 
     activities {
         uuid id PK
@@ -157,7 +205,7 @@ erDiagram
         activity_type type
         text area_id FK
         timestamptz starts_at
-        timestamptz ends_at
+        timestamptz ends_at "nullable"
         smallint capacity "joiners only"
         varchar description
         activity_status status
@@ -182,7 +230,7 @@ erDiagram
         smallint tag_id FK
         text description
         bool is_active
-        uuid created_by FK
+        uuid created_by "no FK"
     }
     circle_members {
         uuid circle_id PK, FK
@@ -205,17 +253,18 @@ erDiagram
         jsonb evidence
         text evidence_media_key
         report_status status
-        uuid handled_by FK
+        uuid handled_by FK "auth.users"
         timestamptz handled_at
         text internal_note
     }
     admin_actions {
         uuid id PK
-        uuid admin_id FK
+        uuid admin_id "no FK"
         text action
         text target_type
         uuid target_id
         text note
+        timestamptz created_at "append-only"
     }
     meetup_feedback {
         uuid id PK
@@ -229,8 +278,14 @@ erDiagram
         uuid id PK
         uuid user_id FK
         data_request_kind kind
-        text status
+        data_request_status status
         timestamptz completed_at
+    }
+    completed_erasures {
+        uuid member_id PK "no FK"
+        timestamptz requested_at
+        timestamptz completed_at
+        int objects_deleted
     }
 
     areas ||--o{ profiles : "lives in"
@@ -247,6 +302,9 @@ erDiagram
     profiles ||--o{ photos : "uploads"
     profiles ||--o{ consents : "accepts"
     profiles ||--o{ device_tokens : ""
+    profiles ||--o| member_locations : "latest point"
+    profiles ||--o{ photo_uploads : "upload slots"
+    profiles ||--o{ push_queue : "recipient"
 
     profiles ||--o{ connections : "requests"
     profiles ||--o{ connections : "receives"
@@ -257,6 +315,10 @@ erDiagram
     connections ||--o{ messages : ""
     profiles ||--o{ messages : "sends"
     activities |o--o{ messages : "activity card"
+    connections ||--o{ chat_uploads : ""
+    profiles ||--o{ chat_uploads : "sends"
+    connections ||--o{ meet_nudges : ""
+    profiles ||--o{ meet_nudges : "nudged"
 
     profiles ||--o{ activities : "hosts"
     circles |o--o{ activities : "posted to"
@@ -267,8 +329,10 @@ erDiagram
     profiles ||--o{ circle_members : "joins"
 
     profiles ||--o{ blocks : "blocks"
-    profiles ||--o{ reports : "files"
-    profiles ||--o{ admin_actions : "admin"
+    profiles ||--o{ blocks : "blocked"
+    profiles |o--o{ reports : "files"
+    profiles |o--o{ reports : "reported"
     profiles ||--o{ meetup_feedback : "gives"
+    profiles ||--o{ meetup_feedback : "about"
     activities |o--o{ meetup_feedback : "context"
     profiles ||--o{ data_requests : ""

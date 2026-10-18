@@ -1,50 +1,25 @@
 # Data model and access rules
 
-**Superseded for schema detail by docs/12-db-schema.md** (28 tables, no pre-approval, no invite codes, Connections carry a Mode). The screens need more than the tables below: see docs/11-screen-data-map.md for the per-screen data map and the additions (about 26 tables in total) that supersede this first list.
-
-Sixteen tables in Supabase Postgres. RLS on every table, default deny.
-
-| Table | Key fields | Who can access |
-|---|---|---|
-| profiles | user id, display name, date of birth, area, intents, discover range (km), prompts, preferences (age range, gender, distance), optional profession/industry, status (pending, approved, paused, banned) | Owner reads and edits; others only through the discovery function |
-| member_locations | user id, offset point (latest only), offset, updated at | Nobody, owner included; only security definer functions (decision 40) |
-| photos | user id, R2 object key, status (pending, approved, rejected) | Owner; others get approved photos by signed URL |
-| tags, profile_tags | curated tag catalog; user-to-tag links | Catalog readable by signed-in users; links by owner and discovery function |
-| availability | user id, time slots | Owner; used by the matching function |
-| activities | host, type, area, time window, spots, expiry, status, optional circle | Approved users read open activities; host edits own |
-| activity_requests | activity, requester, status | Requester and host only |
-| connections | two users, requester, note, status (requested, accepted, declined, closed) | The two users only |
-| messages | client-generated id, connection, sender, body, media path and type, time | Participants of an accepted, unblocked connection |
-| blocks | blocker, blocked | Blocker writes; checked in every function and policy |
-| reports | reporter, target type and id, reason, details, status, handler | Reporter creates; admins read and resolve |
-| consents | user, document, version, accepted at | Owner reads; written at onboarding |
-| meetup_feedback | activity or connection, user, did meet, keep connection | Owner writes; admins read for metrics |
-| admin_actions | admin, action, target, time | Admins only (audit log) |
-| circles | name, area, interest, description, status | Admins create/edit; approved users read active circles |
-| circle_members | circle, user, joined at | Members see own memberships and fellow members; joining via a function |
+The rules every table and function follows. The schema itself (tables, columns, enums and every function with its refusals) is in docs/12-db-schema.md, which is built from the migrations in `supabase/migrations/` (where a later migration redefines a function, the later one is what runs). The per-screen data needs are in docs/11-screen-data-map.md; where it differs from docs/12, docs/12 wins.
 
 ## Rules
-1. Every table starts with no access; each policy grants the minimum.
-2. Other users' profiles are never read from the table directly. The discovery function returns visible (active, submitted, unpaused, not hidden), unblocked people and a safe column subset.
-3. The block check lives in one SQL function used by the discovery function, the connection policy and the message policy.
-4. A message insert is allowed only for a participant of an accepted connection with no block in either direction.
-5. Admin tools use a separate role claim; app users can never read reports or the audit log.
-6. Business rules live in Postgres functions the app calls. Functions that bypass RLS are few, reviewed and tested.
-7. Every rule has an automated test that runs in CI before each migration is applied.
+1. Every table has RLS enabled and starts with no access; each policy grants the minimum. Tables only functions touch (`member_locations`, `push_queue`, `meet_nudges`, upload slots) have no Member policy at all.
+2. Other users' profiles are never read from the table directly. `discover_feed()` and `get_profile()` return Visible (active, submitted, unpaused, not Auto-hidden, not deleted, current consents in place, at least 2 live photos), unblocked Members within the viewer's Discover Range, with a safe column subset and distance as a band only.
+3. Blocks have one source of truth, `is_blocked(a, b)` (security definer, internal), used by discovery, connection, chat, photo and media-link checks.
+4. A message insert is allowed only for the sender, an active side of an accepted Connection with no Block either way (`can_send_in()`); taken-down messages are hidden from both sides.
+5. Admins are users whose JWT carries `app_metadata.role = 'admin'` (`is_admin()`). App users can never read reports (reporters included) or the audit log (`admin_actions`, append-only).
+6. Business rules live in Postgres functions the app calls. Security definer functions set `search_path = ''`; internal helpers are revoked from client roles, and the ones only Edge Functions call are granted to the service role alone.
+7. Exact location lives only in `member_locations` (one offset point, latest only, no client can read it, deleted with the account; decision 40, docs/adr/0003).
+8. Photos have no approval status (no pre-approval, decision 15, docs/adr/0002): a photo is live once its upload is confirmed (`uploaded_at`), and `hidden_at` (Auto-hide) or `removed_at` (admin takedown) take it out of view.
+9. Every rule has an allow and a deny test in `supabase/tests/`, run by the `db-tests` check on every pull request before a migration reaches `main`.
 
-## Functions to implement (SQL)
-`is_blocked(a, b)`, `discover_feed(mode_filter, limit, cursor)`, `match_reason(a, b)` (templated text), `send_request(to, note)`, `respond_request(id, accept)`, `block_user(id)`, `report(target_type, target_id, reason, details)`, `accept_consents(birth_date, document_ids)` (creates the profile; open sign-up, decision 27), `join_activity_request(activity)`, `join_circle(circle)`, `submit_meetup_feedback(...)`, `delete_account()` (also triggers R2 cleanup), `expire_activities()` (pg_cron).
+## Main functions the app calls
+- Getting in and account: `accept_consents(birth_date, document_ids)` (age gate and consents; creates the profile), `submit_profile()`, `set_location(lat, lng)`, `needs_reconsent()`, `withdraw_consent(document_id)`, `set_paused(paused)`, `request_data_copy()`, `delete_account()`, `register_device_token(token, platform)`, `move_photo(photo_id, new_position)`.
+- Discover and Connections: `discover_feed(mode_filter, page_size, after)` (`mode_filter` is a list of Modes), `get_profile(member_id)`, `send_request(to_member, mode, note)`, `respond_request(connection_id, accept)`, `propose_mode_change(connection_id, to_mode)`, `respond_mode_change(change_id, accept)`, `close_connection(connection_id)`, `my_connections()`, `block_user(member_id)`, `my_blocks()`, `set_media_consent(connection_id, consent)`.
+- Activities and Circles: `post_activity(...)`, `update_activity(...)`, `cancel_activity(activity_id)`, `activity_board()`, `get_activity(activity_id)`, `join_activity_request(activity_id)`, `respond_activity_request(request_id, accept)`, `withdraw_activity_request(request_id)`, `joined_activities()`, `my_join_requests()`, `activity_join_requests(activity_id)`, `browse_circles()`, `get_circle(circle_id)`, `join_circle(circle_id)`, `leave_circle(circle_id)`, `circle_members_of(circle_id)`, `circle_activities(circle_id)`.
+- Safety and learning loop: `report(target_type, target_id, reason, details)`, `submit_meetup_feedback(other_user, did_meet, keep, activity)`, `pending_meetup_feedback()`.
+- Admin: `admin_takedown`, `admin_restore`, `admin_ban`, `admin_create_circle`, `admin_edit_circle`, `admin_archive_circle`, `kept_connections(since)`.
+- Photo and chat media uploads and links go through the `media` Edge Function, which calls service-role-only functions (`start_photo_upload`, `photo_links`, `start_chat_upload`, `chat_media_links` and others; see docs/02).
 
 ## Matching (rule-based, SQL)
-Candidates: within the viewer's Discover Range of their Member Location (or Area centre), every Mode shown (decision 45; Casual and Dating rules apply to requests only), not blocked, visible, availability overlap. Score: shared intent, shared interests/activity tags, availability overlap, distance. "Why you match" is a template filled from the overlap (for example "You both want friends, like badminton and cafés, and are free on weekends"). Keep matching in one module/function so AI can later become one more signal.
-
-## Illustrative sketch (verify and test before use)
-```sql
--- sketch only
-create function is_blocked(a uuid, b uuid) returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from blocks
-                 where (blocker = a and blocked = b) or (blocker = b and blocked = a));
-$$;
--- messages insert policy: sender is a participant of an accepted connection and not blocked
-```
+Candidates: Visible, unblocked Members within the viewer's Discover Range of their Member Location (or Area centre), with no waiting or accepted Connection between the two; every Mode shown (decision 45; the Casual and Dating rules apply to requests only, through `eligible_modes()`). Score: shared tags, shared availability, shared Modes and nearness (3 under 2 km, 2 under 5 km, 1 up to 10 km); the Networking filter ranks by shared industry and career stage first. "Why you match" (`match_reason()`) is a template filled from what is shared, for example "You both want friends, like badminton and cafés, and are free on weekends". Matching stays in these functions so AI can later become one more signal.

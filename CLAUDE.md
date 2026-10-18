@@ -17,17 +17,17 @@ Other docs: docs/04-safety-compliance.md, docs/06-brand-colour.md, docs/07-scree
 
 ## Stack (decided)
 - Backend: Supabase only (Mumbai region). Auth with email OTP, Postgres with RLS and PostGIS, Realtime, pg_cron, Edge Functions (TypeScript/Deno).
-- Business rules live in Postgres functions (SQL), not application code. Edge Functions are thin: signed media URLs, push, webhooks, media checks, admin actions.
+- Business rules live in Postgres functions (SQL), not application code. Edge Functions are thin: `media` (signed upload and download URLs, upload checks), `push` (FCM), `account-purge` and `purge-chat-media` (R2 cleanup); pg_cron jobs and database triggers call them over `pg_net`. Admin actions are SQL functions.
 - Media (photos, chat images, video, voice notes): Cloudflare R2, private bucket, short-lived signed URLs issued by an Edge Function.
-- Chat: Supabase Realtime using Broadcast from database triggers on private channels (not Postgres Changes).
+- Chat and live updates: Supabase Realtime using Broadcast from database triggers on one private channel per Member, `member:<id>` (decision 51), not Postgres Changes.
 - Mobile: React Native CLI (bare workflow) with TypeScript. DECIDED: no Expo, no EAS. Bootstrap with `npx @react-native-community/cli@latest init` and keep `@react-native-community/cli` as an explicit devDependency. Android first; iOS builds need macOS (a Mac or macOS CI).
-- Admin: small Next.js moderation page, later; Supabase dashboard first.
-- Email: custom SMTP provider called by API (Edge Functions cannot use ports 25/587). Bot protection: Cloudflare Turnstile. Push: FCM directly (Edge Function sends via the FCM HTTP v1 API); no Expo push.
+- Admin: Supabase dashboard first, calling the admin SQL functions (`admin_takedown`, `admin_restore`, `admin_ban`, Circle admin functions) as a user whose JWT has `app_metadata.role = admin`. A small Next.js moderation page comes later; `apps/admin` is only a placeholder README.
+- Email: Supabase Auth sends sign-in codes through Resend over SMTP (`smtp.resend.com:465`, from `no-reply@milojulo.co.in`; `[remotes.cloud.auth.email.smtp]` in `supabase/config.toml`). Edge Functions cannot use ports 25/587, so any email they send must use a provider's HTTP API. Bot protection: Cloudflare Turnstile, not built yet (#70). Push: FCM directly (the `push` Edge Function sends via the FCM HTTP v1 API); no Expo push.
 - Everything free-tier until the beta; Supabase Pro (about $25/month) when real users arrive.
 
 ## Hard rules
 1. Every table has RLS enabled and starts default-deny. Policies grant the minimum.
-2. Never read other users' rows from tables directly. Use the discovery function, which returns visible (active, submitted, unpaused, not hidden), unblocked people and a safe column subset.
+2. Never read other users' rows from tables directly. Use the discovery function, which returns Visible (active, submitted, unpaused, not Auto-hidden, not deleted, current consents; see CONTEXT.md), unblocked people and a safe column subset.
 3. One SQL function `is_blocked(a, b)` is the single source of truth for blocks; use it in discovery, connection and message policies.
 4. Functions that bypass RLS (security definer) are few, reviewed, and tested. Set a fixed `search_path`.
 5. Every RLS rule gets an automated test that runs in CI before migrations are applied.
@@ -48,16 +48,21 @@ Follow docs/05-ui-standards.md for every dimension (touch targets 48, pill butto
 - When a decision changes, update the relevant doc and add an entry to docs/08-decisions.md.
 
 ## Current phase
-V1 database: spec in GitHub issue #1, tickets #2 to #20 (each lists what blocks it). Plan and lessons in tasks/todo.md.
+V1 is built: the database (issue #1, tickets #2 to #20) and the mobile app (issue #33) were closed as complete on 2026-10-18. Android dev builds go to testers through Firebase App Distribution on every merge that touches `apps/mobile` (.github/workflows/android-distribute.yml). What remains before the beta:
+- Open issues: #163 (remove a taken-down message from open chats live), and, waiting on founder input, #70 (Turnstile), #71 (disposable-email blocklist), #98 (web account deletion page, a Google Play requirement) and #160 (report evidence retention). #137 (media cache through a Cloudflare Worker) is parked.
+- Beta prep in docs/10-build-plan.md: final terms, guidelines and data notice (the app links placeholders), Google Play listing and Data safety form, a release signing key, a k6 load test, Supabase Pro.
+- Open questions in docs/09-open-questions.md.
+Plan and lessons in tasks/todo.md.
 
-## Database tickets
-Work one ticket per branch and PR, test-first with the mattpocock-skills `tdd` skill.
+## Tickets
+Work one ticket per branch and PR, test-first with the mattpocock-skills `tdd` skill. Database rules first; app work follows apps/mobile/README.md.
 - Start: `gh issue view <n>`; check its blockers are merged; branch `feat/<n>-<slug>` from an up-to-date `main`. Read the Review section of tasks/todo.md for gotchas.
 - Local database: `npx supabase db start` (Docker), `npx supabase db reset` to re-apply migrations, `npx supabase test db` to run tests. Pass `</dev/null` to Supabase CLI commands when not in a terminal.
 - One migration per ticket in `supabase/migrations/`. Tests in `supabase/tests/` only; the test runner cannot see other folders.
 - Test seam: act as a Member, admin or signed-out visitor with `supabase/tests/helpers/act_as.psql`, then use only public functions and tables under RLS. Assert behaviour (rows visible, calls refused, results returned), never internals. Every rule gets an allow and a deny test.
 - One red → green cycle at a time. A test that passes before its code exists gets mutation-checked: break the rule in the local database, confirm a test fails, then `db reset`.
-- Finish: add a line to the Review section of tasks/todo.md, commit, push, open a PR that closes the issue, and wait for the `db-tests` check. `main` is protected: merges need a PR with `db-tests` passing and an up-to-date branch.
+- App tickets: `npm run lint`, `npm run typecheck`, `npm test` and `npm run test:integration` (against local Supabase) in `apps/mobile`; `npm run gen:types` after a migration. Edge Functions have Deno tests beside each handler (`handler_test.ts`).
+- Finish: add a line to the Review section of tasks/todo.md, commit, push, open a PR that closes the issue, and wait for its checks: `db-tests` on every PR, plus `app-checks` and `app-integration` when `apps/mobile`, `design` or `supabase` change, and `function-tests` when `supabase/functions` change. `main` is protected: merges need a PR with `db-tests` passing and an up-to-date branch. A merge to `main` deploys new migrations and Edge Functions to the hosted project (.github/workflows/deploy.yml).
 
 ## Agent skills
 
