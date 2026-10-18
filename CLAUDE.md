@@ -21,7 +21,7 @@ Other docs: docs/04-safety-compliance.md, docs/06-brand-colour.md, docs/07-scree
 - Media (photos, chat images, video, voice notes): Cloudflare R2, private bucket, short-lived signed URLs issued by an Edge Function.
 - Chat and live updates: Supabase Realtime using Broadcast from database triggers on one private channel per Member, `member:<id>` (decision 51), not Postgres Changes.
 - Mobile: React Native CLI (bare workflow) with TypeScript. DECIDED: no Expo, no EAS. Bootstrap with `npx @react-native-community/cli@latest init` and keep `@react-native-community/cli` as an explicit devDependency. Android first; iOS builds need macOS (a Mac or macOS CI).
-- Admin: Supabase dashboard first, calling the admin SQL functions (`admin_takedown`, `admin_restore`, `admin_ban`, Circle admin functions) as a user whose JWT has `app_metadata.role = admin`. A small Next.js moderation page comes later; `apps/admin` is only a placeholder README.
+- Admin: Supabase dashboard first, calling the admin SQL functions (`admin_takedown`, `admin_restore`, `admin_ban`, Circle admin functions) as a user whose JWT has `app_metadata.role = admin`. How: docs/runbooks/moderation.md. A small Next.js moderation page comes later; `apps/admin` is only a placeholder README.
 - Email: Supabase Auth sends sign-in codes through Resend over SMTP (`smtp.resend.com:465`, from `no-reply@milojulo.co.in`; `[remotes.cloud.auth.email.smtp]` in `supabase/config.toml`). Edge Functions cannot use ports 25/587, so any email they send must use a provider's HTTP API. Bot protection: Cloudflare Turnstile, not built yet (#70). Push: FCM directly (the `push` Edge Function sends via the FCM HTTP v1 API); no Expo push.
 - Everything free-tier until the beta; Supabase Pro (about $25/month) when real users arrive.
 
@@ -49,7 +49,7 @@ Follow docs/05-ui-standards.md for every dimension (touch targets 48, pill butto
 
 ## Current phase
 V1 is built: the database (issue #1, tickets #2 to #20) and the mobile app (issue #33) were closed as complete on 2026-10-18. Android dev builds go to testers through Firebase App Distribution on every merge that touches `apps/mobile` (.github/workflows/android-distribute.yml). What remains before the beta:
-- Open issues: #171 (moderation runbook), and, waiting on founder input, #70 (Turnstile), #71 (disposable-email blocklist), #98 (web account deletion page, a Google Play requirement) and #160 (report evidence retention). #137 (media cache through a Cloudflare Worker) is parked.
+- Open issues, all waiting on founder input: #70 (Turnstile), #71 (disposable-email blocklist), #98 (web account deletion page, a Google Play requirement) and #160 (report evidence retention). #137 (media cache through a Cloudflare Worker) is parked.
 - Beta prep in docs/10-build-plan.md: final terms, guidelines and data notice (the app links placeholders), Google Play listing and Data safety form, a release signing key, a k6 load test, Supabase Pro.
 - Open questions in docs/09-open-questions.md.
 Plan and lessons in tasks/todo.md.
