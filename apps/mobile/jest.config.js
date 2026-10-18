@@ -2,6 +2,8 @@ module.exports = {
   preset: '@react-native/jest-preset',
   setupFiles: ['<rootDir>/jest.setup.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.afterEnv.js'],
+  // Room for several 5 s waits in one test (see jest.afterEnv.js).
+  testTimeout: 20000,
   resetMocks: true,
   moduleNameMapper: {
     '^@react-native-async-storage/async-storage$':
