@@ -1,3 +1,11 @@
+# Next (2026-10-18)
+
+V1 is built: database (#1) and app (#33) closed. Open, in tracker order:
+- [ ] #163 Remove a taken-down message from open chats live (ready-for-agent)
+- [ ] #70 Turnstile, #71 disposable-email blocklist, #98 web deletion page, #160 report evidence retention (needs-info: waiting on the founder)
+- [ ] #137 Media cache through a Cloudflare Worker (parked)
+- [ ] Beta prep: see docs/10-build-plan.md, Status
+
 # Account (#20) ‖ Account screens (#51), in parallel
 
 Started 2026-10-16. Contract (messages are the DB's exact text; the app maps them):
@@ -15,7 +23,7 @@ Started 2026-10-16. Contract (messages are the DB's exact text; the app maps the
 
 - [x] #20 agent: migration, functions, cascade, pg_cron job, pgTAP allow/deny tests, docs
 - [x] #51 agent: data module, Settings rows, Consent settings, data copy, DeleteAccount, tests
-- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each
+- [x] Merge both, regenerate types, full suites, review per ticket, one PR each (PRs #99, #100)
 
 # Learning loop (#19) ‖ MeetFeedback (#50), in parallel
 
@@ -35,7 +43,7 @@ Started 2026-10-15. Contract (messages are the DB's exact text; the app maps the
 
 - [x] #19 agent: migration, functions, pgTAP allow/deny tests, docs
 - [x] #50 agent: data module, MeetFeedback screen, entry points, tests
-- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each
+- [x] Merge both, regenerate types, full suites, review per ticket, one PR each (PRs #90, #91)
 
 
 # Media Consent (#12) ‖ Chat media (#45)
@@ -56,7 +64,7 @@ Started 2026-10-15. Founder decisions: 33 (consent), 34 (native libraries, scree
 
 - [x] #12 agent: migration, consent trigger, upload slots, chat-upload/chat-urls actions, pgTAP and Deno tests, docs
 - [x] #45 agent: chat media in the app (consent switch, image/video/voice send and display), tests
-- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each
+- [x] Merge both, regenerate types, full suites, review per ticket, one PR each (PRs #88, #89)
 
 # Word filter (#17) ‖ Me, Settings and Safety Centre (#43), in parallel
 
@@ -71,7 +79,7 @@ Started 2026-10-15. Contract (messages are the DB's exact text; the app maps the
 
 - [x] #17 agent: migration, triggers, message flag, pgTAP allow/deny tests, docs
 - [x] #43 agent: Me, edit sections, pause, blocked list, Settings, Safety Centre, tests
-- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each
+- [x] Merge both, regenerate types, full suites, review per ticket, one PR each (PRs #85, #87)
 
 # Reports (#16) ‖ Report screen (#49), in parallel
 
@@ -109,7 +117,7 @@ The pair skipped earlier; resumed 2026-10-14. Contract (messages are the DB's ex
 
 - [x] #15 agent: migration, admin + member functions, board/get_activity circle label, dev seed, pgTAP, docs
 - [x] #48 agent: circles data module, Circles + CircleDetail screens, post-to-circle, label on the board, tests
-- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each
+- [x] Merge both, regenerate types, full suites, review per ticket, one PR each (PRs #79, #81)
 
 # Media links (#35) ‖ Profile setup (#38), in parallel
 
@@ -128,7 +136,7 @@ Founder choices (2026-10-14): build these next; image library react-native-image
 
 - [x] #35 agent: migration (upload slots, confirm/replace, photo visibility), Edge Function with Deno tests, pgTAP tests, CI step for the function tests, docs
 - [x] #38 agent: image-crop-picker, photos data module, five setup steps, resume, submit, tests
-- [ ] Merge, regenerate types, full suites, try upload against the real bucket, phone check, review per ticket, one PR each, then deploy the function and push the migration to the cloud
+- [x] Merge, regenerate types, full suites, try upload against the real bucket, phone check, review per ticket, one PR each, then deploy the function and push the migration to the cloud (PRs #76, #77; real-bucket smoke test in #76; deploys are automatic since PR #80)
 
 # Open sign-up (#68) ‖ app without invites (#69), in parallel
 
@@ -142,7 +150,7 @@ Decision 27 (founder, 2026-10-13): open sign-up, invite codes removed completely
 
 - [x] #68 agent: migration, pgTAP tests, seeds, docs
 - [x] #69 agent: screens, stages, navigation, tests
-- [ ] Merge both, regenerate types, full suites, review per ticket, one PR each, then push the migration to the cloud
+- [x] Merge both, regenerate types, full suites, review per ticket, then push the migration to the cloud (one PR for both, #74, so the app's integration tests kept passing)
 
 # Join Requests (#14) ‖ Join screens (#47), in parallel
 
@@ -204,7 +212,7 @@ Decisions the mockups don't cover:
 - [x] Screens: Welcome, InviteCode (check or redeem), Email, Otp (30 s resend), AgeConsent; profile-setup placeholder
 - [x] Navigation by stage; sign-out clears the session and the pending code
 - [x] Component tests per screen and integration tests against local Supabase (invite and consent rules, stage transitions)
-- [ ] Check every screen on the phone against its mockup (Welcome and InviteCode checked)
+- [ ] Check every screen on the phone against its mockup (Welcome and InviteCode checked). Note: the invite step is gone since #69 (decision 27); the flow is Welcome, Email, code, Date of birth and consents
 
 # Mobile app setup (#34)
 
@@ -219,12 +227,14 @@ Approved: supabase-js, async-storage, url-polyfill, React Navigation (native sta
 - [x] Signed-in hello screen calls `is_admin()` under RLS
 - [x] Jest + RNTL example tests, integration tests against local Supabase; CI workflow for lint, typecheck, tests
 - [x] README: run against local Supabase on an emulator (`10.0.2.2`)
-- [ ] Debug build on an Android emulator (needs JDK 17 and the Android SDK; not installed yet)
+- [x] Android build: JDK 17 and the Android SDK are installed and the app runs on a phone; CI builds a release APK for Firebase App Distribution (android-distribute.yml, PR #82)
 - [ ] iOS: add the fonts to the Xcode project and `UIAppFonts` (needs macOS)
 
 # V1 database: migration plan
 
 Source of truth: docs/12-db-schema.md, CONTEXT.md, docs/adr/. One migration per PR, each with pgTAP tests in `supabase/tests/` that prove every RLS rule and function guard (hard rule 5).
+
+Done: V1 database closed 2026-10-18 (#1). The 0001 to 0007 grouping below was the first sketch; the schema was built as one migration per ticket instead (`supabase/migrations/`), so those lines are history, not open tasks.
 
 ## Setup (before 0001)
 - [x] `npx supabase init` (Supabase CLI via npx, no global install); commit `supabase/config.toml`
@@ -233,22 +243,22 @@ Source of truth: docs/12-db-schema.md, CONTEXT.md, docs/adr/. One migration per 
 - [x] Test helpers: a pgTAP helper to act as a given Member or admin (set `request.jwt.claims` and role `authenticated`)
 
 ## Migrations
-- [ ] **0001 foundations**: extensions (postgis, pg_cron, pg_net, pgtap in tests only); all enums; catalogs (`areas` with centroids, `tags`, `industries`, `prompt_questions`, `consent_documents`, `banned_terms`, `blocked_email_domains`) with seed rows; `is_admin()`; `updated_at` trigger function
-- [ ] **0002 profiles and onboarding**: `profiles`, `profile_prompts`, `profile_tags`, `photos`, `consents`, `invite_codes`, `invite_redemptions`, `device_tokens`; column grants; `check_invite`, `redeem_invite`, `accept_consents`, `submit_profile`, `confirm_photo_upload`, `set_paused`; `enforce_profile_minimum` trigger; word-filter trigger on names and prompts
-- [ ] **0003 blocks and discovery**: `blocks`, `is_blocked`, `is_visible`, `eligible_modes`, `block_user`, `discover_feed`, `get_profile`, `match_reason`
-- [ ] **0004 connections and chat**: `connections` (partial unique pair), `connection_members`, `connection_mode_changes`, `messages`; `send_request`, `respond_request`, `close_connection`, `propose_mode_change`, `respond_mode_change`; message insert policy (incl. Casual media consent); broadcast trigger and `realtime.messages` policy; message word filter → `word_filter` report (report table stubbed here or 0006 moved earlier)
-- [ ] **0005 activities and circles**: `activities`, `activity_venues`, `activity_requests`, `circles`, `circle_members`; `join_activity_request`, `respond_activity_request` (Activity Connection), `withdraw_activity_request`, `join_circle`, `circle_members_of`; Locked Activity and capacity triggers; `expire_activities` pg_cron job
-- [ ] **0006 moderation**: `reports`, `admin_actions`; `report` (Auto-hide at 3 distinct reporters / 7 days), `admin_takedown`, `admin_ban`, `admin_restore`
-- [ ] **0007 learning loop and account**: `meetup_feedback`, `data_requests`; `submit_meetup_feedback`, `withdraw_consent`, `delete_account`; chat media purge pg_cron → pg_net job
-- [ ] `supabase/seed/reviewer.sql` (Reviewer Account, `REVIEWER` code)
+- **0001 foundations**: extensions (postgis, pg_cron, pg_net, pgtap in tests only); all enums; catalogs (`areas` with centroids, `tags`, `industries`, `prompt_questions`, `consent_documents`, `banned_terms`, `blocked_email_domains`) with seed rows; `is_admin()`; `updated_at` trigger function
+- **0002 profiles and onboarding**: `profiles`, `profile_prompts`, `profile_tags`, `photos`, `consents`, `invite_codes`, `invite_redemptions`, `device_tokens`; column grants; `check_invite`, `redeem_invite`, `accept_consents`, `submit_profile`, `confirm_photo_upload`, `set_paused`; `enforce_profile_minimum` trigger; word-filter trigger on names and prompts
+- **0003 blocks and discovery**: `blocks`, `is_blocked`, `is_visible`, `eligible_modes`, `block_user`, `discover_feed`, `get_profile`, `match_reason`
+- **0004 connections and chat**: `connections` (partial unique pair), `connection_members`, `connection_mode_changes`, `messages`; `send_request`, `respond_request`, `close_connection`, `propose_mode_change`, `respond_mode_change`; message insert policy (incl. Casual media consent); broadcast trigger and `realtime.messages` policy; message word filter → `word_filter` report (report table stubbed here or 0006 moved earlier)
+- **0005 activities and circles**: `activities`, `activity_venues`, `activity_requests`, `circles`, `circle_members`; `join_activity_request`, `respond_activity_request` (Activity Connection), `withdraw_activity_request`, `join_circle`, `circle_members_of`; Locked Activity and capacity triggers; `expire_activities` pg_cron job
+- **0006 moderation**: `reports`, `admin_actions`; `report` (Auto-hide at 3 distinct reporters / 7 days), `admin_takedown`, `admin_ban`, `admin_restore`
+- **0007 learning loop and account**: `meetup_feedback`, `data_requests`; `submit_meetup_feedback`, `withdraw_consent`, `delete_account`; chat media purge pg_cron → pg_net job
+- [x] `supabase/seed/reviewer.sql` (Reviewer Account; the `REVIEWER` code went with invite codes in #68)
 
 Ordering note: 0004's message word filter files a report, so `reports` must exist first. Either move `reports`/`admin_actions` into 0003, or add the message filter in 0006. Proposed: create `reports` and `admin_actions` tables in 0003, functions in 0006.
 
 ## Needs input before 0001
-- [ ] The full ~40 interest and activity tags (mockups show 14: badminton, board games, books, cafes, cooking, cricket, cycling, football, live music, movies, photography, running, trekking, yoga)
-- [ ] The prompt questions list
+- [ ] The full ~40 interest and activity tags (the 14 mockup tags are seeded: badminton, board games, books, cafes, cooking, cricket, cycling, football, live music, movies, photography, running, trekking, yoga)
+- [ ] The prompt questions list (2 seeded, from the mockups)
 - [ ] The industries list (a provisional 12-item starter list is seeded in #5)
-- [ ] Banned-terms seed list (or start empty and fill from the dashboard via admin)
+- [x] Banned-terms seed list: starts empty, admins fill it (#17)
 
 ## Review
 - #2 (harness + CI): foundations migration (postgis, pg_cron, pg_net, `is_admin()`), act-as helpers, 4 admin tests passing locally; a deliberately broken `is_admin()` made the suite fail. Gotcha: `supabase migration new` waits on stdin when not run from a terminal, so pass `</dev/null`. Branch protection pending the first workflow run on GitHub.

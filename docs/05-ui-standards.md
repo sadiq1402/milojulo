@@ -1,6 +1,6 @@
 # UI standards
 
-All sizes in logical points (iOS) / dp (Android); text in sp so it scales with the system font setting. Reference frame 390 x 844; support 360 to 430 wide. The static mockups in design/reference-html/screens follow these values.
+All sizes in logical points (iOS) / dp (Android); text in sp so it scales with the system font setting. Reference frame 390 x 844; support 360 to 430 wide. The static mockups in design/reference-html/screens follow these values. The values are tokens in design/tokens.ts (and tokens.json); the app reads them through apps/mobile/src/theme and builds the components below in apps/mobile/src/components (the chat bubble is apps/mobile/src/screens/chat/MessageBubble.tsx).
 
 ## Layout
 - Base unit 4, rhythm 8. Spacing scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64.

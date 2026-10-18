@@ -1,5 +1,7 @@
 # Member location: one offset point per Member, readable by no one
 
+_Status: accepted (decisions 40 to 42). Built as described (migrations 20261017090000_member_location.sql, 20261018090000_discover_by_distance.sql); the app sends a point on open at most every 3 hours (`refreshEvery` in apps/mobile/src/features/location/prompt.ts)._
+
 Founder decision (2026-10-15, #101): Discover filters by distance from the phone, so MiloJulo stores a real location. This reverses the old hard rule 7 ("coarse location cell only, never exact coordinates").
 
 `member_locations` keeps one row per Member: the latest point only, as a PostGIS geography, already moved by a fixed random offset (200 to 500 m in a random direction, drawn on the first update and kept). The raw point from the phone is never stored. RLS is on with no policies, so no client role reads or writes it, the owner and admins included. Only security definer functions touch it: `set_location(lat, lng)` writes it, and the feed measures from `member_point(member)` (internal; the offset point, else the Member's Area centre).
