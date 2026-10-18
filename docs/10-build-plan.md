@@ -15,7 +15,7 @@ The original plan assumed 15 to 20 hours a week: about eleven build weeks, then 
 The build stages (weeks 1 to 11) are done apart from the items below: the database (#1) and the app (#33) were closed as complete. RLS tests (`db-tests`), app tests (`app-checks`, `app-integration`) and Edge Function tests (`function-tests`) run in CI; merges to `main` deploy migrations and Edge Functions (deploy.yml) and send an Android build to testers through Firebase App Distribution (android-distribute.yml).
 
 Still to do before the closed beta:
-- [ ] Remove a taken-down message from open chats live (#163).
+- [x] Remove a taken-down message from open chats live (#163).
 - [ ] Bot check (#70) and disposable-email blocklist (#71) on sign-up; both wait on founder input.
 - [ ] Web account deletion page (#98); waits on hosting and domain.
 - [ ] Report evidence retention and cleanup (#160); waits on the retention period.

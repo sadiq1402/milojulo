@@ -14,6 +14,7 @@ export function MemberLive() {
         const connectionId = String(payload.connection_id);
         const stale = {
           message: [chatKeys.conversations],
+          'message-removed': [chatKeys.conversations],
           connection: [chatKeys.conversations],
           'join-request': [activityKeys.all],
           read: [chatKeys.state(connectionId)],

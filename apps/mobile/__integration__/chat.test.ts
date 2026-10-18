@@ -13,6 +13,7 @@ import {
   subscribeToChat,
   type Message,
 } from '../src/features/chat/api';
+import { admin } from './support/admin';
 import { connect, createMember, type TestMember } from './support/members';
 
 let me: TestMember;
@@ -92,6 +93,7 @@ test('a message from the other side arrives live on the private channel', async 
   const subscribed = new Promise<void>(resolve => {
     const unsubscribe = subscribeToChat(connectionId, {
       onMessage: message => received.push(message),
+      onRemoved: () => {},
       onStatus: status => status === 'live' && resolve(),
     });
     afterAllCleanups.push(unsubscribe);
@@ -128,6 +130,36 @@ test('a message from the other side arrives live on the private channel', async 
   });
 }, 30_000);
 
+test('a message taken down by an admin is announced live and can no longer be read', async () => {
+  const removed: string[] = [];
+  await new Promise<void>(resolve => {
+    afterAllCleanups.push(
+      subscribeToChat(connectionId, {
+        onMessage: () => {},
+        onRemoved: id => removed.push(id),
+        onStatus: status => status === 'live' && resolve(),
+      }),
+    );
+  });
+  const id = newMessageId();
+  await ravi.client.from('messages').insert({
+    id,
+    connection_id: connectionId,
+    type: 'text',
+    body: 'Something nasty',
+  });
+  // What admin_takedown does to a message; the service role stands in for an admin's session.
+  const { error } = await admin
+    .from('messages')
+    .update({ removed_at: new Date().toISOString() })
+    .eq('id', id);
+  expect(error).toBeNull();
+  await waitFor(() => removed.includes(id));
+  expect((await fetchMessages(connectionId)).some(m => m.id === id)).toBe(
+    false,
+  );
+}, 30_000);
+
 test("each chat gets only its own Connection's messages from my one channel", async () => {
   const meera = await createMember('Meera');
   const otherChat = await connect(meera, me);
@@ -138,6 +170,7 @@ test("each chat gets only its own Connection's messages from my one channel", as
       afterAllCleanups.push(
         subscribeToChat(connection, {
           onMessage: message => into.push(message),
+          onRemoved: () => {},
           onStatus: status => status === 'live' && resolve(),
         }),
       );

@@ -58,11 +58,26 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
       list.map(p => (p.id === id ? { ...p, delivery, failure } : p)),
     );
 
+  // Taken down while the chat is open; a fetch that read them earlier must not bring them back.
+  const removed = useRef(new Set<string>());
   const merge = useCallback(
     (incoming: Message[]) =>
       client.setQueryData<Message[]>(chatKeys.messages(connectionId), current =>
-        mergeMessages(current ?? [], incoming),
+        mergeMessages(
+          current ?? [],
+          incoming.filter(m => !removed.current.has(m.id)),
+        ),
       ),
+    [client, connectionId],
+  );
+  const remove = useCallback(
+    (id: string) => {
+      removed.current.add(id);
+      client.setQueryData<Message[]>(chatKeys.messages(connectionId), current =>
+        current?.filter(m => m.id !== id),
+      );
+      setPending(list => list.filter(p => p.id !== id));
+    },
     [client, connectionId],
   );
   const catchUp = useCallback(async () => {
@@ -75,13 +90,14 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     () =>
       subscribeToChat(connectionId, {
         onMessage: message => merge([message]),
+        onRemoved: remove,
         onStatus: status => {
           if (status === 'live') {
             catchUp().catch(() => {});
           }
         },
       }),
-    [connectionId, merge, catchUp],
+    [connectionId, merge, remove, catchUp],
   );
 
   const [appActive, setAppActive] = useState(
@@ -162,7 +178,10 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     }
   };
 
-  const confirmed = messages.data ?? [];
+  // The first load may land after a removal, so filter here too.
+  const confirmed = (messages.data ?? []).filter(
+    m => !removed.current.has(m.id),
+  );
   const confirmedIds = new Set(confirmed.map(m => m.id));
   const items: ChatItem[] = [
     ...confirmed.map(m => ({ ...m, delivery: 'sent' as const })),

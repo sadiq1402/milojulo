@@ -1,7 +1,7 @@
 # Next (2026-10-18)
 
 V1 is built: database (#1) and app (#33) closed. Open, in tracker order:
-- [ ] #163 Remove a taken-down message from open chats live (ready-for-agent)
+- [x] #163 Remove a taken-down message from open chats live
 - [ ] #70 Turnstile, #71 disposable-email blocklist, #98 web deletion page, #160 report evidence retention (needs-info: waiting on the founder)
 - [ ] #137 Media cache through a Cloudflare Worker (parked)
 - [ ] Beta prep: see docs/10-build-plan.md, Status
@@ -346,3 +346,4 @@ Ordering note: 0004's message word filter files a report, so `reports` must exis
 - #166 (Paused meet nudge): `send_meet_nudges()` now skips Paused Members, who are asked once they unpause; redefined in its own migration, and `create or replace` keeps the existing revokes.
 - #167 (push retries): `dispatch_push(id)` is the one place that calls the push function (the insert trigger and the new `retry-queued-pushes` job every 5 minutes); a row is stamped `handed_over_at`, and only rows never handed over after a minute or handed over 5 minutes ago are sent again (pg_net's backlog after a big batch such as the meet nudges would otherwise double-send); a retry re-checks the recipient (banned, setting off, muted, Connection gone) since `enqueue_push` only checked at queue time; ones an hour old dropped (decision 57). Known: a retry goes to every device, so a two-phone Member can get a duplicate.
 - #168 (photo deletes): DELETE on `photos` revoked from `authenticated` and its policy dropped; a photo goes only through `photo-delete` → `delete_photo()` (service role), so its R2 file goes too. Tests that used a Member's direct delete as a shortcut now call `delete_photo()` as the service role (minimum_test) or delete as postgres (photo_move_test).
+- #163 (live message removal): `broadcast_message_removed` trigger on `messages.removed_at` (null → set) sends `message-removed` with `{id, connection_id}` to both sides' `member:<id>` topics, skipping a Blocked pair; `subscribeToChat` gained a required `onRemoved`, `useChat` keeps the removed ids (so a catch-up or first load that read the message earlier cannot bring it back), drops the id from the cache and from pending sends (the sender's own message goes too), and `MemberLive` refreshes the Inbox. Gotcha: after `setQueryData` in a test, assert with `waitFor`, since TanStack notifies on a timer. Integration test sets `removed_at` with the service role (it cannot call `admin_takedown`, which needs an admin JWT).
