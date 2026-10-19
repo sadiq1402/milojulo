@@ -8,6 +8,19 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+// Keyboard handling: the library's mock (keyboard closed), its hooks kept from resetMocks the same way.
+jest.mock('react-native-keyboard-controller', () => {
+  const mock = require('react-native-keyboard-controller/jest');
+  return Object.fromEntries(
+    Object.entries(mock).map(([name, value]) => [
+      name,
+      jest.isMockFunction(value) && value.getMockImplementation()
+        ? value.getMockImplementation()
+        : value,
+    ]),
+  );
+});
+
 // The native photo picker doesn't exist under Jest; tests say what it returns.
 jest.mock('react-native-image-crop-picker', () => ({
   __esModule: true,
