@@ -7,6 +7,7 @@ import { focusManager, QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import React, { useEffect, useState } from 'react';
 import { AppState, StatusBar } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider } from './features/auth/SessionProvider';
 import { keepSavedQueries, persistOptions } from './lib/persistCache';
@@ -44,17 +45,19 @@ export default function App({
   );
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" />
-      <PersistQueryClientProvider
-        client={client}
-        persistOptions={persistOptions}
-      >
-        <SessionProvider>
-          <NavigationContainer ref={navigationRef} theme={navTheme}>
-            <RootNavigator />
-          </NavigationContainer>
-        </SessionProvider>
-      </PersistQueryClientProvider>
+      <KeyboardProvider>
+        <StatusBar barStyle="dark-content" />
+        <PersistQueryClientProvider
+          client={client}
+          persistOptions={persistOptions}
+        >
+          <SessionProvider>
+            <NavigationContainer ref={navigationRef} theme={navTheme}>
+              <RootNavigator />
+            </NavigationContainer>
+          </SessionProvider>
+        </PersistQueryClientProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

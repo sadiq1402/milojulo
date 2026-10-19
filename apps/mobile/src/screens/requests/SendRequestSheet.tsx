@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import {
   Avatar,
   BottomSheet,
@@ -13,7 +13,7 @@ import {
 import { chatKeys } from '../../features/chat/queries';
 import { modeLabels, type Mode } from '../../features/modes';
 import { noteMaxLength, sendRequest } from '../../features/requests/api';
-import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
+import { colors, fontFamily, fonts, layout, sizes, spacing } from '../../theme';
 
 type Props = {
   visible: boolean;
@@ -60,8 +60,13 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
     },
   });
 
+  // Scrolls when the keyboard leaves the sheet too little room (small phones, large text).
   return (
-    <>
+    <ScrollView
+      style={styles.form}
+      contentContainerStyle={styles.formContent}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.header}>
         <Avatar name={member.name} size="sheet" />
         <Text variant="h2" accessibilityRole="header">
@@ -150,11 +155,17 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
       <Text variant="bodySmall" color={colors.secondary} style={styles.center}>
         You can send up to 10 requests in any 24 hours.
       </Text>
-    </>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  // Edge to edge inside the sheet, so the button's shadow isn't clipped at the padding.
+  form: { flexGrow: 0, marginHorizontal: -sizes.sheet.paddingX },
+  formContent: {
+    gap: layout.blockGap,
+    paddingHorizontal: sizes.sheet.paddingX,
+  },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   field: { gap: spacing.xs },
   label: { fontFamily: fontFamily(fonts.text, '600') },

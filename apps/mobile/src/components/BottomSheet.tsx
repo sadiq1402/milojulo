@@ -7,6 +7,8 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, radius, shadow, sizes } from '../theme';
 
@@ -28,6 +30,12 @@ export function BottomSheet({
   const insets = useSafeAreaInsets();
   const offset = useRef(new Animated.Value(height)).current;
   const tallest = (height * sizes.sheet.maxHeightPct) / 100;
+  // A Modal on Android doesn't resize for the keyboard, so make room under the sheet ourselves.
+  // The sheet already pads for the bottom inset, which the keyboard covers.
+  const keyboard = useReanimatedKeyboardAnimation();
+  const keyboardRoom = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(-keyboard.height.value - insets.bottom, 0),
+  }));
 
   useEffect(() => {
     if (visible) {
@@ -48,7 +56,9 @@ export function BottomSheet({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.root}>
+      <Reanimated.View
+        style={[styles.root, { paddingTop: insets.top }, keyboardRoom]}
+      >
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
@@ -69,7 +79,7 @@ export function BottomSheet({
           <View style={styles.handle} />
           {children}
         </Animated.View>
-      </View>
+      </Reanimated.View>
     </Modal>
   );
 }
@@ -83,6 +93,8 @@ const styles = StyleSheet.create({
     paddingTop: sizes.sheet.paddingTop,
     paddingHorizontal: sizes.sheet.paddingX,
     gap: layout.blockGap,
+    // Gives way to the keyboard: content that needs more room scrolls.
+    flexShrink: 1,
     ...shadow('sheet'),
   },
   handle: {
