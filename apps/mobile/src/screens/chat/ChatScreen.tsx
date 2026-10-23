@@ -38,6 +38,7 @@ import { useChat, type ChatItem } from '../../features/chat/useChat';
 import {
   useAttach,
   useMediaConsent,
+  useMediaGate,
   useVoiceRecorder,
 } from '../../features/chat/useChatMedia';
 import { useModeChange } from '../../features/chat/useModeChange';
@@ -122,7 +123,8 @@ export function ChatScreen({
   const limits = useChatMediaLimits();
   const attach = useAttach(chat.sendMedia, limits);
   const voice = useVoiceRecorder(chat.sendMedia, limits.voiceMaxMs);
-  const mediaError = attach.error ?? voice.error;
+  const gate = useMediaGate(connectionId, accepted);
+  const mediaError = gate.wait ?? attach.error ?? voice.error;
   const recordingMs = voice.elapsedMs;
 
   return (
@@ -243,7 +245,7 @@ export function ChatScreen({
               icon="image"
               accessibilityLabel="Attach photo or video"
               disabled={consent.visualsOff}
-              onPress={() => attach.setOpen(true)}
+              onPress={() => gate.allow() && attach.setOpen(true)}
             />
             {recordingMs !== null ? (
               <View style={styles.recording} accessibilityLiveRegion="polite">
@@ -272,7 +274,7 @@ export function ChatScreen({
               />
             ) : (
               <Pressable
-                onPressIn={voice.start}
+                onPressIn={() => gate.allow() && voice.start()}
                 onPressOut={voice.stop}
                 accessibilityRole="button"
                 accessibilityLabel="Hold to record a voice note"

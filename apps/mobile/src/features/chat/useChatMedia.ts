@@ -8,10 +8,11 @@ import {
 } from './capture';
 import {
   setMediaConsent,
+  waitText,
   type ChatMediaLimits,
   type OutgoingMedia,
 } from './media';
-import { chatKeys, useMediaState } from './queries';
+import { chatKeys, useMediaAllowance, useMediaState } from './queries';
 
 // Media Consent for one chat: whether photos and video are open, and the line explaining why not.
 export function useMediaConsent({
@@ -54,6 +55,27 @@ export function useMediaConsent({
     known: !accepted || !state.isPending,
     setMine: (on: boolean) => change.mutate(on),
   };
+}
+
+// Today's media allowance in one chat (#183). `allow()` says whether a pick or a recording may
+// start; when it may not, `wait` holds the line saying when the next one opens.
+export function useMediaGate(connectionId: string, accepted: boolean) {
+  const allowance = useMediaAllowance(connectionId, accepted);
+  const [wait, setWait] = useState<string>();
+  const nextAt = allowance.data?.nextAt;
+  const usedUp =
+    allowance.data?.remaining === 0 &&
+    !!nextAt &&
+    Date.parse(nextAt) > Date.now();
+  const allow = () => {
+    if (usedUp) {
+      setWait(waitText(nextAt!));
+      return false;
+    }
+    setWait(undefined);
+    return true;
+  };
+  return { wait: usedUp ? wait : undefined, allow };
 }
 
 // The attach sheet: pick, compress and check, then hand the file to the chat to send.

@@ -7,6 +7,7 @@ import * as chat from '../src/features/chat/api';
 import type { Conversation, Message } from '../src/features/chat/api';
 import * as capture from '../src/features/chat/capture';
 import * as media from '../src/features/chat/media';
+import { chatKeys } from '../src/features/chat/queries';
 import type { OutgoingMedia } from '../src/features/chat/media';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
@@ -29,6 +30,7 @@ jest.mock('../src/features/chat/capture', () => ({
 jest.mock('../src/features/chat/media', () => ({
   ...jest.requireActual('../src/features/chat/media'),
   fetchChatMediaLimits: jest.fn(),
+  fetchMediaAllowance: jest.fn(),
   uploadChatMedia: jest.fn(),
   insertMediaMessage: jest.fn(),
   fetchMediaUrls: jest.fn(),
@@ -147,6 +149,9 @@ beforeEach(() => {
     .mocked(media.fetchMediaState)
     .mockResolvedValue({ isCasual: false, mine: false, theirs: false });
   jest.mocked(media.fetchChatMediaLimits).mockResolvedValue(limits);
+  jest
+    .mocked(media.fetchMediaAllowance)
+    .mockResolvedValue({ remaining: 1, nextAt: null });
   jest.mocked(media.uploadChatMedia).mockResolvedValue('key-1');
   jest.mocked(media.insertMediaMessage).mockResolvedValue();
 });
@@ -157,6 +162,17 @@ async function openChat() {
   await fireEvent.press(screen.getByRole('tab', { name: 'Chats' }));
   await fireEvent.press(await screen.findByRole('button', { name: /^Isha/ }));
   await screen.findByText('Baner');
+  // The server's limits and allowance arrive before anything is tapped; Query hands results
+  // to the screen on a timer, so let one pass once both are in.
+  await waitFor(() => {
+    expect(app.client.getQueryState(chatKeys.mediaLimits)?.status).toBe(
+      'success',
+    );
+    expect(
+      app.client.getQueryState(chatKeys.mediaAllowance('conn-isha'))?.status,
+    ).toBe('success');
+  });
+  await act(() => new Promise<void>(resolve => setTimeout(() => resolve(), 0)));
   return app;
 }
 
@@ -401,6 +417,57 @@ describe('media in a chat', () => {
     await fireEvent(mic, 'pressIn');
     await fireEvent(mic, 'pressOut');
     expect(media.uploadChatMedia).not.toHaveBeenCalled();
+  });
+});
+
+describe('the daily media allowance', () => {
+  const usedUp = () =>
+    jest.mocked(media.fetchMediaAllowance).mockResolvedValue({
+      remaining: 0,
+      nextAt: new Date(Date.now() + (4 * 60 + 10) * 60_000).toISOString(),
+    });
+
+  test('when it is used up, tapping attach shows the wait and opens nothing', async () => {
+    usedUp();
+    await openChat();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Attach photo or video' }),
+    );
+    expect(
+      await screen.findByText('Next photo, video or voice note in 5 h'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Take a photo' })).toBeNull();
+    expect(capture.pickMedia).not.toHaveBeenCalled();
+  });
+
+  test('when it is used up, holding the mic shows the wait and records nothing', async () => {
+    usedUp();
+    await openChat();
+    await fireEvent(
+      screen.getByRole('button', { name: 'Hold to record a voice note' }),
+      'pressIn',
+    );
+    expect(
+      await screen.findByText('Next photo, video or voice note in 5 h'),
+    ).toBeOnTheScreen();
+    expect(capture.startVoiceNote).not.toHaveBeenCalled();
+  });
+
+  test('after a media message goes, the allowance is read again', async () => {
+    jest.mocked(capture.pickMedia).mockResolvedValue(picked);
+    await openChat();
+    await waitFor(() =>
+      expect(media.fetchMediaAllowance).toHaveBeenCalledTimes(1),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Attach photo or video' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose from gallery' }),
+    );
+    await waitFor(() =>
+      expect(media.fetchMediaAllowance).toHaveBeenCalledTimes(2),
+    );
   });
 });
 

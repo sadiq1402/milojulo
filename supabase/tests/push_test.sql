@@ -1,6 +1,8 @@
 begin;
 \ir helpers/act_as.psql
 select plan(46);
+-- Several media messages per chat here; the daily allowance has its own tests.
+update public.chat_media_settings set daily_media_allowance = null;
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000000' || suffix)::uuid $$;

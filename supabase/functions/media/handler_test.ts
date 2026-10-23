@@ -569,6 +569,10 @@ Deno.test('chat-upload passes on the database refusals', async () => {
     status: 400,
     body: { error: 'image is too large' },
   });
+  assertEquals(await setup({ refuse: { startChatUpload: 'media limit reached' } }).call(chatUpload), {
+    status: 429,
+    body: { error: 'media limit reached' },
+  });
 });
 
 // chat-confirm

@@ -81,6 +81,7 @@ const REFUSAL_STATUS: Record<string, number> = {
   'no connection': 404,
   'media is off in this chat': 403,
   'image is too large': 400,
+  'media limit reached': 429,
   'choose image, video or voice': 400,
   'no upload to confirm': 404,
 };

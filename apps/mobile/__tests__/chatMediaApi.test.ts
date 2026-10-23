@@ -1,5 +1,7 @@
 import {
   fetchChatMediaLimits,
+  fetchMediaAllowance,
+  waitText,
   fetchMediaState,
   fetchMediaUrls,
   insertMediaMessage,
@@ -154,6 +156,10 @@ describe('uploading and sending chat media', () => {
     ['voice note must be an M4A', "That file can't be sent"],
     ['no connection', "can't send messages in this chat"],
     ['media is off in this chat', 'Photos and video are off in this chat'],
+    [
+      'media limit reached',
+      "You've sent today's photo, video or voice note in this chat.",
+    ],
   ])('the function refusing "%s" reads as friendly copy', async (key, copy) => {
     invoke.mockResolvedValueOnce(refused(key));
     await expect(send(image)).rejects.toThrow(copy);
@@ -164,6 +170,10 @@ describe('uploading and sending chat media', () => {
     ['upload the media first', "didn't finish uploading"],
     ['media is off in this chat', 'Photos and video are off in this chat'],
     ['video is too long', 'Videos can be up to 15 seconds.'],
+    [
+      'media limit reached',
+      "You've sent today's photo, video or voice note in this chat.",
+    ],
     ['voice note is too long', 'Voice notes can be up to 1 minute 30 seconds.'],
   ])('the database refusing "%s" reads as friendly copy', async (key, copy) => {
     uploads();
@@ -215,6 +225,36 @@ describe('fetchChatMediaLimits', () => {
       voiceMaxMs: 120_000,
     });
     expect(rpc).toHaveBeenCalledWith('chat_media_limits');
+  });
+});
+
+describe('the daily media allowance', () => {
+  test("reads the caller's allowance for one chat", async () => {
+    rpc.mockReturnValueOnce({
+      single: async () => ({
+        data: { remaining: 0, next_at: '2026-10-25T10:00:00+00:00' },
+        error: null,
+      }),
+    });
+    await expect(fetchMediaAllowance('c1')).resolves.toEqual({
+      remaining: 0,
+      nextAt: '2026-10-25T10:00:00+00:00',
+    });
+    expect(rpc).toHaveBeenCalledWith('chat_media_allowance', {
+      connection_id: 'c1',
+    });
+  });
+
+  test.each([
+    [4 * 60 + 10, 'Next photo, video or voice note in 5 h'],
+    [60, 'Next photo, video or voice note in 1 h'],
+    [59, 'Next photo, video or voice note in 59 min'],
+    [0.5, 'Next photo, video or voice note in 1 min'],
+  ])('a wait of %s minutes reads "%s"', (minutes, text) => {
+    const now = Date.parse('2026-10-24T10:00:00Z');
+    expect(waitText(new Date(now + minutes * 60_000).toISOString(), now)).toBe(
+      text,
+    );
   });
 });
 

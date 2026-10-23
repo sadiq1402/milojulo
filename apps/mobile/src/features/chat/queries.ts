@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchConversations, type Message } from './api';
 import {
   fetchChatMediaLimits,
+  fetchMediaAllowance,
   fetchMediaState,
   fetchMediaUrls,
   fixedLimits,
@@ -11,6 +12,10 @@ import {
 
 export const chatKeys = {
   mediaLimits: ['chat-media-limits'],
+  mediaAllowance: (connectionId: string) => [
+    'chat-media-allowance',
+    connectionId,
+  ],
   conversations: ['conversations'],
   messages: (connectionId: string) => ['messages', connectionId],
   state: (connectionId: string) => ['chat-state', connectionId],
@@ -117,6 +122,16 @@ export function useChatMediaLimits(): ChatMediaLimits {
     queryFn: fetchChatMediaLimits,
   });
   return query.data ?? fixedLimits;
+}
+
+// The caller's media allowance in one chat (#183), read on every open and return to the app.
+export function useMediaAllowance(connectionId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: chatKeys.mediaAllowance(connectionId),
+    queryFn: () => fetchMediaAllowance(connectionId),
+    enabled,
+    staleTime: 0,
+  });
 }
 
 export function useConversations() {

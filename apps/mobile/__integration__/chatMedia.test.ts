@@ -2,6 +2,7 @@ import { signOut } from '../src/features/auth/api';
 import { fetchMessages, newMessageId } from '../src/features/chat/api';
 import {
   fetchChatMediaLimits,
+  fetchMediaAllowance,
   fetchMediaState,
   fetchMediaUrls,
   insertMediaMessage,
@@ -85,8 +86,12 @@ test('a photo uploads, sends once with a retried id, and comes back by signed li
     return;
   }
   const id = newMessageId();
-  await sendMediaMessage({ id, connectionId, media: image });
-  await sendMediaMessage({ id, connectionId, media: image });
+  // A retry reuses the uploaded key, as the chat does, and only sends the message again.
+  const limits = await fetchChatMediaLimits();
+  const mediaKey = await uploadChatMedia(connectionId, image, limits);
+  const message = { id, connectionId, media: image, mediaKey, limits };
+  await insertMediaMessage(message);
+  await insertMediaMessage(message);
   const sent = (await fetchMessages(connectionId)).filter(m => m.id === id);
   expect(sent).toEqual([
     expect.objectContaining({
@@ -141,38 +146,84 @@ describe('limits from the settings row (#182)', () => {
   });
 });
 
+describe('the daily media allowance (#183)', () => {
+  test('one media message per chat a day: then refused, and the wait is readable', async () => {
+    const meera = await createMember('Meera');
+    const chatId = await connect(meera, me);
+    await expect(fetchMediaAllowance(chatId)).resolves.toEqual({
+      remaining: 1,
+      nextAt: null,
+    });
+    if (!served) {
+      return;
+    }
+    await sendMediaMessage({
+      id: newMessageId(),
+      connectionId: chatId,
+      media: image,
+    });
+    const after = await fetchMediaAllowance(chatId);
+    expect(after.remaining).toBe(0);
+    expect(Date.parse(after.nextAt!) - Date.now()).toBeGreaterThan(
+      23 * 3600_000,
+    );
+    await expect(
+      sendMediaMessage({
+        id: newMessageId(),
+        connectionId: chatId,
+        media: image,
+      }),
+    ).rejects.toThrow(
+      "You've sent today's photo, video or voice note in this chat.",
+    );
+  });
+});
+
 describe('in a Casual Connection', () => {
+  let neha: TestMember;
+  let casualId: string;
   beforeAll(async () => {
-    // Set up directly: the Casual preferences flow isn't what's under test here.
+    // A fresh Connection, so today's media allowance is unspent. Set up directly: the Casual
+    // preferences flow isn't what's under test here.
+    neha = await createMember('Neha');
+    casualId = await connect(neha, me);
     await admin
       .from('connections')
       .update({ mode: 'casual' })
-      .eq('id', connectionId);
+      .eq('id', casualId);
   });
 
   test('both switches must be on before photos can be sent', async () => {
-    await setMediaConsent(connectionId, true);
-    await expect(fetchMediaState(connectionId)).resolves.toEqual({
+    await setMediaConsent(casualId, true);
+    await expect(fetchMediaState(casualId)).resolves.toEqual({
       isCasual: true,
       mine: true,
       theirs: false,
     });
     if (served) {
       await expect(
-        sendMediaMessage({ id: newMessageId(), connectionId, media: image }),
+        sendMediaMessage({
+          id: newMessageId(),
+          connectionId: casualId,
+          media: image,
+        }),
       ).rejects.toThrow('Photos and video are off in this chat');
     }
-    await ravi.client.rpc('set_media_consent', {
-      connection_id: connectionId,
+    await neha.client.rpc('set_media_consent', {
+      connection_id: casualId,
       consent: true,
     });
-    await expect(fetchMediaState(connectionId)).resolves.toMatchObject({
+    await expect(fetchMediaState(casualId)).resolves.toMatchObject({
       mine: true,
       theirs: true,
     });
     if (served) {
       await expect(
-        sendMediaMessage({ id: newMessageId(), connectionId, media: image }),
+        sendMediaMessage({
+          id: newMessageId(),
+          connectionId: casualId,
+          media: image,
+        }),
       ).resolves.toBeUndefined();
     }
   });

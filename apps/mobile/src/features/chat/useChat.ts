@@ -128,6 +128,12 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     }
   }, [reading, appActive, newestAt, connectionId, client]);
 
+  // A media send, sent or refused, changes what's left of today's allowance (#183).
+  const refreshAllowance = () =>
+    client.invalidateQueries({
+      queryKey: chatKeys.mediaAllowance(connectionId),
+    });
+
   // A retry reuses the id, so a send that got through earlier isn't doubled.
   const attempt = async (message: Pending) => {
     const { id, body, media } = message;
@@ -154,6 +160,9 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
       }
     } catch (e) {
       const reason = (e as Error).message;
+      if (media) {
+        refreshAllowance();
+      }
       if (reason === cannotSendMessage) {
         setDelivery(id, 'refused');
       } else {
@@ -162,6 +171,9 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
       return;
     }
     setDelivery(id, 'sent');
+    if (media) {
+      refreshAllowance();
+    }
     catchUp().catch(() => {});
   };
 

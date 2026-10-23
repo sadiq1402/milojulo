@@ -1,6 +1,8 @@
 begin;
 \ir helpers/act_as.psql
 select plan(20);
+-- Several media messages per chat here; the daily allowance has its own tests.
+update public.chat_media_settings set daily_media_allowance = null;
 
 \set gone '00000000-0000-0000-0000-00000000b601'
 \set ravi '00000000-0000-0000-0000-00000000b602'

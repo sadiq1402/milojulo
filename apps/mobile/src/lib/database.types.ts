@@ -171,14 +171,14 @@ isOneToOne: false
                   ]
                 },"chat_media_settings": {
                   Row: {
-                    "id": boolean,"image_max_bytes": number | null,"video_max_ms": number | null,"voice_max_ms": number | null
+                    "daily_media_allowance": number | null,"id": boolean,"image_max_bytes": number | null,"video_max_ms": number | null,"voice_max_ms": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "id"?: boolean,"image_max_bytes"?: number | null,"video_max_ms"?: number | null,"voice_max_ms"?: number | null
+                    "daily_media_allowance"?: number | null,"id"?: boolean,"image_max_bytes"?: number | null,"video_max_ms"?: number | null,"voice_max_ms"?: number | null
                   }
                   Update: {
-                    "id"?: boolean,"image_max_bytes"?: number | null,"video_max_ms"?: number | null,"voice_max_ms"?: number | null
+                    "daily_media_allowance"?: number | null,"id"?: boolean,"image_max_bytes"?: number | null,"video_max_ms"?: number | null,"voice_max_ms"?: number | null
                   }
                   Relationships: [
                     
@@ -861,6 +861,11 @@ isOneToOne: false
 "cancel_activity":
 { Args: { "activity_id": string }; Returns: undefined
                            },
+"chat_media_allowance":
+{ Args: { "connection_id": string }; Returns: {
+              "next_at": string,"remaining": number
+            }[]
+                           },
 "chat_media_format":
 { Args: { "kind": Database["public"]['Enums']["message_type"] }; Returns: Record<string, unknown>
                            },
@@ -1035,6 +1040,11 @@ isOneToOne: false
                            },
 "matches_banned_term":
 { Args: { "content": string }; Returns: boolean
+                           },
+"media_allowance":
+{ Args: { "connection_id": string,"member_id": string }; Returns: {
+              "next_at": string,"remaining": number
+            }[]
                            },
 "media_allowed":
 { Args: { "connection_id": string }; Returns: boolean

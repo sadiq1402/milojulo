@@ -60,6 +60,9 @@ In a Casual Connection, the per-side switch that must be on for both Members bef
 **Chat Media Limits**:
 The longest video, the largest image and the longest voice note a Member may send in chat, set in one settings row the founder changes without a release (launch: 15 s, 2 MB, 2 min; decision 59). They can only tighten the fixed maximums (30 s video, 5 MB image, 2 min voice).
 
+**Daily Media Allowance**:
+How many media messages (photo, video or voice note) a Member may send in one Connection in any rolling 24 hours (launch: 1; decision 60). Each side of each Connection has its own; text is never limited. Sent messages count, taken-down and expired ones included.
+
 **Media Expiry**:
 Chat images, video and voice notes are deleted 90 days after sending (daily job); the message remains and shows that its media expired. A file that a Report holds as evidence is marked expired in the chat but kept in R2 (how long is open, #160).
 
