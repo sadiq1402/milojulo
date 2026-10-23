@@ -6,7 +6,11 @@ import {
   type MediaSource,
   type VoiceRecording,
 } from './capture';
-import { setMediaConsent, type OutgoingMedia } from './media';
+import {
+  setMediaConsent,
+  type ChatMediaLimits,
+  type OutgoingMedia,
+} from './media';
 import { chatKeys, useMediaState } from './queries';
 
 // Media Consent for one chat: whether photos and video are open, and the line explaining why not.
@@ -53,14 +57,17 @@ export function useMediaConsent({
 }
 
 // The attach sheet: pick, compress and check, then hand the file to the chat to send.
-export function useAttach(sendMedia: (media: OutgoingMedia) => void) {
+export function useAttach(
+  sendMedia: (media: OutgoingMedia) => void,
+  limits: ChatMediaLimits,
+) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string>();
   const attach = async (source: MediaSource) => {
     setOpen(false);
     setError(undefined);
     try {
-      const picked = await pickMedia(source);
+      const picked = await pickMedia(source, limits);
       if (picked) {
         sendMedia(picked);
       }
@@ -71,8 +78,11 @@ export function useAttach(sendMedia: (media: OutgoingMedia) => void) {
   return { open, setOpen, error, attach };
 }
 
-// Hold to record; letting go (or reaching 2 minutes) sends.
-export function useVoiceRecorder(sendMedia: (media: OutgoingMedia) => void) {
+// Hold to record; letting go (or reaching the voice limit) sends.
+export function useVoiceRecorder(
+  sendMedia: (media: OutgoingMedia) => void,
+  limitMs: number,
+) {
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [error, setError] = useState<string>();
   const recording = useRef<Promise<VoiceRecording | null>>(null);
@@ -89,6 +99,7 @@ export function useVoiceRecorder(sendMedia: (media: OutgoingMedia) => void) {
     setError(undefined);
     setElapsedMs(0);
     recording.current = startVoiceNote({
+      limitMs,
       onTick: setElapsedMs,
       onLimit: () => {
         stop();

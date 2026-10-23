@@ -525,19 +525,29 @@ Deno.test('chat-upload takes video as MP4 up to 20 MB and voice as M4A up to 5 M
   assertEquals(new URL(voice.body.uploadUrl).pathname, `/milojulo-media/uploads/chat/${CONN}/${MEDIA}.m4a`);
 });
 
-Deno.test('chat-upload refuses the wrong type or size per kind, without asking the database', async () => {
+Deno.test('chat-upload refuses the wrong type or size per kind with texts free of numbers, without asking the database', async () => {
   const { call, dbCalls } = setup();
-  const image = { status: 400, body: { error: 'image must be a JPEG of at most 5 MB' } };
-  const video = { status: 400, body: { error: 'video must be an MP4 of at most 20 MB' } };
-  const voice = { status: 400, body: { error: 'voice note must be an M4A of at most 5 MB' } };
-  assertEquals(await call({ ...chatUpload, contentType: 'image/png' }), image);
-  assertEquals(await call({ ...chatUpload, size: 5 * MB + 1 }), image);
-  assertEquals(await call({ ...chatUpload, size: 0 }), image);
-  assertEquals(await call({ ...chatUpload, size: 1.5 }), image);
-  assertEquals(await call({ ...chatUpload, kind: 'video', contentType: 'video/mp4', size: 20 * MB + 1 }), video);
-  assertEquals(await call({ ...chatUpload, kind: 'video', contentType: 'image/jpeg' }), video);
-  assertEquals(await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mp4', size: 5 * MB + 1 }), voice);
-  assertEquals(await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mpeg' }), voice);
+  const refused = (error: string) => ({ status: 400, body: { error } });
+  assertEquals(await call({ ...chatUpload, contentType: 'image/png' }), refused('image must be a JPEG'));
+  assertEquals(await call({ ...chatUpload, size: 5 * MB + 1 }), refused('image is too large'));
+  assertEquals(await call({ ...chatUpload, size: 0 }), refused('size must be a whole number of bytes'));
+  assertEquals(await call({ ...chatUpload, size: 1.5 }), refused('size must be a whole number of bytes'));
+  assertEquals(
+    await call({ ...chatUpload, kind: 'video', contentType: 'video/mp4', size: 20 * MB + 1 }),
+    refused('video is too large'),
+  );
+  assertEquals(
+    await call({ ...chatUpload, kind: 'video', contentType: 'image/jpeg' }),
+    refused('video must be an MP4'),
+  );
+  assertEquals(
+    await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mp4', size: 5 * MB + 1 }),
+    refused('voice note is too large'),
+  );
+  assertEquals(
+    await call({ ...chatUpload, kind: 'voice', contentType: 'audio/mpeg' }),
+    refused('voice note must be an M4A'),
+  );
   assertEquals(await call({ ...chatUpload, kind: 'text' }), {
     status: 400,
     body: { error: 'choose image, video or voice' },
@@ -554,6 +564,10 @@ Deno.test('chat-upload passes on the database refusals', async () => {
   assertEquals(await setup({ refuse: { startChatUpload: 'media is off in this chat' } }).call(chatUpload), {
     status: 403,
     body: { error: 'media is off in this chat' },
+  });
+  assertEquals(await setup({ refuse: { startChatUpload: 'image is too large' } }).call(chatUpload), {
+    status: 400,
+    body: { error: 'image is too large' },
   });
 });
 

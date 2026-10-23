@@ -1,9 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { fetchConversations, type Message } from './api';
-import { fetchMediaState, fetchMediaUrls } from './media';
+import {
+  fetchChatMediaLimits,
+  fetchMediaState,
+  fetchMediaUrls,
+  fixedLimits,
+  type ChatMediaLimits,
+} from './media';
 
 export const chatKeys = {
+  mediaLimits: ['chat-media-limits'],
   conversations: ['conversations'],
   messages: (connectionId: string) => ['messages', connectionId],
   state: (connectionId: string) => ['chat-state', connectionId],
@@ -101,6 +108,15 @@ export function useMediaState(
     queryFn: () => fetchMediaState(connectionId),
     enabled,
   });
+}
+
+// The server's chat media limits (#182); the fixed maximums until they arrive.
+export function useChatMediaLimits(): ChatMediaLimits {
+  const query = useQuery({
+    queryKey: chatKeys.mediaLimits,
+    queryFn: fetchChatMediaLimits,
+  });
+  return query.data ?? fixedLimits;
 }
 
 export function useConversations() {

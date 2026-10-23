@@ -1,4 +1,5 @@
 import {
+  fetchChatMediaLimits,
   fetchMediaState,
   fetchMediaUrls,
   insertMediaMessage,
@@ -61,9 +62,15 @@ const confirmed = { data: { mediaKey: 'k/1.jpg' }, error: null };
 // The function answers the upload link, then the confirm.
 const uploads = () =>
   invoke.mockResolvedValueOnce(upload).mockResolvedValueOnce(confirmed);
+// Limits as the server might have them; refusals name these numbers.
+const limits = {
+  videoMaxMs: 15_000,
+  imageMaxBytes: 2 * 1024 * 1024,
+  voiceMaxMs: 90_000,
+};
 const send = async (media: OutgoingMedia, id = 'msg-1'): Promise<void> => {
-  const mediaKey = await uploadChatMedia('c1', media);
-  await insertMediaMessage({ id, connectionId: 'c1', media, mediaKey });
+  const mediaKey = await uploadChatMedia('c1', media, limits);
+  await insertMediaMessage({ id, connectionId: 'c1', media, mediaKey, limits });
 };
 
 describe('uploading and sending chat media', () => {
@@ -139,17 +146,12 @@ describe('uploading and sending chat media', () => {
   });
 
   test.each([
-    ['image must be a JPEG of at most 5 MB', 'That photo is too large'],
-    ['video must be an MP4 of at most 20 MB', 'That video is too large'],
-    [
-      'voice note must be an M4A of at most 5 MB',
-      'That voice note is too large',
-    ],
-    ['video can be at most 30 seconds', 'Videos can be up to 30 seconds'],
-    [
-      'voice notes can be at most 2 minutes',
-      'Voice notes can be up to 2 minutes',
-    ],
+    ['image is too large', 'Photos can be up to 2 MB. Try another one.'],
+    ['video is too large', 'That video is too large'],
+    ['voice note is too large', 'That voice note is too large'],
+    ['image must be a JPEG', "That file can't be sent"],
+    ['video must be an MP4', "That file can't be sent"],
+    ['voice note must be an M4A', "That file can't be sent"],
     ['no connection', "can't send messages in this chat"],
     ['media is off in this chat', 'Photos and video are off in this chat'],
   ])('the function refusing "%s" reads as friendly copy', async (key, copy) => {
@@ -161,10 +163,29 @@ describe('uploading and sending chat media', () => {
   test.each([
     ['upload the media first', "didn't finish uploading"],
     ['media is off in this chat', 'Photos and video are off in this chat'],
+    ['video is too long', 'Videos can be up to 15 seconds.'],
+    ['voice note is too long', 'Voice notes can be up to 1 minute 30 seconds.'],
   ])('the database refusing "%s" reads as friendly copy', async (key, copy) => {
     uploads();
     insert.mockResolvedValueOnce({ error: { code: 'P0001', message: key } });
     await expect(send(image)).rejects.toThrow(copy);
+  });
+
+  test('the wording follows the limits read, not fixed numbers', async () => {
+    uploads();
+    insert.mockResolvedValueOnce({
+      error: { code: 'P0001', message: 'voice note is too long' },
+    });
+    const mediaKey = await uploadChatMedia('c1', voice, limits);
+    await expect(
+      insertMediaMessage({
+        id: 'msg-3',
+        connectionId: 'c1',
+        media: voice,
+        mediaKey,
+        limits: { ...limits, voiceMaxMs: 120_000 },
+      }),
+    ).rejects.toThrow('Voice notes can be up to 2 minutes.');
   });
 
   test('a closed chat or a Block refuses with the usual line', async () => {
@@ -173,6 +194,27 @@ describe('uploading and sending chat media', () => {
     await expect(send(image)).rejects.toThrow(
       "You can't send messages in this chat any more.",
     );
+  });
+});
+
+describe('fetchChatMediaLimits', () => {
+  test("reads the server's limits", async () => {
+    rpc.mockReturnValueOnce({
+      single: async () => ({
+        data: {
+          video_max_ms: 15_000,
+          image_max_bytes: 2_097_152,
+          voice_max_ms: 120_000,
+        },
+        error: null,
+      }),
+    });
+    await expect(fetchChatMediaLimits()).resolves.toEqual({
+      videoMaxMs: 15_000,
+      imageMaxBytes: 2_097_152,
+      voiceMaxMs: 120_000,
+    });
+    expect(rpc).toHaveBeenCalledWith('chat_media_limits');
   });
 });
 

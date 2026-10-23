@@ -1,6 +1,7 @@
 import { signOut } from '../src/features/auth/api';
 import { fetchMessages, newMessageId } from '../src/features/chat/api';
 import {
+  fetchChatMediaLimits,
   fetchMediaState,
   fetchMediaUrls,
   insertMediaMessage,
@@ -39,14 +40,19 @@ async function mediaServed(): Promise<boolean> {
   }
 }
 
-// Upload, confirm and send, as the chat does.
+// Upload, confirm and send, as the chat does, under the server's limits.
 async function sendMediaMessage(message: {
   id: string;
   connectionId: string;
   media: typeof image;
 }) {
-  const mediaKey = await uploadChatMedia(message.connectionId, message.media);
-  await insertMediaMessage({ ...message, mediaKey });
+  const limits = await fetchChatMediaLimits();
+  const mediaKey = await uploadChatMedia(
+    message.connectionId,
+    message.media,
+    limits,
+  );
+  await insertMediaMessage({ ...message, mediaKey, limits });
 }
 
 let me: TestMember;
@@ -90,6 +96,49 @@ test('a photo uploads, sends once with a retried id, and comes back by signed li
   ]);
   const urls = await fetchMediaUrls([id]);
   expect(urls[id]).toMatch(/^https?:\/\//);
+});
+
+describe('limits from the settings row (#182)', () => {
+  test("the app reads the server's launch limits", async () => {
+    await expect(fetchChatMediaLimits()).resolves.toEqual({
+      videoMaxMs: 15_000,
+      imageMaxBytes: 2 * 1024 * 1024,
+      voiceMaxMs: 120_000,
+    });
+  });
+
+  test('a video over the limit is refused when it goes in, worded with the limit read', async () => {
+    const limits = await fetchChatMediaLimits();
+    await expect(
+      insertMediaMessage({
+        id: newMessageId(),
+        connectionId,
+        media: {
+          kind: 'video',
+          uri: 'file:///cache/v.mp4',
+          mime: 'video/mp4',
+          width: 1280,
+          height: 720,
+          durationMs: limits.videoMaxMs + 1,
+        },
+        mediaKey: `chat/${connectionId}/made-up.mp4`,
+        limits,
+      }),
+    ).rejects.toThrow('Videos can be up to 15 seconds.');
+  });
+
+  test('a photo over the limit gets no upload link, worded with the limit read', async () => {
+    if (!served) {
+      return;
+    }
+    const limits = await fetchChatMediaLimits();
+    const tooLarge = `data:image/jpeg;base64,${'A'.repeat(
+      Math.ceil(((limits.imageMaxBytes + 1) * 4) / 3 / 4) * 4,
+    )}`;
+    await expect(
+      uploadChatMedia(connectionId, { ...image, uri: tooLarge }, limits),
+    ).rejects.toThrow('Photos can be up to 2 MB. Try another one.');
+  });
 });
 
 describe('in a Casual Connection', () => {

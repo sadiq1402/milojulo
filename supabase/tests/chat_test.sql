@@ -136,8 +136,8 @@ select lives_ok(pg_temp.message_from(:'c1', :'chat', 'image', media_key => :'ima
   'an image with its uploaded media is accepted');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'image'),
   '23514', null, 'an image needs its media');
-select lives_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'video_key', duration_ms => 30000, mime => 'video/mp4'),
-  'a 30-second video is accepted');
+select lives_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'video_key', duration_ms => 15000, mime => 'video/mp4'),
+  'a 15-second video is accepted');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', media_key => :'untimed_video_key', mime => 'video/mp4'),
   '23514', null, 'a video needs its duration');
 select throws_ok(pg_temp.message_from(:'c1', :'chat', 'video', duration_ms => 1000),
