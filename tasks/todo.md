@@ -6,6 +6,20 @@ V1 is built: database (#1) and app (#33) closed. Open, in tracker order:
 - [ ] #137 Media cache through a Cloudflare Worker (parked)
 - [ ] Beta prep: see docs/10-build-plan.md, Status
 
+# Chat media limits from a settings row (#182)
+
+Started 2026-10-24, branch `feat/182-chat-media-limits`. Fixed maximums stay (video 30 s / 20 MB, image 5 MB, voice 2 min / 5 MB); the row can only tighten them; empty = fixed maximum.
+
+- [x] Migration: `chat_media_settings` (one row, `video_max_ms` 15000, `image_max_bytes` 2097152, `voice_max_ms` 120000; nullable, checked against the fixed maximums), RLS on, no client grants
+- [x] `chat_media_limits()`: effective limits for a signed-in Member; anon refused
+- [x] `start_chat_upload`: image over the limit refused with `image is too large`
+- [x] `check_message_media`: `video is too long`, `voice note is too long`, read from the row
+- [x] Row change takes effect at once (test updates the row, then calls)
+- [x] `media` function: fixed texts without numbers (type: `image must be a JPEG` etc.; size: `image is too large` etc.); Deno tests
+- [x] App: `fetchChatMediaLimits` query; `pickMedia` and the recorder take the limits; wording built from them; ChatScreen note uses them; refusal map updated; unit + integration tests
+- [x] `npm run gen:types`; docs 01, 02, 08 (new decision replacing 17's video limit), 12, CONTEXT.md, runbook SQL
+- [x] Review line, PR
+
 # Account (#20) ‖ Account screens (#51), in parallel
 
 Started 2026-10-16. Contract (messages are the DB's exact text; the app maps them):
@@ -351,3 +365,4 @@ Ordering note: 0004's message word filter files a report, so `reports` must exis
 - #169 (Circle admin audit): `admin_create_circle`, `admin_edit_circle` and `admin_archive_circle` call `audit()` after they succeed (action `create_circle`/`edit_circle`/`archive_circle`, target_type `circle`, the name as note, none for archive). The dev seed sets `sub` in its JWT claims, so `admin_id` is filled; a seed without it would now fail on the not-null column.
 - #171 (moderation runbook): docs/runbooks/moderation.md. Every snippet was run against the local database as written (admin grant, queue queries, the session block with each admin call, dismissing a Report, banned terms, the audit log). The session block builds the JWT claims from the account's own `raw_app_meta_data`, so a non-admin or unknown email gets `admins only` (a hard-coded role claim would let any email act). Gotcha: `set_config(..., true)` lasts only for the transaction, so the session block needs its own `begin`/`commit`; the admin must be a real auth user, since `photos.removed_by` and `reports.handled_by` reference `auth.users`. Still to do: the founder checks it once on the hosted project.
 - Keyboard in bottom sheets: the send-request note sat under the keyboard. Cause: edge-to-edge (target SDK 36) stops Android resizing windows, and a `Modal` is its own window, so `adjustResize` did nothing and React Native's keyboard events never reached the sheet. Fix: `react-native-keyboard-controller` (decision 58); `BottomSheet` adds keyboard room and shrinks, the send-request form scrolls. Checked on a phone (Android 16) with an adb loop (open the sheet, focus the note, compare the note and Send button to the keyboard's top): red 3/3 before, green 3/3 after, green at 130% font, red again with the keyboard room removed. Gotchas: Jest needs Reanimated's resolver (`react-native-reanimated/jest/resolver`), not its mock, and the keyboard mock's hooks need the same resetMocks workaround as safe-area; a ScrollView inside the sheet clips the button shadow unless it runs edge to edge with the padding inside.
+- #182 (chat media limits from a settings row): `chat_media_settings` (one row, RLS on, no client grants; launch video 15 s, image 2 MB, voice 2 min; null = the fixed maximum, a check stops a value above it) and `chat_media_limits()` (signed-in only). `start_chat_upload` refuses an image over the limit (`image is too large`) before any link; `check_message_media` reads the row (`video is too long`, `voice note is too long`). The media function's chat refusals carry no numbers (`<kind> must be a <format>`, `<kind> is too large`, `size must be a whole number of bytes`); the app builds the wording from the limits it read (`limitCopy`), passes them to `pickMedia`, the voice recorder (its stop and the `0:00 / 2:00` clock), the attach note and the refusal map, and uses the fixed maximums until they arrive (60 s staleTime, refetch on foreground). 20 new pgTAP tests (denies mutation-checked); duration refusals moved out of `chat_uploads_test`. Gotcha: `database.types.ts` was stale (several service-role tables and functions missing); `npm run gen:types` brought it up to date, so expect a bigger types diff than the migration alone. `npx supabase start` after `db start` leaves only the database running; `supabase stop` first.

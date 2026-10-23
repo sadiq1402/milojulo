@@ -119,3 +119,22 @@ left join auth.users u on u.id = a.admin_id
 order by a.created_at desc
 limit 50;
 ```
+
+## 6. Chat media limits
+
+The longest video, the largest image and the longest voice note (decision 59). Each value can only tighten its fixed maximum (video 30 000 ms, image 5 242 880 bytes, voice 120 000 ms); `null` means the fixed maximum. A change applies at once, in the app too, with no deploy. As the dashboard's own role:
+
+```sql
+-- See the current values.
+select * from public.chat_media_settings;
+
+-- Change a limit: video in milliseconds, image in bytes (2 MB = 2097152), voice in milliseconds.
+update public.chat_media_settings set video_max_ms = 20000;
+update public.chat_media_settings set image_max_bytes = 3145728;
+update public.chat_media_settings set voice_max_ms = 60000;
+
+-- Clear a limit (back to the fixed maximum).
+update public.chat_media_settings set video_max_ms = null;
+```
+
+A value above the fixed maximum is refused by the table's check.
