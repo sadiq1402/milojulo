@@ -80,6 +80,33 @@ export function limitCopy(limits: ChatMediaLimits) {
   };
 }
 
+// The caller's media messages left in one chat today (#183): null `remaining` means no limit;
+// `nextAt` is when the next one opens once they are used up.
+export type MediaAllowance = {
+  remaining: number | null;
+  nextAt: string | null;
+};
+
+export async function fetchMediaAllowance(
+  connectionId: string,
+): Promise<MediaAllowance> {
+  const { data, error } = await supabase
+    .rpc('chat_media_allowance', { connection_id: connectionId })
+    .single();
+  if (error || !data) {
+    throw new Error("That didn't work. Check your connection and try again.");
+  }
+  return { remaining: data.remaining, nextAt: data.next_at };
+}
+
+// "Next photo, video or voice note in 5 h" (whole hours, rounded up), or in minutes under an hour.
+export function waitText(nextAt: string, now = Date.now()): string {
+  const minutes = Math.max(1, Math.ceil((Date.parse(nextAt) - now) / 60_000));
+  const wait =
+    minutes >= 60 ? `${Math.ceil(minutes / 60)} h` : `${minutes} min`;
+  return `Next photo, video or voice note in ${wait}`;
+}
+
 export const tooLargeVideo =
   'That video is too large to send. Try a shorter one.';
 const wrongType = "That file can't be sent. Try another one.";
@@ -98,6 +125,8 @@ const fixedRefusals: Record<string, string> = {
   'no upload to confirm': 'That upload took too long. Try again.',
   "the media didn't arrive; try again": notArrived,
   'media is off in this chat': mediaOffCopy,
+  'media limit reached':
+    "You've sent today's photo, video or voice note in this chat.",
 };
 
 function refusalsFor(limits: ChatMediaLimits): Record<string, string> {
