@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(41);
+select plan(39);
 
 \set a '00000000-0000-0000-0000-0000000000d1'
 \set b '00000000-0000-0000-0000-0000000000d2'
@@ -87,19 +87,15 @@ select pg_temp.act_as_member(:'a');
 select throws_ok(pg_temp.media_insert(gen_random_uuid(), :'a', :'second_chat', 'image', :'unsent_image_key'),
   'P0001', 'upload the media first', 'my slot is tied to its Connection');
 
--- Durations: friendly refusals ahead of the table's checks.
+-- A video and a voice note for the link tests below (length limits: chat_media_limits_test).
 reset role;
 select pg_temp.chat_upload(:'a', :'chat', 'video') as video_key \gset
 select pg_temp.chat_upload(:'a', :'chat', 'voice') as voice_key \gset
 select pg_temp.act_as_member(:'a');
-select throws_ok(pg_temp.media_insert(gen_random_uuid(), :'a', :'chat', 'video', :'video_key', 30001),
-  'P0001', 'video can be at most 30 seconds', 'a video over 30 seconds is refused');
-select lives_ok(pg_temp.media_insert('00000000-0000-0000-0000-00000000ee02', :'a', :'chat', 'video', :'video_key', 30000),
-  'a 30-second video is accepted');
-select throws_ok(pg_temp.media_insert(gen_random_uuid(), :'a', :'chat', 'voice', :'voice_key', 120001),
-  'P0001', 'voice notes can be at most 2 minutes', 'a voice note over 2 minutes is refused');
+select lives_ok(pg_temp.media_insert('00000000-0000-0000-0000-00000000ee02', :'a', :'chat', 'video', :'video_key', 15000),
+  'a video using my confirmed slot is accepted');
 select lives_ok(pg_temp.media_insert('00000000-0000-0000-0000-00000000ee03', :'a', :'chat', 'voice', :'voice_key', 120000),
-  'a 2-minute voice note is accepted');
+  'a voice note using my confirmed slot is accepted');
 insert into public.messages (id, connection_id, sender_id, type, body)
 values ('00000000-0000-0000-0000-00000000ee04', :'chat', :'a', 'text', 'plain');
 
