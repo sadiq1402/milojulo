@@ -1,6 +1,8 @@
 begin;
 \ir helpers/act_as.psql
 select plan(44);
+-- Several media messages per chat here; the daily allowance has its own tests.
+update public.chat_media_settings set daily_media_allowance = null;
 
 -- The sender's text insert, to pass to lives_ok / throws_ok.
 create function pg_temp.text_from(sender uuid, conn uuid) returns text

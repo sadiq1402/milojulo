@@ -1,6 +1,8 @@
 begin;
 \ir helpers/act_as.psql
 select plan(36);
+-- Several media messages per chat here; the daily allowance has its own tests.
+update public.chat_media_settings set daily_media_allowance = null;
 
 -- A visible Member holding Friends and Casual. Run as postgres.
 create function pg_temp.create_casual(member_id uuid, member_gender public.gender, wants public.gender[])
