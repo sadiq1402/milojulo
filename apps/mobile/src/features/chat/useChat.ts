@@ -17,7 +17,7 @@ import {
   type OutgoingMedia,
 } from './media';
 import { catchUpFrom, mergeMessages, toMessageMedia } from './messages';
-import { chatKeys } from './queries';
+import { chatKeys, useChatMediaLimits } from './queries';
 
 // 'refused': the Connection closed or a Block landed, so retrying can't help.
 type Delivery = 'sent' | 'sending' | 'failed' | 'refused';
@@ -52,6 +52,7 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
     queryKey: chatKeys.state(connectionId),
     queryFn: () => fetchChatState(connectionId),
   });
+  const limits = useChatMediaLimits();
   const [pending, setPending] = useState<Pending[]>([]);
   const setDelivery = (id: string, delivery: Delivery, failure?: string) =>
     setPending(list =>
@@ -135,13 +136,19 @@ export function useChat(connectionId: string, myId: string, reading: boolean) {
       if (media) {
         let mediaKey = message.mediaKey;
         if (!mediaKey) {
-          mediaKey = await uploadChatMedia(connectionId, media);
+          mediaKey = await uploadChatMedia(connectionId, media, limits);
           const uploaded = mediaKey;
           setPending(list =>
             list.map(p => (p.id === id ? { ...p, mediaKey: uploaded } : p)),
           );
         }
-        await insertMediaMessage({ id, connectionId, media, mediaKey });
+        await insertMediaMessage({
+          id,
+          connectionId,
+          media,
+          mediaKey,
+          limits,
+        });
       } else {
         await sendMessage({ id, connectionId, body: body ?? '' });
       }

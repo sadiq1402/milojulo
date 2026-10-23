@@ -1,11 +1,14 @@
 import ImagePicker from 'react-native-image-crop-picker';
 import { Video, getVideoMetaData } from 'react-native-compressor';
 import Sound from 'react-native-nitro-sound';
-import {
-  pickMedia,
-  startVoiceNote,
-  voiceLimitMs,
-} from '../src/features/chat/capture';
+import { pickMedia, startVoiceNote } from '../src/features/chat/capture';
+
+// The server's launch limits (#182).
+const limits = {
+  videoMaxMs: 15_000,
+  imageMaxBytes: 2 * 1024 * 1024,
+  voiceMaxMs: 120_000,
+};
 
 const pickedImage = {
   path: '/data/a.jpg',
@@ -26,7 +29,7 @@ const pickedVideo = {
 describe('pickMedia', () => {
   test('a gallery photo comes back as a compressed JPEG with its size', async () => {
     jest.mocked(ImagePicker.openPicker).mockResolvedValue(pickedImage as never);
-    await expect(pickMedia('library')).resolves.toEqual({
+    await expect(pickMedia('library', limits)).resolves.toEqual({
       kind: 'image',
       uri: 'file:///data/a.jpg',
       mime: 'image/jpeg',
@@ -43,13 +46,23 @@ describe('pickMedia', () => {
     );
   });
 
-  test('a photo over 5 MB after compressing is refused before upload', async () => {
+  test("a photo over the server's image limit after compressing is refused before upload, naming the limit", async () => {
+    jest.mocked(ImagePicker.openPicker).mockResolvedValue({
+      ...pickedImage,
+      size: 2 * 1024 * 1024 + 1,
+    } as never);
+    await expect(pickMedia('library', limits)).rejects.toThrow(
+      'Photos can be up to 2 MB. Try another one.',
+    );
+  });
+
+  test("a photo right at the server's image limit goes ahead", async () => {
     jest
       .mocked(ImagePicker.openPicker)
-      .mockResolvedValue({ ...pickedImage, size: 5_300_000 } as never);
-    await expect(pickMedia('library')).rejects.toThrow(
-      'That photo is too large to send.',
-    );
+      .mockResolvedValue({ ...pickedImage, size: 2 * 1024 * 1024 } as never);
+    await expect(pickMedia('library', limits)).resolves.toMatchObject({
+      kind: 'image',
+    });
   });
 
   test('a video is compressed to MP4 and keeps its duration', async () => {
@@ -62,7 +75,7 @@ describe('pickMedia', () => {
       width: 1280,
       height: 720,
     });
-    await expect(pickMedia('library')).resolves.toEqual({
+    await expect(pickMedia('library', limits)).resolves.toEqual({
       kind: 'video',
       uri: 'file:///cache/small.mp4',
       mime: 'video/mp4',
@@ -76,14 +89,31 @@ describe('pickMedia', () => {
     );
   });
 
-  test('a video over 30 seconds is refused before compressing', async () => {
+  test("a video over the server's limit is refused before compressing, naming the limit", async () => {
     jest
       .mocked(ImagePicker.openPicker)
-      .mockResolvedValue({ ...pickedVideo, duration: 31_000 } as never);
-    await expect(pickMedia('library')).rejects.toThrow(
-      'Videos can be up to 30 seconds.',
+      .mockResolvedValue({ ...pickedVideo, duration: 15_001 } as never);
+    await expect(pickMedia('library', limits)).rejects.toThrow(
+      'Videos can be up to 15 seconds.',
     );
     expect(Video.compress).not.toHaveBeenCalled();
+  });
+
+  test("a video of unknown length is checked against the server's limit after compressing", async () => {
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue({ ...pickedVideo, duration: null } as never);
+    jest.mocked(Video.compress).mockResolvedValue('file:///cache/small.mp4');
+    jest.mocked(getVideoMetaData).mockResolvedValue({
+      extension: 'mp4',
+      size: 6_000_000,
+      duration: 16,
+      width: 1280,
+      height: 720,
+    });
+    await expect(pickMedia('library', limits)).rejects.toThrow(
+      'Videos can be up to 15 seconds.',
+    );
   });
 
   test('a video still over 20 MB after compressing is refused', async () => {
@@ -96,12 +126,12 @@ describe('pickMedia', () => {
       width: 1280,
       height: 720,
     });
-    await expect(pickMedia('library')).rejects.toThrow('too large');
+    await expect(pickMedia('library', limits)).rejects.toThrow('too large');
   });
 
   test('the camera asks for a photo or a video', async () => {
     jest.mocked(ImagePicker.openCamera).mockResolvedValue(pickedImage as never);
-    await pickMedia('camera-photo');
+    await pickMedia('camera-photo', limits);
     expect(ImagePicker.openCamera).toHaveBeenCalledWith(
       expect.objectContaining({ mediaType: 'photo' }),
     );
@@ -114,7 +144,7 @@ describe('pickMedia', () => {
       width: 1280,
       height: 720,
     });
-    await pickMedia('camera-video');
+    await pickMedia('camera-video', limits);
     expect(ImagePicker.openCamera).toHaveBeenLastCalledWith(
       expect.objectContaining({ mediaType: 'video' }),
     );
@@ -126,21 +156,27 @@ describe('pickMedia', () => {
       .mockRejectedValue(
         Object.assign(new Error('cancel'), { code: 'E_PICKER_CANCELLED' }),
       );
-    await expect(pickMedia('library')).resolves.toBeNull();
+    await expect(pickMedia('library', limits)).resolves.toBeNull();
   });
 });
 
 describe('voice notes', () => {
-  test('records AAC in M4A and stops at 2 minutes on its own', async () => {
+  test("records AAC in M4A and stops at the server's voice limit on its own", async () => {
     jest.mocked(Sound.startRecorder).mockResolvedValue('file:///cache/v.m4a');
     jest.mocked(Sound.stopRecorder).mockResolvedValue('file:///cache/v.m4a');
     const onTick = jest.fn();
     const onLimit = jest.fn();
-    const recording = await startVoiceNote({ onTick, onLimit });
+    const recording = await startVoiceNote({
+      limitMs: 90_000,
+      onTick,
+      onLimit,
+    });
     const listener = jest.mocked(Sound.addRecordBackListener).mock.calls[0][0];
     listener({ currentPosition: 5_000 });
     expect(onTick).toHaveBeenCalledWith(5_000);
-    listener({ currentPosition: voiceLimitMs });
+    listener({ currentPosition: 89_999 });
+    expect(onLimit).not.toHaveBeenCalled();
+    listener({ currentPosition: 90_000 });
     expect(onLimit).toHaveBeenCalled();
 
     await expect(recording.stop()).resolves.toEqual({
@@ -149,7 +185,7 @@ describe('voice notes', () => {
       mime: 'audio/mp4',
       width: null,
       height: null,
-      durationMs: voiceLimitMs,
+      durationMs: 90_000,
     });
     expect(Sound.removeRecordBackListener).toHaveBeenCalled();
   });
@@ -157,7 +193,7 @@ describe('voice notes', () => {
   test('a tap shorter than a second is dropped', async () => {
     jest.mocked(Sound.startRecorder).mockResolvedValue('file:///cache/v.m4a');
     jest.mocked(Sound.stopRecorder).mockResolvedValue('file:///cache/v.m4a');
-    const recording = await startVoiceNote({});
+    const recording = await startVoiceNote({ limitMs: 120_000 });
     jest.mocked(Sound.addRecordBackListener).mock.calls[0][0]({
       currentPosition: 400,
     });

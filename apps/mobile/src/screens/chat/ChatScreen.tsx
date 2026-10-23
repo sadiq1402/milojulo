@@ -29,9 +29,11 @@ import {
 } from '../../features/chat/api';
 import {
   chatKeys,
+  useChatMediaLimits,
   useConversations,
   useMediaUrls,
 } from '../../features/chat/queries';
+import { limitCopy } from '../../features/chat/media';
 import { useChat, type ChatItem } from '../../features/chat/useChat';
 import {
   useAttach,
@@ -117,8 +119,9 @@ export function ChatScreen({
     consent.visualsOff ? 'visuals-off' : 'open',
     consent.known,
   );
-  const attach = useAttach(chat.sendMedia);
-  const voice = useVoiceRecorder(chat.sendMedia);
+  const limits = useChatMediaLimits();
+  const attach = useAttach(chat.sendMedia, limits);
+  const voice = useVoiceRecorder(chat.sendMedia, limits.voiceMaxMs);
   const mediaError = attach.error ?? voice.error;
   const recordingMs = voice.elapsedMs;
 
@@ -245,7 +248,8 @@ export function ChatScreen({
             {recordingMs !== null ? (
               <View style={styles.recording} accessibilityLiveRegion="polite">
                 <Text color={colors.danger} numberOfLines={1}>
-                  {formatDuration(recordingMs)} / 2:00 · release to send
+                  {formatDuration(recordingMs)} /{' '}
+                  {formatDuration(limits.voiceMaxMs)} · release to send
                 </Text>
               </View>
             ) : (
@@ -342,8 +346,7 @@ export function ChatScreen({
             onPress={() => attach.attach('camera-video')}
           />
           <Text variant="caption" color={colors.secondary}>
-            Videos up to 30 seconds. Photos, videos and voice notes are deleted
-            after 90 days.
+            {limitCopy(limits).attachNote}
           </Text>
           <Button
             label="Cancel"

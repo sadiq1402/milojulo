@@ -101,6 +101,20 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"admin_actions": {
+                  Row: {
+                    "action": string,"admin_id": string,"created_at": string,"id": string,"note": string | null,"target_id": string,"target_type": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "action": string,"admin_id": string,"created_at"?: string,"id"?: string,"note"?: string | null,"target_id": string,"target_type": string
+                  }
+                  Update: {
+                    "action"?: string,"admin_id"?: string,"created_at"?: string,"id"?: string,"note"?: string | null,"target_id"?: string,"target_type"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"areas": {
                   Row: {
                     "center": unknown,"created_at": string,"id": string,"is_active": boolean,"lat": number | null,"lng": number | null,"name": string,"zone": string
@@ -154,6 +168,20 @@ isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
+                  ]
+                },"chat_media_settings": {
+                  Row: {
+                    "id": boolean,"image_max_bytes": number | null,"video_max_ms": number | null,"voice_max_ms": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: boolean,"image_max_bytes"?: number | null,"video_max_ms"?: number | null,"voice_max_ms"?: number | null
+                  }
+                  Update: {
+                    "id"?: boolean,"image_max_bytes"?: number | null,"video_max_ms"?: number | null,"voice_max_ms"?: number | null
+                  }
+                  Relationships: [
+                    
                   ]
                 },"chat_uploads": {
                   Row: {
@@ -232,6 +260,20 @@ isOneToOne: false
       referencedRelation: "tags"
       referencedColumns: ["id"]
     }
+                  ]
+                },"completed_erasures": {
+                  Row: {
+                    "completed_at": string,"member_id": string,"objects_deleted": number,"requested_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "completed_at"?: string,"member_id": string,"objects_deleted": number,"requested_at": string
+                  }
+                  Update: {
+                    "completed_at"?: string,"member_id"?: string,"objects_deleted"?: number,"requested_at"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"connection_members": {
                   Row: {
@@ -416,6 +458,32 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"meet_nudges": {
+                  Row: {
+                    "connection_id": string,"sent_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "connection_id": string,"sent_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "connection_id"?: string,"sent_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meet_nudges_connection_id_fkey"
+      columns: ["connection_id"]
+isOneToOne: false
+      referencedRelation: "connections"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meet_nudges_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"meetup_feedback": {
                   Row: {
@@ -635,14 +703,14 @@ isOneToOne: false
                   ]
                 },"push_queue": {
                   Row: {
-                    "body": string,"created_at": string,"data": NonNullable<Json>,"id": number,"recipient_id": string,"title": string
+                    "body": string,"created_at": string,"data": NonNullable<Json>,"handed_over_at": string | null,"id": number,"recipient_id": string,"title": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "body": string,"created_at"?: string,"data": NonNullable<Json>,"id"?: never,"recipient_id": string,"title": string
+                    "body": string,"created_at"?: string,"data": NonNullable<Json>,"handed_over_at"?: string | null,"id"?: never,"recipient_id": string,"title": string
                   }
                   Update: {
-                    "body"?: string,"created_at"?: string,"data"?: NonNullable<Json>,"id"?: never,"recipient_id"?: string,"title"?: string
+                    "body"?: string,"created_at"?: string,"data"?: NonNullable<Json>,"handed_over_at"?: string | null,"id"?: never,"recipient_id"?: string,"title"?: string
                   }
                   Relationships: [
                     {
@@ -752,14 +820,26 @@ isOneToOne: false
 "admin_archive_circle":
 { Args: { "circle_id": string }; Returns: undefined
                            },
+"admin_ban":
+{ Args: { "member_id": string,"reason": string }; Returns: undefined
+                           },
 "admin_create_circle":
 { Args: { "area_id": string,"description": string,"name": string,"tag_id": number }; Returns: string
                            },
 "admin_edit_circle":
 { Args: { "area_id": string,"circle_id": string,"description": string,"name": string,"tag_id": number }; Returns: undefined
                            },
+"admin_restore":
+{ Args: { "note": string,"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
+                           },
+"admin_takedown":
+{ Args: { "note": string,"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
+                           },
 "age_of":
 { Args: { "birth_date": string }; Returns: number
+                           },
+"audit":
+{ Args: { "action": string,"note": string,"target_id": string,"target_type": string }; Returns: undefined
                            },
 "block_user":
 { Args: { "member_id": string }; Returns: undefined
@@ -783,6 +863,11 @@ isOneToOne: false
                            },
 "chat_media_format":
 { Args: { "kind": Database["public"]['Enums']["message_type"] }; Returns: Record<string, unknown>
+                           },
+"chat_media_limits":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "image_max_bytes": number,"video_max_ms": number,"voice_max_ms": number
+            }[]
                            },
 "chat_media_links":
 { Args: { "message_ids": (string)[],"viewer": string }; Returns: {
@@ -812,6 +897,9 @@ isOneToOne: false
                            },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined
+                           },
+"close_reports":
+{ Args: { "outcome": Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
                            },
 "confirm_chat_upload":
 { Args: { "member_id": string,"upload_id": string }; Returns: string
@@ -847,6 +935,9 @@ isOneToOne: false
               "distance_m": number,"shared_modes": (Database["public"]['Enums']["mode"])[],"their_modes": (Database["public"]['Enums']["mode"])[]
             }[]
                            },
+"dispatch_push":
+{ Args: { "queue_id": number }; Returns: undefined
+                           },
 "display_name_of":
 { Args: { "member_id": string }; Returns: string
                            },
@@ -862,8 +953,21 @@ isOneToOne: false
 "enqueue_push":
 { Args: { "body": string,"data": Json,"recipient": string,"setting": string,"title": string }; Returns: undefined
                            },
+"erasure_media_keys":
+{ Args: { "member": string }; Returns: string[]
+                           },
+"erasure_queue":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "member_id": string,"requested_at": string
+            }[]
+                           },
 "expire_activities":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"expired_chat_media":
+{ Args: { "batch": number,"skip"?: (string)[] }; Returns: {
+              "keep_file": boolean,"media_key": string,"message_id": string
+            }[]
                            },
 "fits_dating_preferences":
 { Args: { "candidate": string,"seeker": string }; Returns: boolean
@@ -922,6 +1026,9 @@ isOneToOne: false
                            },
 "leave_circle":
 { Args: { "circle_id": string }; Returns: undefined
+                           },
+"mark_chat_media_deleted":
+{ Args: { "message_ids": (string)[] }; Returns: undefined
                            },
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
@@ -991,6 +1098,9 @@ isOneToOne: false
 "propose_mode_change":
 { Args: { "connection_id": string,"to_mode": Database["public"]['Enums']["mode"] }; Returns: string
                            },
+"record_erasure":
+{ Args: { "member": string,"objects_deleted": number,"requested_at": string }; Returns: undefined
+                           },
 "region_of":
 { Args: { "point": unknown }; Returns: number
                            },
@@ -1012,8 +1122,14 @@ isOneToOne: false
 "respond_request":
 { Args: { "accept": boolean,"connection_id": string }; Returns: undefined
                            },
+"retry_queued_pushes":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "seed_reviewer":
 { Args: { "reviewer_id": string }; Returns: undefined
+                           },
+"send_meet_nudges":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "send_request":
 { Args: { "mode": Database["public"]['Enums']["mode"],"note"?: string,"to_member": string }; Returns: string

@@ -8,19 +8,17 @@ import Sound, {
 import { colors } from '../../theme';
 import { fileUri, pickerFailure } from '../media/picker';
 import {
-  tooLargePhoto,
+  limitCopy,
   tooLargeVideo,
-  tooLongVideo,
+  type ChatMediaLimits,
   type OutgoingMedia,
 } from './media';
 
 export type MediaSource = 'library' | 'camera-photo' | 'camera-video';
 
-// Limits match the media function's (#12), checked here first so nothing too big uploads.
-export const videoLimitMs = 30_000;
-const photoLimitBytes = 5 * 1024 * 1024;
+// Checked here first so nothing too big uploads: the server's limits (#182), and the media
+// function's fixed video size (#12).
 const videoLimitBytes = 20 * 1024 * 1024;
-export const voiceLimitMs = 120_000;
 const shortestVoiceMs = 1_000;
 
 // Chat photos are compressed to JPEG on the phone; no crop, the bubble shows them 4:3.
@@ -36,7 +34,9 @@ const pickerOptions = {
 // The picked photo or video, compressed and checked; null when the Member backs out.
 export async function pickMedia(
   source: MediaSource,
+  limits: ChatMediaLimits,
 ): Promise<OutgoingMedia | null> {
+  const copy = limitCopy(limits);
   let picked;
   try {
     picked =
@@ -57,8 +57,8 @@ export async function pickMedia(
     return null;
   }
   if (!picked.mime.startsWith('video/')) {
-    if (picked.size > photoLimitBytes) {
-      throw new Error(tooLargePhoto);
+    if (picked.size > limits.imageMaxBytes) {
+      throw new Error(copy.tooLargePhoto);
     }
     return {
       kind: 'image',
@@ -70,8 +70,8 @@ export async function pickMedia(
     };
   }
   const pickedMs = (picked as { duration?: number | null }).duration ?? null;
-  if (pickedMs !== null && pickedMs > videoLimitMs) {
-    throw new Error(tooLongVideo);
+  if (pickedMs !== null && pickedMs > limits.videoMaxMs) {
+    throw new Error(copy.tooLongVideo);
   }
   let uri: string;
   let meta;
@@ -85,8 +85,8 @@ export async function pickMedia(
   }
   // The compressor reports seconds.
   const durationMs = pickedMs ?? Math.round(meta.duration * 1000);
-  if (durationMs > videoLimitMs) {
-    throw new Error(tooLongVideo);
+  if (durationMs > limits.videoMaxMs) {
+    throw new Error(copy.tooLongVideo);
   }
   if (meta.size > videoLimitBytes) {
     throw new Error(tooLargeVideo);
@@ -119,11 +119,14 @@ export type VoiceRecording = {
   stop: () => Promise<OutgoingMedia | null>;
 };
 
-// Records AAC in an M4A file; `onLimit` fires at 2 minutes so the caller stops and sends.
+// Records AAC in an M4A file; `onLimit` fires at `limitMs` (the server's voice limit) so the
+// caller stops and sends.
 export async function startVoiceNote({
+  limitMs,
   onTick,
   onLimit,
 }: {
+  limitMs: number;
   onTick?: (ms: number) => void;
   onLimit?: () => void;
 }): Promise<VoiceRecording> {
@@ -133,9 +136,9 @@ export async function startVoiceNote({
   let elapsed = 0;
   let limitHit = false;
   Sound.addRecordBackListener(({ currentPosition }) => {
-    elapsed = Math.min(currentPosition, voiceLimitMs);
+    elapsed = Math.min(currentPosition, limitMs);
     onTick?.(elapsed);
-    if (currentPosition >= voiceLimitMs && !limitHit) {
+    if (currentPosition >= limitMs && !limitHit) {
       limitHit = true;
       onLimit?.();
     }

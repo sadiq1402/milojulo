@@ -23,17 +23,76 @@ const notArrived = "It didn't finish uploading. Try again.";
 export const mediaOffCopy =
   'Photos and video are off in this chat until you both allow them.';
 
-// Keys are the media function's and the database's exact messages (#12).
-const refusals: Record<string, string> = {
+// The chat media limits in force (#182): the server's settings row, never above the fixed
+// maximums. The fixed ones stand in until the server's arrive; the server checks again anyway.
+export type ChatMediaLimits = {
+  videoMaxMs: number;
+  imageMaxBytes: number;
+  voiceMaxMs: number;
+};
+export const fixedLimits: ChatMediaLimits = {
+  videoMaxMs: 30_000,
+  imageMaxBytes: 5 * 1024 * 1024,
+  voiceMaxMs: 120_000,
+};
+
+export async function fetchChatMediaLimits(): Promise<ChatMediaLimits> {
+  const { data, error } = await supabase.rpc('chat_media_limits').single();
+  if (error || !data) {
+    throw new Error("That didn't work. Check your connection and try again.");
+  }
+  return {
+    videoMaxMs: data.video_max_ms,
+    imageMaxBytes: data.image_max_bytes,
+    voiceMaxMs: data.voice_max_ms,
+  };
+}
+
+// "15 seconds", "2 minutes", "1 minute 30 seconds".
+export function lengthText(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  return [
+    minutes > 0 ? unit(minutes, 'minute') : null,
+    seconds > 0 || minutes === 0 ? unit(seconds, 'second') : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+// "2 MB", "1.5 MB".
+const sizeText = (bytes: number) =>
+  `${Math.floor((bytes / (1024 * 1024)) * 10) / 10} MB`;
+
+// The wording that names a limit; the server's refusals carry no numbers, so they come from here.
+export function limitCopy(limits: ChatMediaLimits) {
+  return {
+    tooLargePhoto: `Photos can be up to ${sizeText(
+      limits.imageMaxBytes,
+    )}. Try another one.`,
+    tooLongVideo: `Videos can be up to ${lengthText(limits.videoMaxMs)}.`,
+    tooLongVoice: `Voice notes can be up to ${lengthText(limits.voiceMaxMs)}.`,
+    attachNote: `Videos up to ${lengthText(
+      limits.videoMaxMs,
+    )}. Photos, videos and voice notes are deleted after 90 days.`,
+  };
+}
+
+export const tooLargeVideo =
+  'That video is too large to send. Try a shorter one.';
+const wrongType = "That file can't be sent. Try another one.";
+
+// Keys are the media function's and the database's exact messages (#12, #182).
+const fixedRefusals: Record<string, string> = {
   'sign in first': "You've been signed out. Sign in again to send this.",
-  'image must be a JPEG of at most 5 MB':
-    'That photo is too large to send. Try another one.',
-  'video must be an MP4 of at most 20 MB':
-    'That video is too large to send. Try a shorter one.',
-  'voice note must be an M4A of at most 5 MB':
+  'image must be a JPEG': wrongType,
+  'video must be an MP4': wrongType,
+  'voice note must be an M4A': wrongType,
+  'video is too large': tooLargeVideo,
+  'voice note is too large':
     'That voice note is too large to send. Try a shorter one.',
-  'video can be at most 30 seconds': 'Videos can be up to 30 seconds.',
-  'voice notes can be at most 2 minutes': 'Voice notes can be up to 2 minutes.',
   'no connection': cannotSendMessage,
   'upload the media first': notArrived,
   'no upload to confirm': 'That upload took too long. Try again.',
@@ -41,21 +100,26 @@ const refusals: Record<string, string> = {
   'media is off in this chat': mediaOffCopy,
 };
 
-// The phone checks these before uploading too, with the same copy.
-export const tooLargePhoto = refusals['image must be a JPEG of at most 5 MB'];
-export const tooLargeVideo = refusals['video must be an MP4 of at most 20 MB'];
-export const tooLongVideo = refusals['video can be at most 30 seconds'];
-
-const refusal = refusalFrom(refusals);
-const invoke = <T>(body: Record<string, unknown>) =>
-  invokeMedia<T>(body, refusals);
+function refusalsFor(limits: ChatMediaLimits): Record<string, string> {
+  const copy = limitCopy(limits);
+  return {
+    ...fixedRefusals,
+    'image is too large': copy.tooLargePhoto,
+    'video is too long': copy.tooLongVideo,
+    'voice note is too long': copy.tooLongVoice,
+  };
+}
 
 // Upload link (a staging key), PUT to R2, then confirm (the function copies it to its final
 // key). The key it returns is what the message carries.
 export async function uploadChatMedia(
   connectionId: string,
   media: OutgoingMedia,
+  limits: ChatMediaLimits,
 ): Promise<string> {
+  const refusals = refusalsFor(limits);
+  const invoke = <T>(body: Record<string, unknown>) =>
+    invokeMedia<T>(body, refusals);
   let file: Blob;
   try {
     file = await (await fetch(media.uri)).blob();
@@ -103,11 +167,13 @@ export async function insertMediaMessage({
   connectionId,
   media,
   mediaKey,
+  limits,
 }: {
   id: string;
   connectionId: string;
   media: OutgoingMedia;
   mediaKey: string;
+  limits: ChatMediaLimits;
 }): Promise<void> {
   const { error } = await supabase.from('messages').insert({
     id,
@@ -125,7 +191,7 @@ export async function insertMediaMessage({
   if (error.code === '42501') {
     throw new Error(cannotSendMessage);
   }
-  throw refusal(error.message);
+  throw refusalFrom(refusalsFor(limits))(error.message);
 }
 
 // Signed links by message id; ids I may not see (expired, or withheld by Media Consent) are
@@ -133,7 +199,7 @@ export async function insertMediaMessage({
 export async function fetchMediaUrls(
   messageIds: string[],
 ): Promise<Record<string, string>> {
-  return fetchSignedUrls('chat-urls', 'messageIds', messageIds, refusals);
+  return fetchSignedUrls('chat-urls', 'messageIds', messageIds, fixedRefusals);
 }
 
 export type MediaState = { isCasual: boolean; mine: boolean; theirs: boolean };

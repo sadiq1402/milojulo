@@ -28,6 +28,7 @@ jest.mock('../src/features/chat/capture', () => ({
 // Keep the real refusal copy; stand in only the calls.
 jest.mock('../src/features/chat/media', () => ({
   ...jest.requireActual('../src/features/chat/media'),
+  fetchChatMediaLimits: jest.fn(),
   uploadChatMedia: jest.fn(),
   insertMediaMessage: jest.fn(),
   fetchMediaUrls: jest.fn(),
@@ -105,6 +106,13 @@ const voiceMessage = message({
   },
 });
 
+// The server's limits, tighter than the fixed maximums so the screen must use them.
+const limits = {
+  videoMaxMs: 15_000,
+  imageMaxBytes: 2 * 1024 * 1024,
+  voiceMaxMs: 90_000,
+};
+
 const picked: OutgoingMedia = {
   kind: 'image',
   uri: 'file:///tmp/a.jpg',
@@ -138,6 +146,7 @@ beforeEach(() => {
   jest
     .mocked(media.fetchMediaState)
     .mockResolvedValue({ isCasual: false, mine: false, theirs: false });
+  jest.mocked(media.fetchChatMediaLimits).mockResolvedValue(limits);
   jest.mocked(media.uploadChatMedia).mockResolvedValue('key-1');
   jest.mocked(media.insertMediaMessage).mockResolvedValue();
 });
@@ -238,14 +247,19 @@ describe('media in a chat', () => {
     await fireEvent.press(
       screen.getByRole('button', { name: 'Choose from gallery' }),
     );
-    expect(capture.pickMedia).toHaveBeenCalledWith('library');
-    expect(media.uploadChatMedia).toHaveBeenCalledWith('conn-isha', picked);
+    expect(capture.pickMedia).toHaveBeenCalledWith('library', limits);
+    expect(media.uploadChatMedia).toHaveBeenCalledWith(
+      'conn-isha',
+      picked,
+      limits,
+    );
     await waitFor(() =>
       expect(media.insertMediaMessage).toHaveBeenCalledWith({
         id: 'new-1',
         connectionId: 'conn-isha',
         media: picked,
         mediaKey: 'key-1',
+        limits,
       }),
     );
     // The phone's copy shows while it uploads.
@@ -269,7 +283,7 @@ describe('media in a chat', () => {
       screen.getByRole('button', { name: 'Attach photo or video' }),
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Take a photo' }));
-    expect(capture.pickMedia).toHaveBeenCalledWith('camera-photo');
+    expect(capture.pickMedia).toHaveBeenCalledWith('camera-photo', limits);
     expect(
       await screen.findByText(
         'That photo is too large to send. Try another one.',
@@ -307,14 +321,27 @@ describe('media in a chat', () => {
       connectionId: 'conn-isha',
       media: picked,
       mediaKey: 'key-1',
+      limits,
     });
     expect(media.uploadChatMedia).toHaveBeenCalledTimes(1);
+  });
+
+  test("the attach sheet names the server's video limit", async () => {
+    await openChat();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Attach photo or video' }),
+    );
+    expect(
+      await screen.findByText(
+        'Videos up to 15 seconds. Photos, videos and voice notes are deleted after 90 days.',
+      ),
+    ).toBeOnTheScreen();
   });
 
   test('a picker problem shows its reason and sends nothing', async () => {
     jest
       .mocked(capture.pickMedia)
-      .mockRejectedValue(new Error('Videos can be up to 30 seconds.'));
+      .mockRejectedValue(new Error('Videos can be up to 15 seconds.'));
     await openChat();
     await fireEvent.press(
       screen.getByRole('button', { name: 'Attach photo or video' }),
@@ -323,7 +350,7 @@ describe('media in a chat', () => {
       screen.getByRole('button', { name: 'Record a video' }),
     );
     expect(
-      await screen.findByText('Videos can be up to 30 seconds.'),
+      await screen.findByText('Videos can be up to 15 seconds.'),
     ).toBeOnTheScreen();
     expect(media.uploadChatMedia).not.toHaveBeenCalled();
   });
@@ -345,8 +372,11 @@ describe('media in a chat', () => {
     });
     await fireEvent(mic, 'pressIn');
     expect(
-      await screen.findByText('0:00 / 2:00 · release to send'),
+      await screen.findByText('0:00 / 1:30 · release to send'),
     ).toBeOnTheScreen();
+    expect(capture.startVoiceNote).toHaveBeenCalledWith(
+      expect.objectContaining({ limitMs: 90_000 }),
+    );
     await fireEvent(mic, 'pressOut');
     expect(stop).toHaveBeenCalled();
     await waitFor(() =>
@@ -355,6 +385,7 @@ describe('media in a chat', () => {
         connectionId: 'conn-isha',
         media: note,
         mediaKey: 'key-1',
+        limits,
       }),
     );
   });
