@@ -135,6 +135,10 @@ update public.chat_media_settings set voice_max_ms = 60000;
 
 -- Clear a limit (back to the fixed maximum).
 update public.chat_media_settings set video_max_ms = null;
+
+-- Media messages per sender per Connection in any 24 hours (decision 60); null switches it off.
+update public.chat_media_settings set daily_media_allowance = 2;
+update public.chat_media_settings set daily_media_allowance = null;
 ```
 
 A value above the fixed maximum is refused by the table's check.
