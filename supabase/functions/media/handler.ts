@@ -44,11 +44,27 @@ export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const MAX_PHOTO_IDS = 60;
 export const MAX_MESSAGE_IDS = 60;
 
-// What each chat media kind accepts.
-const CHAT_MEDIA: Record<ChatKind, { mime: string; maxBytes: number; refusal: string }> = {
-  image: { mime: 'image/jpeg', maxBytes: 5 * 1024 * 1024, refusal: 'image must be a JPEG of at most 5 MB' },
-  video: { mime: 'video/mp4', maxBytes: 20 * 1024 * 1024, refusal: 'video must be an MP4 of at most 20 MB' },
-  voice: { mime: 'audio/mp4', maxBytes: 5 * 1024 * 1024, refusal: 'voice note must be an M4A of at most 5 MB' },
+// What each chat media kind accepts. maxBytes are fixed maximums; the database's settings row
+// can only tighten them. Refusals carry no numbers, since the app matches them by text.
+const CHAT_MEDIA: Record<ChatKind, { mime: string; maxBytes: number; wrongType: string; tooLarge: string }> = {
+  image: {
+    mime: 'image/jpeg',
+    maxBytes: 5 * 1024 * 1024,
+    wrongType: 'image must be a JPEG',
+    tooLarge: 'image is too large',
+  },
+  video: {
+    mime: 'video/mp4',
+    maxBytes: 20 * 1024 * 1024,
+    wrongType: 'video must be an MP4',
+    tooLarge: 'video is too large',
+  },
+  voice: {
+    mime: 'audio/mp4',
+    maxBytes: 5 * 1024 * 1024,
+    wrongType: 'voice note must be an M4A',
+    tooLarge: 'voice note is too large',
+  },
 };
 const JPEG = 'image/jpeg';
 
@@ -64,6 +80,7 @@ const REFUSAL_STATUS: Record<string, number> = {
   'add at least 2 photos': 400,
   'no connection': 404,
   'media is off in this chat': 403,
+  'image is too large': 400,
   'choose image, video or voice': 400,
   'no upload to confirm': 404,
 };
@@ -186,11 +203,11 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       throw new HttpError(400, 'choose image, video or voice');
     }
     const rule = CHAT_MEDIA[kind as ChatKind];
-    if (
-      contentType !== rule.mime || !Number.isInteger(size) || (size as number) < 1 || (size as number) > rule.maxBytes
-    ) {
-      throw new HttpError(400, rule.refusal);
+    if (contentType !== rule.mime) throw new HttpError(400, rule.wrongType);
+    if (!Number.isInteger(size) || (size as number) < 1) {
+      throw new HttpError(400, 'size must be a whole number of bytes');
     }
+    if ((size as number) > rule.maxBytes) throw new HttpError(400, rule.tooLarge);
     if (typeof connectionId !== 'string' || !UUID.test(connectionId)) throw new HttpError(404, 'no connection');
     const slot = await db(deps.db.startChatUpload(me, connectionId, kind as ChatKind, size as number));
     const uploadUrl = await deps.storage.uploadUrl(slot.uploadKey, rule.mime, size as number, UPLOAD_EXPIRES_IN);
