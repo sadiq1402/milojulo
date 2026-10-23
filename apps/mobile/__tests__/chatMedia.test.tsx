@@ -7,6 +7,7 @@ import * as chat from '../src/features/chat/api';
 import type { Conversation, Message } from '../src/features/chat/api';
 import * as capture from '../src/features/chat/capture';
 import * as media from '../src/features/chat/media';
+import { chatKeys } from '../src/features/chat/queries';
 import type { OutgoingMedia } from '../src/features/chat/media';
 import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
@@ -161,12 +162,17 @@ async function openChat() {
   await fireEvent.press(screen.getByRole('tab', { name: 'Chats' }));
   await fireEvent.press(await screen.findByRole('button', { name: /^Isha/ }));
   await screen.findByText('Baner');
-  // The server's limits and allowance arrive before anything is tapped.
+  // The server's limits and allowance arrive before anything is tapped; Query hands results
+  // to the screen on a timer, so let one pass once both are in.
   await waitFor(() => {
-    expect(media.fetchChatMediaLimits).toHaveBeenCalled();
-    expect(media.fetchMediaAllowance).toHaveBeenCalled();
+    expect(app.client.getQueryState(chatKeys.mediaLimits)?.status).toBe(
+      'success',
+    );
+    expect(
+      app.client.getQueryState(chatKeys.mediaAllowance('conn-isha'))?.status,
+    ).toBe('success');
   });
-  await act(async () => {});
+  await act(() => new Promise<void>(resolve => setTimeout(() => resolve(), 0)));
   return app;
 }
 
