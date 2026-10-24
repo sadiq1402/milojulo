@@ -155,7 +155,8 @@ Every function has a fixed `search_path`. Unless a row says otherwise, business 
 
 Shared helpers:
 - `is_admin()` (invoker; callable by every role, used in policies), `is_blocked(a, b)` (definer, internal), `is_visible(member)` (invoker, internal: active, submitted, not paused, not hidden, not deleted, no current consent document missing or withdrawn (`consent_withdrawn`), at least 2 live photos), `is_reachable(member)` (invoker, internal: not banned, deleted or Auto-hidden, no consent withdrawn), `eligible_modes(a, b)` (invoker, internal: shared Modes, Dating Modes filtered by both Members' Dating Preferences).
-- Used by policies, so executable by `authenticated`: `can_send_in(connection)` (messages insert), `hosts_activity(activity)` (activity_requests select).
+- Used by policies, so executable by `authenticated`: `can_send_in(connection)` (messages insert; the caller's `member_can_send_in`), `hosts_activity(activity)` (activity_requests select).
+- The chat media send rule (#186), internal: `member_can_send_in(member, connection)` (an Active side of an accepted Connection, no Block either way, no current consent withdrawn) and `check_media_send(member, connection, kind, size, duration_ms)`, which raises the Member's refusal unless they may send that media now: `no connection`, `media is off in this chat` (decision 33), `image is too large`, `video is too long`, `voice note is too long` (decision 59), `media limit reached` (decision 60, after locking the sender's `connection_members` row). `start_chat_upload` (with the size) and `check_message_media` (with the duration) both call it.
 
 Business functions:
 | Function | Notes |

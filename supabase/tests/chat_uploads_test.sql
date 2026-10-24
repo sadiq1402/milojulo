@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(39);
+select plan(44);
 -- Several media messages per chat here; the daily allowance has its own tests.
 update public.chat_media_settings set daily_media_allowance = null;
 
@@ -130,6 +130,26 @@ reset role;
 select pg_temp.act_as_member(:'b');
 select throws_ok($$ select * from public.chat_media_links('00000000-0000-0000-0000-0000000000d2', '{}') $$,
   '42501', null, 'Members cannot call chat_media_links');
+
+-- Withdrawn consent (decision 37): no slot, so no upload link, until the Member accepts again.
+select pg_temp.act_as_member(:'a');
+select public.withdraw_consent((pg_temp.current_docs())[1]);
+select pg_temp.act_as_service();
+select throws_ok(format($$ select public.start_chat_upload(%L, %L, 'voice', 1000) $$, :'a', :'chat'),
+  'P0001', 'no connection', 'a Member who withdrew a consent gets no upload slot');
+select pg_temp.act_as_member(:'a');
+select public.accept_consents('1995-06-15', pg_temp.current_docs());
+select pg_temp.act_as_service();
+select lives_ok(format($$ select public.start_chat_upload(%L, %L, 'voice', 1000) $$, :'a', :'chat'),
+  'after accepting again, they get one');
+select pg_temp.act_as_member(:'a');
+select throws_ok(format($$ select public.check_media_send(%L, %L, 'voice', null, 1000) $$, :'a', :'chat'),
+  '42501', null, 'Members cannot call the send rule directly');
+select throws_ok(format($$ select public.member_can_send_in(%L, %L) $$, :'b', :'chat'),
+  '42501', null, 'Members cannot ask whether someone else may send');
+select pg_temp.act_as_anon();
+select throws_ok(format($$ select public.check_media_send(%L, %L, 'voice', null, 1000) $$, :'a', :'chat'),
+  '42501', null, 'visitors cannot call the send rule');
 
 -- A Block standing on a still-accepted Connection stops slots too. block_user always closes the
 -- Connection, so no public path leaves one standing; the row is written directly.
