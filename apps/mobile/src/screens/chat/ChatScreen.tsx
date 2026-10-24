@@ -22,11 +22,7 @@ import {
 } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaNames } from '../../features/catalog/queries';
-import {
-  blockMember,
-  closeConnection,
-  setMuted,
-} from '../../features/chat/api';
+import { closeConnection, setMuted } from '../../features/chat/api';
 import {
   chatKeys,
   useChatMediaLimits,
@@ -44,6 +40,7 @@ import {
 import { useModeChange } from '../../features/chat/useModeChange';
 import { useHasAnswered } from '../../features/meetFeedback/queries';
 import { modeLabels } from '../../features/modes';
+import { useBlockMember } from '../../features/me/queries';
 import { useSecureScreen } from '../../lib/secureScreen';
 import type { MemberParams } from '../../navigation/types';
 import {
@@ -89,6 +86,7 @@ export function ChatScreen({
     conversation?.otherId,
     choosingMode,
   );
+  const block = useBlockMember();
   const menuAction = useMutation({
     mutationFn: (action: () => Promise<void>) => action(),
     onSuccess: () => {
@@ -311,8 +309,7 @@ export function ChatScreen({
         onPropose={mode => modeChange.propose.mutateAsync(mode)}
         onMute={muted => menuAction.mutate(() => setMuted(connectionId, muted))}
         onBlock={() =>
-          conversation &&
-          menuAction.mutate(() => blockMember(conversation.otherId))
+          conversation && menuAction.mutate(() => block(conversation.otherId))
         }
         onCloseChat={() =>
           menuAction.mutate(() => closeConnection(connectionId))

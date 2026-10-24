@@ -21,7 +21,6 @@ import {
   Text,
   TopBar,
 } from '../../components';
-import { blockMember } from '../../features/chat/api';
 import { usePhotoUrl } from '../../features/photos/queries';
 import { chatKeys, useConversations } from '../../features/chat/queries';
 import type { Profile } from '../../features/discover/api';
@@ -30,8 +29,9 @@ import {
   usePromptQuestions,
   useTagNames,
 } from '../../features/catalog/queries';
-import { discoverKeys, useProfile } from '../../features/discover/queries';
+import { useProfile } from '../../features/discover/queries';
 import { modeLabels } from '../../features/modes';
+import { useBlockMember } from '../../features/me/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, sizes, spacing } from '../../theme';
 import { SendRequestSheet } from '../requests/SendRequestSheet';
@@ -41,16 +41,14 @@ type Props = NativeStackScreenProps<MemberParams, 'Profile'>;
 
 export function ProfileScreen({ navigation, route }: Props) {
   const { memberId } = route.params;
-  const client = useQueryClient();
   const profile = useProfile(memberId);
   const member = profile.data;
   const [menuOpen, setMenuOpen] = useState(false);
+  const block = useBlockMember();
 
-  const block = async () => {
-    await blockMember(memberId);
+  const blockAndLeave = async () => {
+    await block(memberId);
     setMenuOpen(false);
-    client.invalidateQueries({ queryKey: discoverKeys.all });
-    client.invalidateQueries({ queryKey: chatKeys.conversations });
     navigation.goBack();
   };
 
@@ -92,7 +90,7 @@ export function ProfileScreen({ navigation, route }: Props) {
             visible={menuOpen}
             onClose={() => setMenuOpen(false)}
             name={member.name}
-            onBlock={block}
+            onBlock={blockAndLeave}
             onReport={() =>
               navigation.navigate('Report', {
                 targetType: 'profile',

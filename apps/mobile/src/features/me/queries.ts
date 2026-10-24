@@ -5,9 +5,11 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import { activityKeys } from '../activities/queries';
+import { blockMember } from '../chat/api';
 import { chatKeys } from '../chat/queries';
 import { circleKeys } from '../circles/queries';
 import { discoverKeys } from '../discover/queries';
+import { meetFeedbackKeys } from '../meetFeedback/queries';
 import { useMyPhotos } from '../photos/queries';
 import { useProfileDraft } from '../profileSetup/queries';
 import { fetchMyBlocks, setPaused, unblock } from './api';
@@ -27,6 +29,27 @@ export function useSetPaused() {
   });
 }
 
+// What a Block or Unblock changes: who each side sees in Discover, chats, Activities, Circles and
+// meet feedback, and the blocked list.
+const changedByBlock = [
+  blocksKey,
+  discoverKeys.all,
+  chatKeys.conversations,
+  chatKeys.stateAll,
+  activityKeys.all,
+  circleKeys.all,
+  meetFeedbackKeys.all,
+];
+
+// Blocks a Member and refreshes what that changes, for every screen that offers Block.
+export function useBlockMember() {
+  const client = useQueryClient();
+  return async (memberId: string) => {
+    await blockMember(memberId);
+    refresh(client, changedByBlock);
+  };
+}
+
 export function useMyBlocks() {
   return useQuery({ queryKey: blocksKey, queryFn: fetchMyBlocks });
 }
@@ -35,14 +58,7 @@ export function useUnblock() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (memberId: string) => unblock(memberId),
-    onSuccess: () =>
-      refresh(client, [
-        blocksKey,
-        discoverKeys.all,
-        activityKeys.all,
-        circleKeys.all,
-        chatKeys.conversations,
-      ]),
+    onSuccess: () => refresh(client, changedByBlock),
   });
 }
 
