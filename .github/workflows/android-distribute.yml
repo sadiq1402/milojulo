@@ -1,14 +1,13 @@
 name: Distribute Android build
 
-# On every merge to main that changes the app, builds a release APK (signed with the
-# shared debug keystore so it updates in place) and sends it to Firebase App Distribution.
-# Testers get a notification and install with one tap — no Play Store.
+# Builds a release APK (signed with the shared debug keystore so it updates in place) and sends it
+# to Firebase App Distribution. Testers get a notification and install with one tap — no Play Store.
+#
+# Run by hand, from the Actions tab or `gh workflow run android-distribute.yml --ref main`. It used
+# to run on every merge touching apps/mobile, which was about 20 of the account's Actions minutes a
+# time and the second largest spender; testers need a build when there is something to try, not on
+# every merge. Nothing here tests the app: mobile.yml does that on every pull request.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/mobile/**'
-      - '.github/workflows/android-distribute.yml'
   workflow_dispatch:
 
 concurrency:
@@ -34,6 +33,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          # Without this the build downloads and recompiles everything: about 20 minutes a run.
+          cache: gradle
       - run: npm ci
       # env.ts is gitignored; CI writes the cloud target so the distributed app talks to the hosted project.
       # env.ts is gitignored; CI writes the cloud target. These are public client values, not secrets.
@@ -59,4 +60,4 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: devs
           file: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
-          releaseNotes: ${{ github.event.head_commit.message }}
+          releaseNotes: ${{ github.event.head_commit.message || format('Manual build of {0}', github.sha) }}

@@ -58,7 +58,7 @@ Static Bricolage Grotesque (Bold) and Figtree (Regular, Medium, SemiBold, Bold) 
 
 ## Distributing dev builds (Firebase App Distribution)
 
-`.github/workflows/android-distribute.yml` builds a release APK (arm64 only) and sends it to Firebase App Distribution on every push to `main` that touches `apps/mobile/**` (or by hand from the Actions tab). Testers get a notification and install with one tap — no Play Store. The APK targets the hosted Supabase project and is signed with the shared debug keystore, so each build updates the app in place.
+`.github/workflows/android-distribute.yml` builds a release APK (arm64 only) and sends it to Firebase App Distribution. Run it by hand when testers need a build: `gh workflow run android-distribute.yml --ref main`, or the Actions tab. It ran on every merge touching `apps/mobile/**` until 2026-10-26, at about 20 Actions minutes a time. Testers get a notification and install with one tap — no Play Store. The APK targets the hosted Supabase project and is signed with the shared debug keystore, so each build updates the app in place.
 
 App package id: `co.in.milojulo`. Requires three GitHub Actions secrets:
 

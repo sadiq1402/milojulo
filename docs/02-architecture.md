@@ -44,7 +44,7 @@ Edge Functions only do what SQL cannot, and there are five: `media` (signs R2 up
 Load test with k6 before the beta (several hundred chatters plus feed loads) and watch slow queries.
 
 ## Environments and delivery
-Supabase CLI for migrations and functions. GitHub Actions: `db-tests` (every migration and pgTAP test on a fresh database), `function-tests` (Deno fmt, lint, check and tests per function), the app's lint, typecheck, unit and integration tests, a deploy to the hosted project on every backend change to `main` (supabase/README.md), and an Android release build sent to Firebase App Distribution on every app change to `main`. Supabase logs. Crash reporting (Sentry) is not set up. Schema and infrastructure live in git.
+Supabase CLI for migrations and functions. GitHub Actions, all on pull requests only (`main` is protected and a branch must be up to date to merge, so a run on `main` would only repeat the pull request's): `db-tests` (every migration and pgTAP test on a fresh database), `function-tests` (Deno fmt, lint, check and tests per function), and the app's lint, typecheck, unit and integration tests. A deploy to the hosted project runs on every backend change to `main` and can be run by hand (supabase/README.md); the Android release build to Firebase App Distribution is run by hand only, to keep inside the account's Actions minutes. Supabase logs. Crash reporting (Sentry) is not set up. Schema and infrastructure live in git.
 
 ## Costs
 About $0 until the beta. Then Supabase Pro about $25/month, plus domain, email provider if the free tier is outgrown, and store fees (Apple $99/year, Google $25 one-time). SMS only if phone verification is added.
