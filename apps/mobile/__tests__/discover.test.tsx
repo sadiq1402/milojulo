@@ -60,7 +60,7 @@ const card = (overrides: Partial<FeedCard>): FeedCard => ({
   modes: ['friends'],
   theirModes: ['friends'],
   distanceBand: '~3 km',
-  coverPhotoId: null,
+  photoIds: [],
   sharedTagIds: [1, 2],
   whyYouMatch: 'You both want friends, like badminton and cafes.',
   ...overrides,
@@ -184,8 +184,8 @@ describe('the Discover feed', () => {
   test('a card shows the cover photo, and the initial when the photo is withheld', async () => {
     jest.mocked(discover.fetchFeedPage).mockResolvedValue({
       cards: [
-        card({ coverPhotoId: 'isha-cover' }),
-        card({ id: 'rohan', name: 'Rohan', coverPhotoId: 'rohan-cover' }),
+        card({ photoIds: ['isha-cover'] }),
+        card({ id: 'rohan', name: 'Rohan', photoIds: ['rohan-cover'] }),
       ],
       nextCursor: null,
     });
@@ -197,6 +197,33 @@ describe('the Discover feed', () => {
     expect(photo.props.source).toEqual({ uri: 'https://r2.example/isha.jpg' });
     expect(screen.queryByLabelText('Photo of Rohan')).toBeNull();
     expect(photos.fetchPhotoUrls).toHaveBeenCalledTimes(1);
+  });
+
+  test("a card can be swiped through the Member's photos (#199)", async () => {
+    jest.mocked(discover.fetchFeedPage).mockResolvedValue({
+      cards: [card({ photoIds: ['isha-1', 'isha-2', 'isha-3'] })],
+      nextCursor: null,
+    });
+    jest.mocked(photos.fetchPhotoUrls).mockResolvedValue({
+      'isha-1': 'https://r2.example/1.jpg',
+      'isha-2': 'https://r2.example/2.jpg',
+      'isha-3': 'https://r2.example/3.jpg',
+    });
+    await renderApp(me);
+
+    // Every photo is on the card, and the links came in one call, not one per photo.
+    const pager = await screen.findByLabelText('Photos of Isha');
+    expect(await screen.findByLabelText('Photo 1 of 3')).toBeOnTheScreen();
+    expect(photos.fetchPhotoUrls).toHaveBeenCalledTimes(1);
+
+    await fireEvent.scroll(pager, {
+      nativeEvent: {
+        contentOffset: { x: 350, y: 0 },
+        contentSize: { width: 1050, height: 300 },
+        layoutMeasurement: { width: 350, height: 300 },
+      },
+    });
+    expect(await screen.findByLabelText('Photo 2 of 3')).toBeOnTheScreen();
   });
 
   test('with no Mode in common, the card shows the Modes they are here for', async () => {

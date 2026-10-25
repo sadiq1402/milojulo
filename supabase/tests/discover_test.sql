@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(33);
+select plan(35);
 
 -- Is this Member in the signed-in Member's feed?
 create function pg_temp.in_feed(member_id uuid) returns boolean
@@ -92,6 +92,8 @@ insert into public.profile_tags (user_id, tag_id)
 select '00000000-0000-0000-0000-0000000000f2', id from public.tags where slug in ('cafes', 'badminton', 'cricket');
 update public.photos set id = '00000000-0000-0000-0000-0000000f2001'
 where user_id = '00000000-0000-0000-0000-0000000000f2' and position = 1;
+update public.photos set id = '00000000-0000-0000-0000-0000000f2002'
+where user_id = '00000000-0000-0000-0000-0000000000f2' and position = 2;
 
 -- f3's cover is Auto-hidden, so its next live photo stands in.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000f3', '{activities}');
@@ -114,7 +116,7 @@ select '00000000-0000-0000-0000-0000000000f4', id from public.tags where slug in
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000f1');
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(f)) from public.discover_feed() f $$,
-  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'cover_photo_id', 'shared_tag_ids',
+  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'photo_ids', 'shared_tag_ids',
         'why_you_match', 'cursor'],
   'a feed card carries only safe columns, never date of birth');
 select is(
@@ -125,12 +127,23 @@ select is(
 select is(
   (select age from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f3'),
   24, 'age counts only birthdays already reached');
+-- Every live photo, in position order, so the card can be swiped through (#199).
 select is(
-  (select cover_photo_id from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f2'),
+  (select photo_ids[1] from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f2'),
   '00000000-0000-0000-0000-0000000f2001'::uuid, 'the cover photo is the first live photo');
 select is(
-  (select cover_photo_id from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f3'),
+  (select photo_ids[1] from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f3'),
   '00000000-0000-0000-0000-0000000f3003'::uuid, 'an Auto-hidden cover gives way to the next live photo');
+select is(
+  (select photo_ids from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f2'),
+  array['00000000-0000-0000-0000-0000000f2001', '00000000-0000-0000-0000-0000000f2002']::uuid[],
+  'the card carries every live photo, in position order');
+select ok(
+  (select not (exists (select 1 from public.photos ph
+                       where ph.user_id = '00000000-0000-0000-0000-0000000000f3' and ph.hidden_at is not null
+                         and ph.id = any (f.photo_ids)))
+   from public.discover_feed() f where f.user_id = '00000000-0000-0000-0000-0000000000f3'),
+  'an Auto-hidden photo is not among them');
 select is(
   (select shared_tag_ids from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f2'),
   (select array_agg(id order by sort_order) from public.tags where slug in ('badminton', 'cafes')),

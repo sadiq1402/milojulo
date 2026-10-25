@@ -106,7 +106,7 @@ select matches((select distance_band from public.discover_feed(null, 50) where u
 select matches((select why_you_match from public.discover_feed(null, 50) where user_id = pg_temp.m('02')),
   '^About [345] km away\. You both want friends\.$', 'why-you-match mentions the distance');
 select set_eq($$ select jsonb_object_keys(to_jsonb(f)) from public.discover_feed() f $$,
-  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'cover_photo_id',
+  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'photo_ids',
         'shared_tag_ids', 'why_you_match', 'cursor'],
   'a card carries a distance band, never coordinates');
 select pg_temp.act_as_member(pg_temp.m('06'));
