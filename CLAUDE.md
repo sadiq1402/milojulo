@@ -49,7 +49,7 @@ Follow docs/05-ui-standards.md for every dimension (touch targets 48, pill butto
 
 ## Current phase
 V1 is built: the database (issue #1, tickets #2 to #20) and the mobile app (issue #33) were closed as complete on 2026-10-18. Android dev builds go to testers through Firebase App Distribution when the build is run by hand (`gh workflow run android-distribute.yml --ref main`, or the Actions tab; .github/workflows/android-distribute.yml). It ran on every merge until 2026-10-26, which cost about a fifth of the account's monthly Actions minutes. What remains before the beta:
-- Open issues, all waiting on founder input: #70 (Turnstile), #71 (disposable-email blocklist), #98 (web account deletion page, a Google Play requirement) and #160 (report evidence retention). #137 (media cache through a Cloudflare Worker) is parked.
+- Open issues: #70 (Turnstile) and #71 (disposable-email blocklist) wait on founder input; #98 (web account deletion page, a Google Play requirement) is decided (decision 61) but needs #70's Turnstile keys; #160 (report evidence) is decided (decision 62) and half built, the copy shipped and the 90-day cleanup still to come. #137 (media cache through a Cloudflare Worker) is parked.
 - Beta prep in docs/10-build-plan.md: final terms, guidelines and data notice (the app links placeholders), Google Play listing and Data safety form, a release signing key, a k6 load test, Supabase Pro.
 - Open questions in docs/09-open-questions.md.
 Plan and lessons in tasks/todo.md.

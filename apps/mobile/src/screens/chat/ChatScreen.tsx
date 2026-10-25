@@ -87,12 +87,16 @@ export function ChatScreen({
     choosingMode,
   );
   const block = useBlockMember();
+  // Mute and close chat change this chat and the Inbox; a Block changes far more and
+  // refreshes through the one Block action (#188). So each action brings its own refresh,
+  // and one mutation still carries every menu action's error line.
+  const refreshChat = () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: chatKeys.conversations }),
+      client.invalidateQueries({ queryKey: chatKeys.state(connectionId) }),
+    ]);
   const menuAction = useMutation({
     mutationFn: (action: () => Promise<void>) => action(),
-    onSuccess: () => {
-      client.invalidateQueries({ queryKey: chatKeys.conversations });
-      client.invalidateQueries({ queryKey: chatKeys.state(connectionId) });
-    },
   });
 
   const send = () => {
@@ -307,12 +311,20 @@ export function ChatScreen({
         )}
         onChoosingModes={setChoosingMode}
         onPropose={mode => modeChange.propose.mutateAsync(mode)}
-        onMute={muted => menuAction.mutate(() => setMuted(connectionId, muted))}
+        onMute={muted =>
+          menuAction.mutate(async () => {
+            await setMuted(connectionId, muted);
+            await refreshChat();
+          })
+        }
         onBlock={() =>
           conversation && menuAction.mutate(() => block(conversation.otherId))
         }
         onCloseChat={() =>
-          menuAction.mutate(() => closeConnection(connectionId))
+          menuAction.mutate(async () => {
+            await closeConnection(connectionId);
+            await refreshChat();
+          })
         }
         onSafety={() => navigation.navigate('SafetyCentre')}
         mediaConsent={consent.casual ? consent.mine : undefined}

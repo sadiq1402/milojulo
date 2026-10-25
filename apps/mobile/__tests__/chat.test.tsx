@@ -498,6 +498,22 @@ describe('chat menu', () => {
     expect(chat.setMuted).toHaveBeenCalledWith('conn-isha', true);
   });
 
+  test('the menu offers to unmute once this chat is muted', async () => {
+    jest.mocked(chat.setMuted).mockImplementation(async (_id, muted) => {
+      jest
+        .mocked(chat.fetchChatState)
+        .mockResolvedValue({ otherLastReadAt: null, muted });
+    });
+    await openMenu();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Mute notifications' }),
+    );
+    await fireEvent.press(screen.getByLabelText('Chat menu'));
+    expect(
+      await screen.findByRole('button', { name: 'Unmute notifications' }),
+    ).toBeOnTheScreen();
+  });
+
   test('Block asks first, then blocks the other Member', async () => {
     jest.mocked(chat.blockMember).mockImplementation(async () => {
       jest
