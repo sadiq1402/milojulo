@@ -26,36 +26,31 @@ function fakes(opts: { expired?: ExpiredMedia[]; failing?: string[]; clock?: () 
   return { call, deleted, marked };
 }
 
-const media = (id: string, keepFile = false): ExpiredMedia => ({
+const media = (id: string): ExpiredMedia => ({
   messageId: id,
   mediaKey: `chat/c/${id}.jpg`,
-  keepFile,
 });
 
 Deno.test('deletes expired files in batches and marks their messages', async () => {
   const f = fakes({ expired: [media('a'), media('b'), media('c')] });
-  assertEquals(await (await f.call()).json(), { purged: 3, kept: 0, failed: 0 });
+  assertEquals(await (await f.call()).json(), { purged: 3, failed: 0 });
   assertEquals(f.deleted, ['chat/c/a.jpg', 'chat/c/b.jpg', 'chat/c/c.jpg']);
   assertEquals(f.marked, ['a', 'b', 'c']);
 });
 
-Deno.test('a file kept as report evidence is marked but never deleted', async () => {
-  const f = fakes({ expired: [media('a', true), media('b')] });
-  assertEquals(await (await f.call()).json(), { purged: 1, kept: 1, failed: 0 });
-  assertEquals(f.deleted, ['chat/c/b.jpg']);
-  assertEquals(f.marked, ['a', 'b']);
-});
+// A file whose report evidence hasn't been copied yet is held back by the database (#160), so it
+// never reaches this function; it comes back on a later run, once the copy exists.
 
 Deno.test('a file that fails to delete stays unmarked for the next run, and the run still ends', async () => {
   const f = fakes({ expired: [media('a'), media('b')], failing: ['chat/c/a.jpg'] });
-  assertEquals(await (await f.call()).json(), { purged: 1, kept: 0, failed: 1 });
+  assertEquals(await (await f.call()).json(), { purged: 1, failed: 1 });
   assertEquals(f.marked, ['b']);
 });
 
 Deno.test('stops starting batches past its time budget', async () => {
   let t = 0;
   const f = fakes({ expired: [media('a'), media('b'), media('c')], clock: () => (t += 60_000) });
-  assertEquals(await (await f.call()).json(), { purged: 2, kept: 0, failed: 0 });
+  assertEquals(await (await f.call()).json(), { purged: 2, failed: 0 });
 });
 
 Deno.test('only the service role may run it', async () => {
@@ -66,7 +61,7 @@ Deno.test('only the service role may run it', async () => {
 
 Deno.test('files that keep failing do not hold back the ones behind them', async () => {
   const f = fakes({ expired: [media('a'), media('b'), media('c')], failing: ['chat/c/a.jpg', 'chat/c/b.jpg'] });
-  assertEquals(await (await f.call()).json(), { purged: 1, kept: 0, failed: 2 });
+  assertEquals(await (await f.call()).json(), { purged: 1, failed: 2 });
   assertEquals(f.marked, ['c']);
 });
 

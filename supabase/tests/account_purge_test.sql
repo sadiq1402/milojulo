@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(20);
+select plan(22);
 -- Several media messages per chat here; the daily allowance has its own tests.
 update public.chat_media_settings set daily_media_allowance = null;
 
@@ -40,6 +40,12 @@ select pg_temp.act_as_member(:'gone');
 select public.delete_account();
 
 select pg_temp.act_as_service();
+-- An erasure waits while a report's evidence is still being copied (#160), so this one is only
+-- ready once the copies are through.
+select is_empty($$ select 1 from public.erasure_queue() $$,
+  'the queue waits while evidence the account holds is still being copied');
+select lives_ok($$ select public.mark_evidence_copied(array(select id from public.reports)) $$,
+  'the copy job gets through its queue');
 select results_eq($$ select member_id from public.erasure_queue() $$, array[:'gone'::uuid],
   'the queue holds the Member who asked to be deleted, and no one else');
 create temp table keys as select public.erasure_media_keys(:'gone') as key;
@@ -47,8 +53,10 @@ select ok((select bool_and(k = any (array(select key from keys)))
            from unnest(array['gone/live.jpg', 'uploads/gone/new.jpg', :'sent_key', :'received_key',
                              'uploads/' || :'unsent_key']) k),
   'their photos and uploads, and the chat media on both sides of their chats, are erased');
-select ok(not ('gone/reported.jpg' = any (array(select key from keys))), 'a reported photo''s file is kept as evidence');
-select ok(not (:'reported_key' = any (array(select key from keys))), 'a reported message''s media is kept as evidence');
+select ok('gone/reported.jpg' = any (array(select key from keys)),
+  'a reported photo''s file goes once its evidence copy exists (#160): the copy is the evidence');
+select ok(:'reported_key' = any (array(select key from keys)),
+  'and so does a reported message''s media');
 select ok('gone/taken-down.jpg' = any (array(select key from keys)),
   'a photo taken down without a report is erased: no row would point at it afterwards');
 select ok('gone/new.jpg' = any (array(select key from keys)) and :'unsent_key' = any (array(select key from keys)),

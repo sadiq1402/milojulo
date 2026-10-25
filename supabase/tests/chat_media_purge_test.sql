@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(12);
+select plan(14);
 
 \set asha '00000000-0000-0000-0000-00000000c701'
 \set ravi '00000000-0000-0000-0000-00000000c702'
@@ -31,11 +31,17 @@ insert into public.reports (reporter_id, target_type, target_id, target_user_id,
 values (:'ravi', 'message', '00000000-0000-0000-0000-00000000c7a2', :'asha', 'harassment', :'evidence_key');
 
 select pg_temp.act_as_service();
-select results_eq($$ select message_id::text, media_key, keep_file from public.expired_chat_media(10) $$,
-  format($$ values ('00000000-0000-0000-0000-00000000c7a2', %L, true), ('00000000-0000-0000-0000-00000000c7a6', %L, false),
-                   ('00000000-0000-0000-0000-00000000c7a5', %L, false), ('00000000-0000-0000-0000-00000000c7a1', %L, false) $$,
-         :'evidence_key', :'voice_key', :'video_key', :'old_key'),
-  'image, video and voice older than 90 days are due, oldest first; a reported file is kept');
+-- A file whose report evidence is still being copied is held back (#160) until the copy exists.
+select results_eq($$ select message_id::text, media_key from public.expired_chat_media(10) $$,
+  format($$ values ('00000000-0000-0000-0000-00000000c7a6', %L),
+                   ('00000000-0000-0000-0000-00000000c7a5', %L), ('00000000-0000-0000-0000-00000000c7a1', %L) $$,
+         :'voice_key', :'video_key', :'old_key'),
+  'image, video and voice older than 90 days are due, oldest first; one still being copied waits');
+select lives_ok($$ select public.mark_evidence_copied(array(select id from public.reports)) $$,
+  'the copy job gets through its queue');
+select results_eq($$ select message_id::text from public.expired_chat_media(10) limit 1 $$,
+  array['00000000-0000-0000-0000-00000000c7a2'],
+  'once the evidence copy exists the original is due like any other, oldest first');
 select results_eq($$ select count(*)::int from public.expired_chat_media(1) $$, array[1], 'a batch has at most the size asked');
 select results_eq($$ select message_id::text from public.expired_chat_media(1, array['00000000-0000-0000-0000-00000000c7a2']::uuid[]) $$,
   array['00000000-0000-0000-0000-00000000c7a6'], 'files the run failed on are skipped, so the next ones come through');

@@ -723,14 +723,14 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "created_at": string,"details": string | null,"evidence": Json | null,"evidence_media_key": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"internal_note": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string | null,"status": Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id": string | null
+                    "created_at": string,"details": string | null,"evidence": Json | null,"evidence_copied_at": string | null,"evidence_media_key": string | null,"evidence_source_key": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"internal_note": string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id": string | null,"status": Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"details"?: string | null,"evidence"?: Json | null,"evidence_media_key"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"internal_note"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id"?: string | null
+                    "created_at"?: string,"details"?: string | null,"evidence"?: Json | null,"evidence_copied_at"?: string | null,"evidence_media_key"?: string | null,"evidence_source_key"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"internal_note"?: string | null,"reason": Database["public"]['Enums']["report_reason"],"reporter_id"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_id": string,"target_type": Database["public"]['Enums']["report_target"],"target_user_id"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"details"?: string | null,"evidence"?: Json | null,"evidence_media_key"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"internal_note"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_id"?: string,"target_type"?: Database["public"]['Enums']["report_target"],"target_user_id"?: string | null
+                    "created_at"?: string,"details"?: string | null,"evidence"?: Json | null,"evidence_copied_at"?: string | null,"evidence_media_key"?: string | null,"evidence_source_key"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"internal_note"?: string | null,"reason"?: Database["public"]['Enums']["report_reason"],"reporter_id"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_id"?: string,"target_type"?: Database["public"]['Enums']["report_target"],"target_user_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -887,6 +887,9 @@ isOneToOne: false
 "check_activity":
 { Args: { "capacity": number,"ends_at": string,"start_changed": boolean,"starts_at": string,"title": string }; Returns: undefined
                            },
+"check_media_send":
+{ Args: { "connection_id": string,"duration_ms": number,"kind": Database["public"]['Enums']["message_type"],"member_id": string,"size": number }; Returns: undefined
+                           },
 "check_photo_uploader":
 { Args: { "member_id": string }; Returns: undefined
                            },
@@ -940,6 +943,9 @@ isOneToOne: false
               "distance_m": number,"shared_modes": (Database["public"]['Enums']["mode"])[],"their_modes": (Database["public"]['Enums']["mode"])[]
             }[]
                            },
+"dispatch_evidence_copies":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "dispatch_push":
 { Args: { "queue_id": number }; Returns: undefined
                            },
@@ -961,17 +967,26 @@ isOneToOne: false
 "erasure_media_keys":
 { Args: { "member": string }; Returns: string[]
                            },
+"erasure_media_keys_all":
+{ Args: { "member": string }; Returns: string[]
+                           },
 "erasure_queue":
 { Args: Record<PropertyKey, never>; Returns: {
               "member_id": string,"requested_at": string
             }[]
+                           },
+"evidence_key_for":
+{ Args: { "report_id": string,"source_key": string }; Returns: string
+                           },
+"evidence_pending_for":
+{ Args: { "key": string }; Returns: boolean
                            },
 "expire_activities":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "expired_chat_media":
 { Args: { "batch": number,"skip"?: (string)[] }; Returns: {
-              "keep_file": boolean,"media_key": string,"message_id": string
+              "media_key": string,"message_id": string
             }[]
                            },
 "fits_dating_preferences":
@@ -1035,6 +1050,9 @@ isOneToOne: false
 "mark_chat_media_deleted":
 { Args: { "message_ids": (string)[] }; Returns: undefined
                            },
+"mark_evidence_copied":
+{ Args: { "report_ids": (string)[] }; Returns: string[]
+                           },
 "match_reason":
 { Args: { "a": string,"b": string }; Returns: string
                            },
@@ -1048,6 +1066,9 @@ isOneToOne: false
                            },
 "media_allowed":
 { Args: { "connection_id": string }; Returns: boolean
+                           },
+"member_can_send_in":
+{ Args: { "connection_id": string,"member_id": string }; Returns: boolean
                            },
 "member_point":
 { Args: { "member_id": string }; Returns: unknown
@@ -1082,6 +1103,11 @@ isOneToOne: false
 "pending_chat_upload":
 { Args: { "member_id": string,"upload_id": string }; Returns: {
               "media_key": string,"mime": string,"size": number,"upload_key": string
+            }[]
+                           },
+"pending_evidence_copies":
+{ Args: { "batch": number,"skip"?: (string)[] }; Returns: {
+              "evidence_key": string,"report_id": string,"source_key": string
             }[]
                            },
 "pending_meetup_feedback":

@@ -216,8 +216,8 @@ select results_eq(
          pg_temp.m('c4'), pg_temp.m('c4') || '/3.jpg', pg_temp.m('c4')),
   'the photo evidence holds the owner and object key');
 select is(
-  (select evidence_media_key from public.reports where target_id = pg_temp.id('c4photo')),
-  pg_temp.m('c4') || '/3.jpg', 'a photo report keeps the object key as its evidence media');
+  (select evidence_source_key from public.reports where target_id = pg_temp.id('c4photo')),
+  pg_temp.m('c4') || '/3.jpg', 'a photo report keeps the object key as the source of its evidence (#160)');
 select results_eq(
   format($$ select target_user_id, evidence->>'body', evidence->>'sender_id', evidence->>'type',
                   evidence ? 'media_key', evidence ? 'sent_at'

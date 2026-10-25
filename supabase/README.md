@@ -91,3 +91,10 @@ Not auto-deployed: auth/SMTP settings in `config.toml` (`supabase config push`; 
 
 - Reviewer Account (store review), once per environment after creating its auth user: `psql "$DB_URL" -v reviewer_id=<auth user id> -f supabase/seed/reviewer.sql`. Rerun it when a consent document gets a new version (decision 41).
 - `seed/dev/*.sql`: local development only (a chat partner, Activity partners, Circles); each file's header says how to run it. Never run them against a hosted project.
+
+## The `evidence/` prefix in R2
+
+Reported media is copied to `evidence/<report id><ext>` by the `copy-evidence` function (#160,
+decision 62), and that copy is the evidence an admin opens. Keep the `uploads/` lifecycle rule off
+this prefix: a rule that deleted `evidence/` after a day would throw away the safety record. Evidence
+is meant to go 90 days after the report, by a scheduled job (not built yet, #160).

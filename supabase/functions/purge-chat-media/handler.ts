@@ -1,7 +1,6 @@
 export interface ExpiredMedia {
   messageId: string;
   mediaKey: string;
-  keepFile: boolean;
 }
 
 export interface Db {
@@ -36,7 +35,6 @@ export function createHandler(deps: Deps) {
     }
     const started = now();
     let purged = 0;
-    let kept = 0;
     const failed = new Set<string>();
     while (now() - started <= budgetMs) {
       const due = await deps.db.expired(batch, [...failed]);
@@ -45,11 +43,6 @@ export function createHandler(deps: Deps) {
       for (let i = 0; i < due.length; i += parallelDeletes) {
         await Promise.all(
           due.slice(i, i + parallelDeletes).map(async (m) => {
-            if (m.keepFile) {
-              kept++;
-              done.push(m.messageId);
-              return;
-            }
             try {
               await deps.storage.delete(m.mediaKey);
               purged++;
@@ -64,6 +57,6 @@ export function createHandler(deps: Deps) {
       }
       if (done.length > 0) await deps.db.markDeleted(done);
     }
-    return json(200, { purged, kept, failed: failed.size });
+    return json(200, { purged, failed: failed.size });
   };
 }

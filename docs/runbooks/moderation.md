@@ -32,7 +32,7 @@ where r.status = 'open'
 order by r.created_at;
 ```
 
-`reason = 'word_filter'` rows are messages the word filter flagged (no reporter). `evidence` is a snapshot of what was reported; `evidence_media_key` is the R2 key of a reported photo or chat file.
+`reason = 'word_filter'` rows are messages the word filter flagged (no reporter). `evidence` is a snapshot of what was reported, including the media key the file had at the time; `evidence_media_key` is the R2 key of the **evidence copy** (`evidence/<report id><ext>`, #160), which is the one to open. `evidence_source_key` is the live file it was copied from, and `evidence_copied_at` is null until the copy exists; a report whose copy is still pending holds its original back from the purges.
 
 Auto-hidden items (3 different Members reported them within 7 days; they stay hidden until you restore or take them down):
 

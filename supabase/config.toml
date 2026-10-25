@@ -409,6 +409,9 @@ verify_jwt = false
 [functions.purge-chat-media]
 verify_jwt = false
 
+[functions.copy-evidence]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
