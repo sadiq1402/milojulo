@@ -24,7 +24,11 @@ jest.mock('react-native-keyboard-controller', () => {
 // The native photo picker doesn't exist under Jest; tests say what it returns.
 jest.mock('react-native-image-crop-picker', () => ({
   __esModule: true,
-  default: { openPicker: jest.fn(), openCamera: jest.fn() },
+  default: {
+    openPicker: jest.fn(),
+    openCamera: jest.fn(),
+    openCropper: jest.fn(),
+  },
 }));
 
 // Chat media natives (#45): compression, voice record/play and video playback.
