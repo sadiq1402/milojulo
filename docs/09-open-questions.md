@@ -23,7 +23,7 @@
 - [ ] Android only for the beta, or iOS too ($99/year plus TestFlight). Decision 8 says Android first.
 - [ ] Pick the two neighbourhood clusters for the beta.
 - [ ] Numeric go/no-go thresholds for each beta metric.
-- [ ] Lawyer review of terms, privacy notice and consent screen; decide the data-retention period for safety records (stated in the privacy notice, not on the delete screen; see #160). The app links placeholder URLs until the documents exist.
+- [ ] Lawyer review of terms, privacy notice and consent screen. Drafts now exist in `docs/legal/` (decision 64) and are hosted, so this is a review rather than a blank page; decide the data-retention period for safety records (stated in the privacy notice, not on the delete screen; see #160). The app links placeholder URLs until the documents exist.
 - [ ] Trademark search for "MiloJulo" and the chosen logo (IP India device/logo search, reverse image search, adjacent classes).
 - [x] Final logo choice: decided 2026-10-15 (Decision 32): design/brand/logo.png, used as is.
 - [x] Email provider and domain: Resend, sending sign-in codes from `no-reply@milojulo.co.in` (PRs #72, #78).

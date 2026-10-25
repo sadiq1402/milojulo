@@ -21,7 +21,7 @@ import {
   AgeConsentScreen,
   collected,
   DocLink,
-  placeholderUrls,
+  documentUrls,
 } from './AgeConsentScreen';
 
 const intros = {
@@ -138,13 +138,13 @@ function AcceptAgain({ birthDate }: { birthDate: string }) {
           <DocLink
             label="Terms"
             doc={documents.data?.terms}
-            fallback={placeholderUrls.terms}
+            fallback={documentUrls.terms}
           />{' '}
           and the{' '}
           <DocLink
             label="Community Guidelines"
             doc={documents.data?.guidelines}
-            fallback={placeholderUrls.guidelines}
+            fallback={documentUrls.guidelines}
           />
           .
         </Checkbox>
