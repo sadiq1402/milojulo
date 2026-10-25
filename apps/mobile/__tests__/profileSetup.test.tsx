@@ -55,6 +55,10 @@ beforeEach(() => {
   jest.spyOn(device, 'hasPermission').mockResolvedValue(false);
   jest.spyOn(device, 'requestPermission').mockResolvedValue(false);
   jest.spyOn(device, 'currentPosition').mockRejectedValue(new Error('no fix'));
+  // Cropping a gallery photo hands back the same file unless a test says otherwise (#197).
+  jest
+    .mocked(ImagePicker.openCropper)
+    .mockImplementation(async ({ path }) => ({ path } as never));
 });
 
 // What the Member's tabs load once setup is done.
@@ -277,7 +281,7 @@ describe('photos', () => {
     mockProfileSetup(basics, [{ id: 'p1', position: 1 }]);
     jest
       .mocked(ImagePicker.openPicker)
-      .mockResolvedValue({ path: 'file:///tmp/new.jpg' } as never);
+      .mockResolvedValue([{ path: 'file:///tmp/new.jpg' }] as never);
     jest.mocked(photos.uploadPhoto).mockImplementation(async () => {
       jest.mocked(photos.fetchMyPhotos).mockResolvedValue(twoPhotos);
       return 'p2';
@@ -299,9 +303,11 @@ describe('photos', () => {
       await screen.findByRole('button', { name: 'Photo 2' }),
     ).toBeOnTheScreen();
     expect(ImagePicker.openPicker).toHaveBeenCalledWith(
+      expect.objectContaining({ mediaType: 'photo', multiple: true }),
+    );
+    expect(ImagePicker.openCropper).toHaveBeenCalledWith(
       expect.objectContaining({
-        mediaType: 'photo',
-        cropping: true,
+        path: 'file:///tmp/new.jpg',
         width: 1080,
         height: 1350,
         compressImageQuality: 0.8,
@@ -309,6 +315,84 @@ describe('photos', () => {
     );
     expect(photos.uploadPhoto).toHaveBeenCalledWith(2, 'file:///tmp/new.jpg');
     await waitFor(() => expect(button('Next')).toBeEnabled());
+  });
+
+  test('several photos chosen at once fill the free slots, each cropped', async () => {
+    mockProfileSetup(basics, [{ id: 'p1', position: 1 }]);
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue([
+        { path: 'file:///tmp/a.jpg' },
+        { path: 'file:///tmp/b.jpg' },
+      ] as never);
+    jest
+      .mocked(ImagePicker.openCropper)
+      .mockImplementation(
+        async ({ path }) =>
+          ({ path: path.replace('/tmp/', '/tmp/cropped-') } as never),
+      );
+    jest.mocked(photos.uploadPhoto).mockImplementation(async position => {
+      jest.mocked(photos.fetchMyPhotos).mockResolvedValue(twoPhotos);
+      return `p${position}`;
+    });
+    await open();
+    await header('Add 2 to 4 photos');
+
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Choose from your photos' }),
+    );
+
+    // Three slots are free, so the picker may offer at most three.
+    expect(ImagePicker.openPicker).toHaveBeenCalledWith(
+      expect.objectContaining({ multiple: true, maxFiles: 3 }),
+    );
+    await waitFor(() =>
+      expect(photos.uploadPhoto).toHaveBeenCalledWith(
+        2,
+        'file:///tmp/cropped-a.jpg',
+      ),
+    );
+    expect(photos.uploadPhoto).toHaveBeenCalledWith(
+      3,
+      'file:///tmp/cropped-b.jpg',
+    );
+  });
+
+  test('photos that do not fit are left out, and the Member is told', async () => {
+    mockProfileSetup(basics, twoPhotos);
+    // A picker that ignores maxFiles and hands back more than there is room for.
+    jest
+      .mocked(ImagePicker.openPicker)
+      .mockResolvedValue([
+        { path: 'file:///tmp/a.jpg' },
+        { path: 'file:///tmp/b.jpg' },
+        { path: 'file:///tmp/c.jpg' },
+      ] as never);
+    jest.mocked(photos.uploadPhoto).mockResolvedValue('p4');
+    await open();
+    // Two photos already meet the minimum, so setup opens on the next step.
+    await header('Two lines that start a conversation');
+    await fireEvent.press(button('Back'));
+    await header('Add 2 to 4 photos');
+
+    await fireEvent.press(
+      screen.getAllByRole('button', { name: 'Add photo' })[0],
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Choose from your photos' }),
+    );
+
+    expect(
+      await screen.findByText(
+        'Only 2 more photos fit, so we added the first 2.',
+      ),
+    ).toBeOnTheScreen();
+    await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(2));
+    expect(photos.uploadPhoto).toHaveBeenCalledWith(3, 'file:///tmp/a.jpg');
+    expect(photos.uploadPhoto).toHaveBeenCalledWith(4, 'file:///tmp/b.jpg');
   });
 
   test('backing out of the camera uploads nothing', async () => {
@@ -356,7 +440,7 @@ describe('photos', () => {
     mockProfileSetup(basics);
     jest
       .mocked(ImagePicker.openPicker)
-      .mockResolvedValue({ path: 'file:///tmp/a.jpg' } as never);
+      .mockResolvedValue([{ path: 'file:///tmp/a.jpg' }] as never);
     jest
       .mocked(photos.uploadPhoto)
       .mockRejectedValueOnce(
@@ -393,7 +477,7 @@ describe('photos', () => {
     jest.mocked(photos.deletePhoto).mockResolvedValue();
     jest
       .mocked(ImagePicker.openPicker)
-      .mockResolvedValue({ path: 'file:///tmp/b.jpg' } as never);
+      .mockResolvedValue([{ path: 'file:///tmp/b.jpg' }] as never);
     jest.mocked(photos.uploadPhoto).mockResolvedValue('p3');
     await open();
     await header('Two lines that start a conversation');
@@ -712,7 +796,7 @@ describe('leaving a step', () => {
     mockProfileSetup(basics, twoPhotos);
     jest
       .mocked(ImagePicker.openPicker)
-      .mockResolvedValue({ path: 'file:///tmp/c.jpg' } as never);
+      .mockResolvedValue([{ path: 'file:///tmp/c.jpg' }] as never);
     let finish: (id: string) => void = () => {};
     jest.mocked(photos.uploadPhoto).mockImplementation(
       () =>

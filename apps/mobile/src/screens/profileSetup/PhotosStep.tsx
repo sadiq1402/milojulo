@@ -8,7 +8,7 @@ import {
   photoPositions,
   type MyPhoto,
 } from '../../features/photos/model';
-import { pickPhoto, type PhotoSource } from '../../features/photos/picker';
+import { pickPhotos, type PhotoSource } from '../../features/photos/picker';
 import { photoKeys, useMyPhotos } from '../../features/photos/queries';
 import { minPhotos } from '../../features/profileSetup/model';
 import { colors, layout, sizes, spacing } from '../../theme';
@@ -26,6 +26,8 @@ type Slot =
   | { kind: 'empty' };
 
 type Upload = { position: number; localUri: string };
+// The free slots to fill, the tapped one first.
+type ChoosePhotos = { source: PhotoSource; free: number[] };
 
 export const waitForUpload = 'Wait for the photo to finish uploading.';
 
@@ -44,6 +46,8 @@ export function PhotosStep({
   // Photo id → the local file it was uploaded from, shown instead of fetching a link.
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [sheet, setSheet] = useState<Sheet | null>(null);
+  // Set when the picker hands back more photos than there are slots (#197).
+  const [tooMany, setTooMany] = useState<string>();
   const shownNotice = useNotice(notice, {
     photos: list,
     uploads: Object.keys(uploads),
@@ -81,18 +85,28 @@ export function PhotosStep({
       })),
   });
 
+  // The gallery may be asked for as many photos as there are free slots; each fills the next
+  // one, starting with the slot that was tapped (#197).
   const choose = useMutation({
-    mutationFn: ({ source }: { source: PhotoSource; position: number }) =>
-      pickPhoto(source),
+    mutationFn: ({ source, free }: ChoosePhotos) =>
+      pickPhotos(source, free.length),
     onMutate: () => {
       setSheet(null);
+      setTooMany(undefined);
       move.reset();
       remove.reset();
     },
-    onSuccess: (localUri, { position }) => {
-      if (localUri) {
-        upload.mutate({ position, localUri });
-      }
+    onSuccess: ({ uris, chosen }, { free }) => {
+      setTooMany(
+        chosen > free.length
+          ? free.length === 1
+            ? 'Only 1 more photo fits, so we added the first.'
+            : `Only ${free.length} more photos fit, so we added the first ${free.length}.`
+          : undefined,
+      );
+      uris.slice(0, free.length).forEach((localUri, i) => {
+        upload.mutate({ position: free[i]!, localUri });
+      });
     },
   });
 
@@ -128,6 +142,11 @@ export function PhotosStep({
     ...Object.keys(uploads).map(Number),
   ]);
   const nextFree = photoPositions.find(p => !taken.has(p));
+  // The tapped slot first, then the rest, so a multiple choice fills them in order.
+  const freeFrom = (position: number) => [
+    position,
+    ...photoPositions.filter(p => p !== position && !taken.has(p)),
+  ];
   const slots: Slot[] = [
     ...list.map(photo => ({
       kind: 'photo' as const,
@@ -207,6 +226,7 @@ export function PhotosStep({
   const uploadFailure = Object.values(uploads).find(state => state.failed);
   const error =
     uploadFailure?.failed ??
+    tooMany ??
     choose.error?.message ??
     move.error?.message ??
     remove.error?.message ??
@@ -258,7 +278,7 @@ export function PhotosStep({
           variant="secondary"
           onPress={() =>
             sheet?.kind === 'add' &&
-            choose.mutate({ source: 'camera', position: sheet.position })
+            choose.mutate({ source: 'camera', free: freeFrom(sheet.position) })
           }
         />
         <Button
@@ -266,7 +286,7 @@ export function PhotosStep({
           variant="secondary"
           onPress={() =>
             sheet?.kind === 'add' &&
-            choose.mutate({ source: 'library', position: sheet.position })
+            choose.mutate({ source: 'library', free: freeFrom(sheet.position) })
           }
         />
       </BottomSheet>
