@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,10 +11,6 @@ import {
   TextArea,
   TopBar,
 } from '../../components';
-import { activityKeys } from '../../features/activities/queries';
-import { blockMember } from '../../features/chat/api';
-import { chatKeys } from '../../features/chat/queries';
-import { discoverKeys } from '../../features/discover/queries';
 import {
   detailsLimit,
   reportContent,
@@ -22,6 +18,7 @@ import {
   type ReportReason,
   type ReportTarget,
 } from '../../features/reports/api';
+import { useBlockMember } from '../../features/me/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, spacing } from '../../theme';
 
@@ -46,7 +43,7 @@ const reviewLine =
 export function ReportScreen({ navigation, route }: Props) {
   const { targetType, targetId, memberId, memberName } = route.params;
   const name = memberName ?? 'them';
-  const client = useQueryClient();
+  const block = useBlockMember();
   const [reason, setReason] = useState<ReportReason>();
   const [details, setDetails] = useState('');
   const [alsoBlock, setAlsoBlock] = useState(false);
@@ -60,17 +57,10 @@ export function ReportScreen({ navigation, route }: Props) {
         return { blocked: false, blockFailed: false };
       }
       try {
-        await blockMember(memberId);
+        await block(memberId);
         return { blocked: true, blockFailed: false };
       } catch {
         return { blocked: false, blockFailed: true };
-      }
-    },
-    onSuccess: ({ blocked }) => {
-      if (blocked) {
-        client.invalidateQueries({ queryKey: discoverKeys.all });
-        client.invalidateQueries({ queryKey: chatKeys.conversations });
-        client.invalidateQueries({ queryKey: activityKeys.all });
       }
     },
   });
