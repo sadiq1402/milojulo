@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(13);
+select plan(14);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000104' || suffix)::uuid $$;
@@ -25,8 +25,12 @@ reset role;
 select pg_temp.create_visible_member(pg_temp.m('03'), '{friends}');
 select pg_temp.create_visible_member(pg_temp.m('04'), '{friends,activities}');
 select pg_temp.act_as_member(pg_temp.m('04'));
-select throws_ok(format('select public.send_request(%L, %L)', pg_temp.m('03'), 'activities'),
-  'P0001', 'that mode is not open between you', 'a request under a Mode the recipient did not choose is refused');
+-- Since #200 a request may go under the sender's own Mode too; the app warns that nothing is
+-- shared. Only a Mode neither side chose is refused.
+select lives_ok(format('select public.send_request(%L, %L)', pg_temp.m('03'), 'activities'),
+  'a request under the sender''s own Mode goes through, with nothing in common');
+select throws_ok(format('select public.send_request(%L, %L)', pg_temp.m('03'), 'serious'),
+  'P0001', 'that mode is not open between you', 'a Mode neither side chose is still refused');
 
 -- Dating Preferences that fit each other: r05 a man wanting women, r06 and r07 women wanting men, r08 a woman wanting women. Run as postgres.
 reset role;

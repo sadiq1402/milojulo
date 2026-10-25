@@ -45,14 +45,14 @@ Fixed lists a Member in Networking may pick from (career stages: student, early,
 ### Connecting
 
 **Connection**:
-A one-to-one relationship between two Members, carried under a single Mode (one of the recipient's Eligible Modes when sent; the sender need not hold it, decision 39), which unlocks chat once accepted. Status: Requested, Accepted, Declined or Closed. At most one Requested or Accepted Connection per pair; a sender whose request was declined waits 30 days to ask that Member again.
+A one-to-one relationship between two Members, carried under a single Mode (one of the Eligible Modes when sent, which may be the sender's own; decisions 39 and 63), which unlocks chat once accepted. Status: Requested, Accepted, Declined or Closed. At most one Requested or Accepted Connection per pair; a sender whose request was declined waits 30 days to ask that Member again.
 _Avoid_: Match, friendship
 
 **Mode Change**:
 A proposal by one side of an accepted Connection to move it to another Eligible Mode; the Connection keeps its current Mode until the other side accepts. One open proposal at a time; it lapses after 7 days, and a declined proposer waits 7 days to propose again.
 
 **Eligible Mode**:
-From a sender to a recipient: a Mode the recipient chose that is open between them (Casual only when both chose it; a Dating Mode only when both Members' Dating Preferences fit and the recipient's range includes the sender). The sender need not hold it (decision 39). Connection Requests use the recipient's Eligible Modes; a Mode Change uses those of the side who answers it. Discover shows every Visible Member in range with all their Modes (decision 45), except those the viewer has a waiting Connection Request or an accepted Connection with (decision 49); the Casual and Dating rules apply only to Eligible Modes.
+From a sender to a recipient: a Mode **either** of them chose that is open between them (Casual only when both chose it; a Dating Mode only when both Members' Dating Preferences fit and the recipient's range includes the sender). Neither side need hold the other's (decisions 39 and 63). Connection Requests use these (`requestable_modes()`), and the app warns before sending under a Mode the two don't share; a Mode Change uses the recipient's Modes that are open between them (`eligible_modes()`), which is also what Discover calls a shared Mode. Discover shows every Visible Member in range with all their Modes (decision 45), except those the viewer has a waiting Connection Request or an accepted Connection with (decision 49); the Casual and Dating rules apply only to Eligible Modes.
 
 **Media Consent**:
 In a Casual Connection, the per-side switch that must be on for both Members before either can send or open images or video (including ones sent earlier). Changing a Connection's Mode into Casual switches it off on both sides.
@@ -79,7 +79,7 @@ The templated line on a Discover card and profile: the distance band, then the o
 How a distance leaves the database: "<2 km" or "~N km", rounded to the kilometre, never finer.
 
 **Connection Request**:
-A Connection in its Requested state, sent with an optional note under one of the recipient's Eligible Modes, only to a Member the sender could see in Discover (inside their Discover Range). Accepting it is not re-checked against range.
+A Connection in its Requested state, sent with an optional note under one of the Eligible Modes (either side's, with a warning in the app when the two share none; decision 63), only to a Member the sender could see in Discover (inside their Discover Range). Accepting it is not re-checked against range.
 
 **Request Cap**:
 The limit of 10 Connection Requests a Member may send in any rolling 24 hours, across all Modes.
