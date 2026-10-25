@@ -1134,6 +1134,11 @@ isOneToOne: false
 "propose_mode_change":
 { Args: { "connection_id": string,"to_mode": Database["public"]['Enums']["mode"] }; Returns: string
                            },
+"push_health":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "devices": number,"never_handed_over": number,"oldest_queued_minutes": number,"queued": number,"vault_ready": boolean
+            }[]
+                           },
 "record_erasure":
 { Args: { "member": string,"objects_deleted": number,"requested_at": string }; Returns: undefined
                            },
