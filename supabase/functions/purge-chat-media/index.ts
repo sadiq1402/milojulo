@@ -1,5 +1,6 @@
-// Chat media purge (#97, Media Expiry): deletes chat media older than 90 days. The database decides what
-// is due and what report evidence keeps (expired_chat_media); this file only wires in Supabase and R2.
+// Chat media purge (#97, Media Expiry): deletes chat media older than 90 days. The database decides
+// what is due (expired_chat_media, which holds back a file whose report evidence is still being
+// copied, #160); this file only wires in Supabase and R2.
 import { createClient } from '@supabase/supabase-js';
 import { createR2 } from '../_shared/r2.ts';
 import { createHandler, type Db } from './handler.ts';
@@ -23,10 +24,9 @@ function check<T>({ data, error }: { data: T; error: { message: string } | null 
 const db: Db = {
   async expired(batch, skip) {
     const rows = check(await supabase.rpc('expired_chat_media', { batch, skip }), 'load expired media');
-    return (rows ?? []).map((r: { message_id: string; media_key: string; keep_file: boolean }) => ({
+    return (rows ?? []).map((r: { message_id: string; media_key: string }) => ({
       messageId: r.message_id,
       mediaKey: r.media_key,
-      keepFile: r.keep_file,
     }));
   },
   async markDeleted(messageIds) {
