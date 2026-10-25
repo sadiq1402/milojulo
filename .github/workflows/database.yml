@@ -1,9 +1,14 @@
 name: Database tests
 
 on:
+  # Pull requests only: see mobile.yml. No paths filter, because db-tests is a required check and a
+  # check that is skipped never reports, which would block the merge.
   pull_request:
-  push:
-    branches: [main]
+
+# A new push to a pull request cancels the run it replaces.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   db-tests:

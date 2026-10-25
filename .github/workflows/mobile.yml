@@ -1,15 +1,19 @@
 name: Mobile app
 
 on:
+  # Pull requests only: main is protected and a branch must be up to date before it merges, so a
+  # run on main would re-test the tree the pull request already tested.
   pull_request:
-    paths: ['apps/mobile/**', 'design/**', 'supabase/**', '.github/workflows/mobile.yml']
-  push:
-    branches: [main]
     paths: ['apps/mobile/**', 'design/**', 'supabase/**', '.github/workflows/mobile.yml']
 
 defaults:
   run:
     working-directory: apps/mobile
+
+# A new push to a pull request cancels the run it replaces.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   app-checks:
