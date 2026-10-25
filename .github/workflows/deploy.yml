@@ -25,7 +25,11 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
     steps:
+      # Full history: the function check below diffs against the commit before this push,
+      # which a shallow clone doesn't have.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: supabase/setup-cli@v1
         with:
           version: 2.120.0
@@ -37,12 +41,19 @@ jobs:
       - name: Push migrations
         run: supabase db push
 
-      # Only redeploys functions when a function file changed in this push.
+      # Only redeploys functions when a function file changed in this push. If the diff can't be
+      # worked out (a force push, a first push, a commit that has gone), deploy anyway: deploying
+      # functions that haven't changed costs a minute, while skipping one that has leaves the
+      # database calling a function that isn't there. This check failed closed until 2026-10-26
+      # and no function was ever deployed by CI.
       - name: Check for function changes
         id: fns
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
-             | grep -q '^supabase/functions/'; then
+          before='${{ github.event.before }}'
+          if ! git cat-file -e "$before^{commit}" 2>/dev/null; then
+            echo "cannot see $before; deploying functions to be safe"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$before" '${{ github.sha }}' | grep -q '^supabase/functions/'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
