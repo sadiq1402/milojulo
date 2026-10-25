@@ -18,6 +18,8 @@ export const chatKeys = {
   ],
   conversations: ['conversations'],
   messages: (connectionId: string) => ['messages', connectionId],
+  // Every chat's state, for invalidating; `state` is one chat's.
+  stateAll: ['chat-state'],
   state: (connectionId: string) => ['chat-state', connectionId],
   modeChange: (connectionId: string) => ['mode-change', connectionId],
   eligibleModes: (otherId: string) => ['eligible-modes', otherId],

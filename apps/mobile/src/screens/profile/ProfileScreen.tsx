@@ -21,16 +21,16 @@ import {
   Text,
   TopBar,
 } from '../../components';
-import { blockMember } from '../../features/chat/api';
 import { usePhotoUrl } from '../../features/photos/queries';
 import { chatKeys, useConversations } from '../../features/chat/queries';
+import { blockAndRefresh } from '../../features/me/queries';
 import type { Profile } from '../../features/discover/api';
 import {
   useAreaNames,
   usePromptQuestions,
   useTagNames,
 } from '../../features/catalog/queries';
-import { discoverKeys, useProfile } from '../../features/discover/queries';
+import { useProfile } from '../../features/discover/queries';
 import { modeLabels } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, sizes, spacing } from '../../theme';
@@ -47,10 +47,8 @@ export function ProfileScreen({ navigation, route }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const block = async () => {
-    await blockMember(memberId);
+    await blockAndRefresh(client, memberId);
     setMenuOpen(false);
-    client.invalidateQueries({ queryKey: discoverKeys.all });
-    client.invalidateQueries({ queryKey: chatKeys.conversations });
     navigation.goBack();
   };
 

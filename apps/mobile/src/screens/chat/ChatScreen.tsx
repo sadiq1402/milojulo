@@ -22,11 +22,7 @@ import {
 } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useAreaNames } from '../../features/catalog/queries';
-import {
-  blockMember,
-  closeConnection,
-  setMuted,
-} from '../../features/chat/api';
+import { closeConnection, setMuted } from '../../features/chat/api';
 import {
   chatKeys,
   useChatMediaLimits,
@@ -43,6 +39,7 @@ import {
 } from '../../features/chat/useChatMedia';
 import { useModeChange } from '../../features/chat/useModeChange';
 import { useHasAnswered } from '../../features/meetFeedback/queries';
+import { blockAndRefresh } from '../../features/me/queries';
 import { modeLabels } from '../../features/modes';
 import { useSecureScreen } from '../../lib/secureScreen';
 import type { MemberParams } from '../../navigation/types';
@@ -95,6 +92,11 @@ export function ChatScreen({
       client.invalidateQueries({ queryKey: chatKeys.conversations });
       client.invalidateQueries({ queryKey: chatKeys.state(connectionId) });
     },
+  });
+
+  // Blocking refreshes far more than a menu action does, so it has its own mutation (#188).
+  const block = useMutation({
+    mutationFn: (otherId: string) => blockAndRefresh(client, otherId),
   });
 
   const send = () => {
@@ -217,7 +219,7 @@ export function ChatScreen({
             {consent.note}
           </Text>
         ) : null}
-        {menuAction.isError ? (
+        {menuAction.isError || block.isError ? (
           <Text
             variant="bodySmall"
             color={colors.danger}
@@ -310,10 +312,7 @@ export function ChatScreen({
         onChoosingModes={setChoosingMode}
         onPropose={mode => modeChange.propose.mutateAsync(mode)}
         onMute={muted => menuAction.mutate(() => setMuted(connectionId, muted))}
-        onBlock={() =>
-          conversation &&
-          menuAction.mutate(() => blockMember(conversation.otherId))
-        }
+        onBlock={() => conversation && block.mutate(conversation.otherId)}
         onCloseChat={() =>
           menuAction.mutate(() => closeConnection(connectionId))
         }

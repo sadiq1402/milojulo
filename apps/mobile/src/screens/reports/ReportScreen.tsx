@@ -11,10 +11,7 @@ import {
   TextArea,
   TopBar,
 } from '../../components';
-import { activityKeys } from '../../features/activities/queries';
-import { blockMember } from '../../features/chat/api';
-import { chatKeys } from '../../features/chat/queries';
-import { discoverKeys } from '../../features/discover/queries';
+import { blockAndRefresh } from '../../features/me/queries';
 import {
   detailsLimit,
   reportContent,
@@ -60,17 +57,10 @@ export function ReportScreen({ navigation, route }: Props) {
         return { blocked: false, blockFailed: false };
       }
       try {
-        await blockMember(memberId);
+        await blockAndRefresh(client, memberId);
         return { blocked: true, blockFailed: false };
       } catch {
         return { blocked: false, blockFailed: true };
-      }
-    },
-    onSuccess: ({ blocked }) => {
-      if (blocked) {
-        client.invalidateQueries({ queryKey: discoverKeys.all });
-        client.invalidateQueries({ queryKey: chatKeys.conversations });
-        client.invalidateQueries({ queryKey: activityKeys.all });
       }
     },
   });
