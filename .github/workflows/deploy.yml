@@ -10,6 +10,9 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/functions/**'
       - '.github/workflows/deploy.yml'
+  # Lets a deploy be run by hand: after a failed run, or to put the hosted project back in step
+  # with main (every function is deployed, since there is no push to compare against).
+  workflow_dispatch:
 
 # Never let two deploys run at once; let an in-flight one finish.
 concurrency:
