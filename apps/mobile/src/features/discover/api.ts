@@ -13,7 +13,8 @@ export type FeedCard = {
   theirModes: Mode[];
   // Rounded on the server, such as "<2 km" or "~3 km".
   distanceBand: string;
-  coverPhotoId: string | null;
+  // Every live photo, in position order; the first is the cover.
+  photoIds: string[];
   sharedTagIds: number[];
   whyYouMatch: string;
 };
@@ -81,7 +82,7 @@ export async function fetchFeedPage({
       modes: row.modes,
       theirModes: row.their_modes,
       distanceBand: row.distance_band,
-      coverPhotoId: row.cover_photo_id,
+      photoIds: row.photo_ids,
       sharedTagIds: row.shared_tag_ids,
       whyYouMatch: row.why_you_match,
     })),

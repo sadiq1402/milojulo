@@ -1,10 +1,10 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Card, PhotoPlaceholder, Tag, Text } from '../../components';
+import { Card, Tag, Text } from '../../components';
 import type { FeedCard as FeedCardData } from '../../features/discover/api';
-import { usePhotoUrl } from '../../features/photos/queries';
 import { modeLabels } from '../../features/modes';
-import { colors, radius, sizes, spacing } from '../../theme';
+import { colors, radius, spacing } from '../../theme';
+import { PhotoPager } from './PhotoPager';
 
 type Props = {
   card: FeedCardData;
@@ -18,7 +18,6 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
   const place = [areaName, card.distanceBand].filter(Boolean).join(' · ');
   // With no Mode in common, the card shows what they're here for.
   const modes = card.modes.length > 0 ? card.modes : card.theirModes;
-  const cover = usePhotoUrl(card.coverPhotoId);
   return (
     <Pressable
       onPress={onPress}
@@ -27,12 +26,11 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
       accessibilityHint="Opens their profile"
     >
       <Card feed padded={false}>
-        <PhotoPlaceholder
+        <PhotoPager
           name={card.name}
           seed={card.id}
-          initialSize={initialSize}
-          uri={cover.data}
-          style={styles.media}
+          photoIds={card.photoIds}
+          onPress={onPress}
         >
           {place ? (
             <View style={styles.area}>
@@ -44,7 +42,7 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
               <Tag key={mode} label={modeLabels[mode]} tone={mode} />
             ))}
           </View>
-        </PhotoPlaceholder>
+        </PhotoPager>
         <View style={styles.body}>
           <Text variant="h1">
             {card.name}, {card.age}
@@ -74,10 +72,7 @@ export function MatchNote({ text }: { text: string }) {
 }
 
 // Initial sized to the feed media as in the mockup.
-const initialSize = Math.round(sizes.photo.feedMediaH * 0.42);
-
 const styles = StyleSheet.create({
-  media: { aspectRatio: sizes.photo.heroW / sizes.photo.feedMediaH },
   area: { position: 'absolute', left: spacing.sm, bottom: spacing.sm },
   modes: {
     position: 'absolute',
