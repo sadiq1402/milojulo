@@ -18,10 +18,12 @@ import {
 import { toBirthDate } from '../../features/consents/birthDate';
 import { colors, fontFamily, fonts, spacing } from '../../theme';
 
-// Until the lawyer-reviewed documents have URLs.
-export const placeholderUrls = {
-  terms: 'https://example.com/milojulo/terms',
-  guidelines: 'https://example.com/milojulo/community-guidelines',
+// Where the documents live. The app only falls back to these: the URL that is used comes from
+// `consent_documents`, so the founder can move a document without an app release (#201).
+export const documentUrls = {
+  terms: 'https://milojulo.co.in/terms',
+  guidelines: 'https://milojulo.co.in/community-guidelines',
+  dataNotice: 'https://milojulo.co.in/data-notice',
 };
 
 export const collected = [
@@ -194,13 +196,13 @@ export function AgeConsentScreen() {
           <DocLink
             label="Terms"
             doc={documents.data?.terms}
-            fallback={placeholderUrls.terms}
+            fallback={documentUrls.terms}
           />{' '}
           and the{' '}
           <DocLink
             label="Community Guidelines"
             doc={documents.data?.guidelines}
-            fallback={placeholderUrls.guidelines}
+            fallback={documentUrls.guidelines}
           />
           .
         </Checkbox>

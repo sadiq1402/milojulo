@@ -18,7 +18,7 @@ import { useDeleteAccount } from '../../features/account/queries';
 import { fetchConsentDocuments } from '../../features/consents/api';
 import { useSetPaused } from '../../features/me/queries';
 import type { DeleteAccountParams } from '../../navigation/types';
-import { DocLink } from '../gettingIn/AgeConsentScreen';
+import { DocLink, documentUrls } from '../gettingIn/AgeConsentScreen';
 import { colors, sizes, spacing } from '../../theme';
 
 const consequences = [
@@ -26,9 +26,6 @@ const consequences = [
   'Your Connections are closed and your messages are removed for both sides.',
   'This cannot be undone.',
 ];
-
-// Until the data notice has its lawyer-reviewed URL.
-const dataNoticeFallback = 'https://example.com/milojulo/data-notice';
 
 export function DeleteAccountScreen() {
   const navigation = useNavigation();
@@ -93,7 +90,7 @@ export function DeleteAccountScreen() {
         <DocLink
           label="Read how we handle your data"
           doc={documents.data?.data_notice}
-          fallback={dataNoticeFallback}
+          fallback={documentUrls.dataNotice}
         />
       </Text>
       <Input

@@ -11,7 +11,7 @@ export const couldNotLoad =
 const fallback = "That didn't work. Check your connection and try again.";
 
 // The address safety reports and questions go to; confirm with the founder before launch.
-export const supportEmail = 'support@milojulo.in';
+export const supportEmail = 'support@milojulo.co.in';
 
 // Pausing hides me from new people only; existing chats carry on.
 export async function setPaused(paused: boolean): Promise<void> {

@@ -48,7 +48,7 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 | Circle (circles/CircleDetailScreen; CircleDetail) | `get_circle()`, `circle_members_of()`, `circle_activities()` | `join_circle()`, `leave_circle()` | Posting to a circle uses `post_activity(circle_id)`. Members open the member's profile; a request starts a 1:1 chat. No group chat in V1 |
 | After you meet (meetFeedback/MeetFeedbackScreen; MeetFeedback) | own `meetup_feedback` (already answered?) | `submit_meetup_feedback(other_user, did_meet, keep, activity)` | Private; `kept_connections()` (admin) computes mutual keeps |
 | Report (reports/ReportScreen; Report) | target summary from the screen it came from | `report(target_type, target_id, reason, details)`; optional `block_user()` | `report()` snapshots the content into reports.evidence |
-| Safety Centre (me/SafetyCentreScreen; SafetyCentre) | static copy | none | Contact support opens the email app to support@milojulo.in |
+| Safety Centre (me/SafetyCentreScreen; SafetyCentre) | static copy | none | Contact support opens the email app to support@milojulo.co.in |
 | Me (me/MeScreen; Me) | own `profiles`, `photos`, catalogs | sign out (deletes this phone's `device_tokens` row) | No notice for a taken-down photo yet (the mockup shows one) |
 | Edit profile (me/EditProfileScreen; no mockup) | as the setup steps | as the setup steps | Reuses one setup step at a time |
 | Settings (me/SettingsScreen; Settings) | own `profiles` (paused_at, notify_messages, notify_activities) | `set_paused()`; `profiles.notify_messages`, `notify_activities` | Links to Blocked people, Consents, Data copy, Delete account |
