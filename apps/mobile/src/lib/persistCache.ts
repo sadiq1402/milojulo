@@ -9,7 +9,8 @@ import { circleKeys } from '../features/circles/queries';
 import { discoverKeys } from '../features/discover/queries';
 
 // Bump when a saved query's data changes shape, so old copies are dropped instead of hydrated.
-const cacheVersion = '1';
+// 2: Discover cards have photoIds, not photoId (#199); a hydrated old card crashed the slider.
+const cacheVersion = '2';
 const savedFor = 24 * 60 * 60_000;
 
 // Chat text never goes to the phone's (unencrypted) storage: the Inbox preview fills in on refresh.
