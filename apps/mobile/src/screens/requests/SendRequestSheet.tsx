@@ -51,6 +51,8 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
   ];
   const [mode, setMode] = useState<Mode | undefined>(choices[0]);
   const [note, setNote] = useState('');
+  // A Mode they haven't both chosen is allowed, but it asks first (#200).
+  const [confirming, setConfirming] = useState<Mode>();
   const send = useMutation({
     mutationFn: (chosen: Mode) => sendRequest(member.id, chosen, note),
     onSuccess: () => {
@@ -143,15 +145,36 @@ function SendRequestForm({ member, onClose, onSent }: Omit<Props, 'visible'>) {
           {send.error.message}
         </Text>
       ) : null}
-      <View>
-        <Button
-          label="Send request"
-          disabled={!mode}
-          loading={send.isPending}
-          onPress={() => mode && send.mutate(mode)}
-        />
-        <Button label="Cancel" variant="text" onPress={onClose} />
-      </View>
+      {confirming ? (
+        <View style={styles.field} testID="confirm-unshared-mode">
+          <Text variant="bodySmall" color={colors.secondary}>
+            You and {member.name} haven't both chosen {modeLabels[confirming]}.
+            Connect anyway?
+          </Text>
+          <Button
+            label="Connect anyway"
+            loading={send.isPending}
+            onPress={() => send.mutate(confirming)}
+          />
+          <Button
+            label="Pick another Mode"
+            variant="text"
+            onPress={() => setConfirming(undefined)}
+          />
+        </View>
+      ) : (
+        <View>
+          <Button
+            label="Send request"
+            disabled={!mode}
+            loading={send.isPending}
+            onPress={() =>
+              mode && (isShared(mode) ? send.mutate(mode) : setConfirming(mode))
+            }
+          />
+          <Button label="Cancel" variant="text" onPress={onClose} />
+        </View>
+      )}
       <Text variant="bodySmall" color={colors.secondary} style={styles.center}>
         You can send up to 10 requests in any 24 hours.
       </Text>
