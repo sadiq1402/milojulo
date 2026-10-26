@@ -127,3 +127,20 @@ test('signing out leaves nothing kept on the phone', async () => {
   });
   expect(await saved()).toBe('');
 });
+
+test('an update drops what the previous build kept, whose shape may have changed', async () => {
+  const first = await openChats();
+  await untilSaved(cache => cache.includes('Isha'));
+  await first.unmount();
+
+  // As the build before #199 left it: Discover cards then had one photoId, and hydrating them crashed.
+  const old = JSON.parse(await saved());
+  await storage.setItem(
+    'milojulo-query-cache',
+    JSON.stringify({ ...old, buster: '1' }),
+  );
+  jest.mocked(chat.fetchConversations).mockReturnValue(new Promise(() => {}));
+  const { client } = await openChats();
+  await act(() => new Promise<void>(resolve => setTimeout(resolve, 300)));
+  expect(client.getQueryData(['conversations'])).toBeUndefined();
+});
