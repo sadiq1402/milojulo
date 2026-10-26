@@ -16,5 +16,10 @@ export function useRequests() {
     sent: requested.filter(c => c.direction === 'outgoing'),
     joinWaiting: joins.filter(r => r.direction === 'incoming'),
     joinSent: joins.filter(r => r.direction === 'outgoing'),
+    // Chats with something unread. The Inbox badge counts these alongside waiting requests,
+    // so a message you haven't read shows on the tab (#202).
+    unreadChats: (conversations.data ?? []).filter(
+      c => c.status === 'accepted' && c.unreadCount > 0,
+    ),
   };
 }

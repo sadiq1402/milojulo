@@ -201,6 +201,45 @@ describe('Inbox requests', () => {
     ).toBeOnTheScreen();
   });
 
+  test('unread messages count on the Inbox badge too (#202)', async () => {
+    jest
+      .mocked(chat.fetchConversations)
+      .mockResolvedValue([
+        rohan,
+        { ...isha, unreadCount: 3 },
+        { ...anaya, status: 'accepted', unreadCount: 1 },
+      ]);
+    await renderApp(me);
+    // One waiting request and two chats with something unread.
+    expect(
+      await screen.findByRole('tab', { name: 'Inbox, 3 waiting' }),
+    ).toBeOnTheScreen();
+  });
+
+  test('a message arriving while the app is open says so, and opens the chat (#202)', async () => {
+    jest.mocked(chat.fetchConversations).mockResolvedValue([isha]);
+    await renderApp(me);
+    await screen.findByRole('tab', { name: 'Inbox' });
+    await act(() =>
+      member.emitMemberEvent({
+        event: 'message',
+        payload: {
+          connection_id: 'conn-isha',
+          sender_id: 'isha',
+          type: 'text',
+          body: 'Still on for Saturday?',
+        },
+      }),
+    );
+    const banner = await screen.findByRole('button', {
+      name: 'Isha: Still on for Saturday?. Opens the chat',
+    });
+    await fireEvent.press(banner);
+    expect(
+      await screen.findByRole('header', { name: 'Isha' }),
+    ).toBeOnTheScreen();
+  });
+
   test('accepting a request opens the chat', async () => {
     await openInbox();
     jest
