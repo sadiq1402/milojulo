@@ -82,4 +82,4 @@ ask you to accept it before you carry on using MiloJulo.
 
 ## Contact
 
-support@milojulo.in
+support@milojulo.co.in

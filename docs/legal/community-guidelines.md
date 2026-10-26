@@ -64,4 +64,4 @@ permanent: we have no way to reverse one today.
 
 ## If we get it wrong
 
-Write to support@milojulo.in. A person reads it.
+Write to support@milojulo.co.in. A person reads it.

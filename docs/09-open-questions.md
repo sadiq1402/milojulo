@@ -27,6 +27,5 @@
 - [ ] Trademark search for "MiloJulo" and the chosen logo (IP India device/logo search, reverse image search, adjacent classes).
 - [x] Final logo choice: decided 2026-10-15 (Decision 32): design/brand/logo.png, used as is.
 - [x] Email provider and domain: Resend, sending sign-in codes from `no-reply@milojulo.co.in` (PRs #72, #78).
-- [ ] Support address behind the Contact support button: the app uses the placeholder `support@milojulo.in`, a different domain from `milojulo.co.in`. Confirm the address.
 - [ ] Date the beta. The V1 build is done (#1 and #33 closed 2026-10-18); what remains is in docs/10-build-plan.md.
 - [ ] Validate Orchid pop with 5 to 8 women in Pune.

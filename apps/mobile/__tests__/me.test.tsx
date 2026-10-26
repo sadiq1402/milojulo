@@ -346,7 +346,7 @@ describe('the Safety Centre', () => {
     await fireEvent.press(await button('Call 112'));
     expect(open).toHaveBeenCalledWith('tel:112');
     await fireEvent.press(await button('Contact support'));
-    expect(open).toHaveBeenCalledWith('mailto:support@milojulo.in');
+    expect(open).toHaveBeenCalledWith('mailto:support@milojulo.co.in');
   });
 
   test('Block someone opens blocked people; Pause my profile opens Settings', async () => {

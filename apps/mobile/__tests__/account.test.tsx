@@ -30,7 +30,7 @@ jest.mock('../src/features/me/api', () => ({
 const documents = {
   terms: { id: 't1', url: null },
   guidelines: { id: 'g1', url: null },
-  data_notice: { id: 'd1', url: 'https://milojulo.in/data-notice' },
+  data_notice: { id: 'd1', url: 'https://milojulo.co.in/data-notice' },
 };
 
 const accepted = (documentId: string, kind: consents.ConsentKind) => ({
@@ -361,7 +361,7 @@ describe('deleting the account', () => {
       await screen.findByRole('link', { name: 'Read how we handle your data' }),
     );
     expect(Linking.openURL).toHaveBeenCalledWith(
-      'https://milojulo.in/data-notice',
+      'https://milojulo.co.in/data-notice',
     );
   });
 

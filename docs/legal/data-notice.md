@@ -84,7 +84,7 @@ for the 90 days above.
 ## Your rights
 
 Ask in the app for a copy of what we hold (Settings → Request a copy of my data) and we will send
-it to your email. Ask us to correct something, or to delete it, at support@milojulo.in. We answer
+it to your email. Ask us to correct something, or to delete it, at support@milojulo.co.in. We answer
 within 30 days and never later than 90. If you are not satisfied, you can complain to the Data
 Protection Board of India.
 
@@ -105,4 +105,4 @@ and accept it before you carry on.
 
 ## Contact
 
-support@milojulo.in
+support@milojulo.co.in
