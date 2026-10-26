@@ -119,12 +119,14 @@ beforeEach(() => {
 async function openInbox() {
   const app = await renderApp(me);
   await fireEvent.press(await screen.findByRole('tab', { name: /^Inbox/ }));
+  // The Inbox opens on Chats; these tests are about the Requests segment.
+  await fireEvent.press(screen.getByRole('tab', { name: 'Requests' }));
   await screen.findByText('Waiting for you');
   return app;
 }
 
 describe('Inbox requests', () => {
-  test('opens on Requests: incoming ones wait for an answer, sent ones show as pending', async () => {
+  test('Requests: incoming ones wait for an answer, sent ones show as pending', async () => {
     await openInbox();
     expect(
       screen.getByRole('tab', { name: 'Requests', selected: true }),
@@ -285,6 +287,7 @@ describe('Inbox requests', () => {
     jest.mocked(chat.fetchConversations).mockResolvedValue([isha]);
     await renderApp(me);
     await fireEvent.press(await screen.findByRole('tab', { name: 'Inbox' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Requests' }));
     expect(
       await screen.findByText(/No requests waiting for you/),
     ).toBeOnTheScreen();

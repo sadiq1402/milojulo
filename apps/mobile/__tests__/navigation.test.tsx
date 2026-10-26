@@ -52,7 +52,11 @@ test('a Member with a Submitted Profile lands on Discover and can switch tabs', 
     await screen.findByRole('tab', { name: 'Inbox', selected: true }),
   ).toBeOnTheScreen();
   expect(screen.getByRole('header', { name: 'Inbox' })).toBeOnTheScreen();
-  expect(await screen.findByText(/No requests waiting/)).toBeOnTheScreen();
+  // The Inbox opens on Chats.
+  expect(
+    screen.getByRole('tab', { name: 'Chats', selected: true }),
+  ).toBeOnTheScreen();
+  expect(await screen.findByText(/No chats yet/)).toBeOnTheScreen();
 });
 
 test('when the account cannot be loaded the app offers a retry', async () => {
