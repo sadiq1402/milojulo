@@ -82,8 +82,8 @@ as $$
 $$;
 
 -- Discover Range: no "anywhere" any more; those who had it get the widest range.
-update public.profiles set discover_range_km = 100 where discover_range_km is null;
 alter table public.profiles drop constraint profiles_discover_range_km_check;
+update public.profiles set discover_range_km = 100 where discover_range_km is null;
 alter table public.profiles
   add constraint profiles_discover_range_km_check check (discover_range_km in (2, 5, 10, 25, 50, 100)),
   alter column discover_range_km set not null,
