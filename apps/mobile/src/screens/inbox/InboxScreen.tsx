@@ -28,7 +28,7 @@ import { MemberAvatar } from '../shared/MemberAvatar';
 
 export function InboxScreen() {
   const params = useRoute<RouteProp<TabParams, 'Inbox'>>().params;
-  const [segment, setSegment] = useState<InboxSegment>('requests');
+  const [segment, setSegment] = useState<InboxSegment>('chats');
   // Each navigation brings new params, so a second tap switches back even after a manual change.
   useEffect(() => {
     if (params?.segment) {
