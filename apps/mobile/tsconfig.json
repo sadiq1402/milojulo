@@ -1,5 +1,8 @@
 {
   "extends": "@react-native/typescript-config",
+  // React Native's base config loads only jest's global types; the tests also run in Node
+  // (reading the bundled fonts, for one), so node's types come too.
+  "compilerOptions": { "types": ["jest", "node"] },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["**/node_modules", "**/Pods"]
 }

@@ -523,7 +523,29 @@ describe('send request sheet', () => {
       screen.getByRole('button', { name: 'Networking', selected: true }),
     ).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Send request' }));
+    // Networking isn't shared, so it asks before sending (#200).
+    expect(requests.sendRequest).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        "You and Isha haven't both chosen Networking. Connect anyway?",
+      ),
+    ).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Connect anyway' }),
+    );
     expect(requests.sendRequest).toHaveBeenCalledWith('isha', 'networking', '');
+    await waitFor(() => expect(onSent).toHaveBeenCalled());
+  });
+
+  test('a shared Mode sends straight away, with no warning (#200)', async () => {
+    jest.mocked(requests.sendRequest).mockResolvedValue('conn-new');
+    const { onSent } = await renderSheet(
+      ['friends', 'networking'],
+      ['friends'],
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Send request' }));
+    expect(requests.sendRequest).toHaveBeenCalledWith('isha', 'friends', '');
+    expect(screen.queryByText(/Connect anyway/)).toBeNull();
     await waitFor(() => expect(onSent).toHaveBeenCalled());
   });
 
