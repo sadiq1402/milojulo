@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { brandWordmark, wordmarkAspectRatio } from '../../assets/brand';
+import { brandMark, markAspectRatio } from '../../assets/brand';
 import { Button, Chip, Icon, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import type { FeedCard as FeedCardData } from '../../features/discover/api';
@@ -54,8 +54,8 @@ export function DiscoverScreen() {
           accessibilityLabel="Discover"
         >
           <Image
-            source={brandWordmark}
-            style={styles.wordmark}
+            source={brandMark}
+            style={styles.mark}
             resizeMode="contain"
             accessibilityRole="image"
             accessibilityLabel="MiloJulo"
@@ -307,8 +307,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: layout.pageMargin,
   },
-  // The logo's own lettering, the height of the H1 line it replaces.
-  wordmark: { height: 32, aspectRatio: wordmarkAspectRatio },
+  // The logo's mark alone (founder, #198): the lettering read badly at header size.
+  mark: { height: 40, aspectRatio: markAspectRatio },
   chipRow: { flexGrow: 0 },
   chips: {
     paddingHorizontal: layout.pageMargin,
