@@ -32,7 +32,7 @@ select throws_ok(format('select public.send_request(%L, %L)', pg_temp.m('03'), '
 
 -- f03 accepts a request s01 sent before narrowing the range: accepting is not re-checked.
 reset role;
-update public.profiles set discover_range_km = null where id = pg_temp.m('01');
+update public.profiles set discover_range_km = 25 where id = pg_temp.m('01');
 select pg_temp.act_as_member(pg_temp.m('01'));
 select public.send_request(pg_temp.m('03'), 'friends') as conn \gset
 reset role;
@@ -41,20 +41,18 @@ select pg_temp.act_as_member(pg_temp.m('03'));
 select lives_ok(format('select public.respond_request(%L, true)', :'conn'),
   'a request sent in range can still be accepted after the range narrows');
 
--- A second Service Region (Mumbai): o04 is located there; s05 has no range, so sees all of Pune only.
+-- o04 is in Mumbai, about 110 km away; s05 has the widest range, 100 km.
 reset role;
-insert into public.service_regions (name, min_lat, max_lat, min_lng, max_lng)
-values ('Mumbai', 18.85, 19.30, 72.75, 73.10);
 select pg_temp.create_visible_member(pg_temp.m('04'));
 select pg_temp.locate(pg_temp.m('04'), 19.0760, 72.8777);
 select pg_temp.create_visible_member(pg_temp.m('05'));
 select pg_temp.locate(pg_temp.m('05'), 18.5590, 73.7868);
-update public.profiles set discover_range_km = null where id = pg_temp.m('05');
+update public.profiles set discover_range_km = 100 where id = pg_temp.m('05');
 select pg_temp.act_as_member(pg_temp.m('05'));
 select throws_ok(format('select public.send_request(%L, %L)', pg_temp.m('04'), 'friends'),
-  'P0001', 'that member is not in your Discover', 'a request to a Member in another Service Region is refused');
+  'P0001', 'that member is not in your Discover', 'a request beyond even the widest range is refused');
 select lives_ok(format('select public.send_request(%L, %L)', pg_temp.m('03'), 'friends'),
-  'a request anywhere in the sender''s own Service Region is sent');
+  'a request across Pune is sent at 100 km');
 
 -- Hidden and Paused recipients near s01 stay refused.
 reset role;

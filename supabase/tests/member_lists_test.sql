@@ -6,10 +6,8 @@ select plan(21);
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c1');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c2');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000c3');
-update public.profiles set display_name = 'Asha', area_id = 'wakad' where id = '00000000-0000-0000-0000-0000000000c1';
-update public.profiles set display_name = 'Ravi', area_id = 'kharadi' where id = '00000000-0000-0000-0000-0000000000c2';
--- Wakad to Kharadi is beyond the default range, so Asha looks anywhere in Pune.
-update public.profiles set discover_range_km = null where id = '00000000-0000-0000-0000-0000000000c1';
+update public.profiles set display_name = 'Asha' where id = '00000000-0000-0000-0000-0000000000c1';
+update public.profiles set display_name = 'Ravi' where id = '00000000-0000-0000-0000-0000000000c2';
 select id as ravi_cover from public.photos
 where user_id = '00000000-0000-0000-0000-0000000000c2' and position = 1 \gset
 
@@ -20,11 +18,11 @@ select public.respond_request(:'asha_ravi', true);
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select results_eq(
-  $$ select other_id, other_name, other_photo_id, other_area_id, mode, status::text
+  $$ select other_id, other_name, other_photo_id, mode, status::text
      from public.my_connections() $$,
   format($$ values ('00000000-0000-0000-0000-0000000000c2'::uuid, 'Ravi'::varchar, %L::uuid,
-                    'kharadi'::text, 'friends'::public.mode, 'accepted') $$, :'ravi_cover'),
-  'a Member sees their Connection with the other side''s first name, cover photo, Area, Mode and status');
+                    'friends'::public.mode, 'accepted') $$, :'ravi_cover'),
+  'a Member sees their Connection with the other side''s first name, cover photo, Mode and status');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c3');
 select is_empty($$ select 1 from public.my_connections() $$,
@@ -75,9 +73,9 @@ select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c2');
 select public.set_paused(true);
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000c1');
 select results_eq(
-  $$ select other_name, other_photo_id is not null, other_area_id from public.my_connections()
+  $$ select other_name, other_photo_id is not null from public.my_connections()
      where other_id = '00000000-0000-0000-0000-0000000000c2' $$,
-  $$ values ('Ravi'::varchar, true, 'kharadi'::text) $$,
+  $$ values ('Ravi'::varchar, true) $$,
   'the other side''s details still come back while they are Paused');
 
 reset role;

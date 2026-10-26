@@ -10,9 +10,10 @@ select '00000000-0000-0000-0000-0000000000a1', id from public.tags where slug = 
 
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000a2', '{friends,networking}');
 update public.profiles
-set display_name = 'Asha', area_id = 'kharadi', availability = '{weekends,early_mornings}',
+set display_name = 'Asha', availability = '{weekends,early_mornings}',
     date_of_birth = (now() at time zone 'Asia/Kolkata')::date - interval '30 years'
 where id = '00000000-0000-0000-0000-0000000000a2';
+select pg_temp.place('00000000-0000-0000-0000-0000000000a2', 18.5515, 73.9348);
 update public.profile_prompts set answer = 'Trek at dawn, misal after'
 where user_id = '00000000-0000-0000-0000-0000000000a2' and position = 1;
 insert into public.profile_tags (user_id, tag_id)
@@ -54,14 +55,14 @@ $$;
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a1');
 select is(
-  (select row(display_name, age, area_id, modes, why_you_match)::text
+  (select row(display_name, age, modes, why_you_match)::text
    from public.get_profile('00000000-0000-0000-0000-0000000000a2')),
-  row('Asha', 30, 'kharadi', '{friends}'::public.mode[],
+  row('Asha', 30, '{friends}'::public.mode[],
       'About 16 km away. You both want friends, like trekking, and are free on weekends.')::text,
-  'a profile shows name, age, Area, shared Modes and why-you-match');
+  'a profile shows name, age, shared Modes and why-you-match');
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(p)) from public.get_profile('00000000-0000-0000-0000-0000000000a2') p $$,
-  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'why_you_match', 'photo_ids', 'prompts',
+  array['user_id', 'display_name', 'age', 'modes', 'their_modes', 'distance_band', 'why_you_match', 'photo_ids', 'prompts',
         'tag_ids', 'availability', 'request_modes'],
   'a profile carries only safe columns, never date of birth');
 select is(

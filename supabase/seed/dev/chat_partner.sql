@@ -27,8 +27,12 @@ insert into public.profiles (id, date_of_birth) values (:'isha', '1997-08-14') o
 
 -- Both profiles meet the minimum and are submitted.
 update public.profiles set display_name = coalesce(display_name, case when id = :'isha' then 'Isha' else 'You' end),
-  area_id = coalesce(area_id, 'baner'), modes = '{friends,activities}'
+  modes = '{friends,activities}'
 where id in (:'me', :'isha');
+-- Near Baner, Pune, so Discover can measure them; the phone's own location replaces its point.
+insert into public.member_locations (user_id, point)
+select u, 'SRID=4326;POINT(73.7868 18.5590)' from unnest(array[:'me', :'isha']::uuid[]) u
+on conflict (user_id) do nothing;
 insert into public.profile_prompts (user_id, position, question_id, answer)
 select u, p, (select min(id) from public.prompt_questions), 'Badminton and filter coffee'
 from unnest(array[:'me', :'isha']::uuid[]) u, generate_series(1, 2) p

@@ -8,7 +8,7 @@ language sql immutable as $$ select ('00000000-0000-0000-0000-0000000102' || suf
 create function pg_temp.pt(lat double precision, lng double precision) returns extensions.geography
 language sql immutable as $$ select extensions.st_setsrid(extensions.st_makepoint(lng, lat), 4326)::extensions.geography $$;
 
--- Where discover_feed will measure a Member from (the stored point, or their Area's centre). Run as postgres.
+-- Where discover_feed will measure a Member from (the stored point if fresh, else null). Run as postgres.
 create function pg_temp.at(member uuid) returns extensions.geography
 language plpgsql stable as $$ begin return public.member_point(member); end $$;
 
@@ -57,18 +57,20 @@ select pg_temp.hours_ago(pg_temp.m('01'), 2);
 select pg_temp.act_as_member(pg_temp.m('01'));
 select lives_ok($$ select public.set_location(18.5515, 73.9348) $$, 'an update after the hour is accepted');
 
--- Implausible jumps: anywhere outside the Pune box is refused
+-- Anywhere in the world (no Service Region); a missing coordinate is refused
 reset role;
 select pg_temp.hours_ago(pg_temp.m('01'), 2);
 select pg_temp.act_as_member(pg_temp.m('01'));
-select throws_ok($$ select public.set_location(19.0760, 72.8777) $$, 'P0001', 'MiloJulo isn''t in your city yet',
-  'a point in Mumbai is refused');
-select throws_ok($$ select public.set_location(null, 73.7868) $$, 'P0001', 'MiloJulo isn''t in your city yet',
-  'a missing coordinate is refused');
+select lives_ok($$ select public.set_location(19.0760, 72.8777) $$, 'a point in Mumbai is accepted');
+reset role;
+select pg_temp.hours_ago(pg_temp.m('01'), 2);
+select pg_temp.act_as_member(pg_temp.m('01'));
 select lives_ok($$ select public.set_location(18.5204, 73.8567) $$, 'a point in central Pune is accepted');
+select throws_ok($$ select public.set_location(null, 73.7868) $$, 'P0001', 'that location is not valid',
+  'a missing coordinate is refused');
 reset role;
 select ok(extensions.st_distance(pg_temp.at(pg_temp.m('01')), pg_temp.pt(18.5204, 73.8567)) < 600,
-  'a refused jump leaves the last accepted point in place');
+  'a refused coordinate leaves the last accepted point in place');
 
 -- The stored point carries a fixed per-Member offset of a few hundred metres
 select ok(extensions.st_distance(pg_temp.at(pg_temp.m('01')), pg_temp.pt(18.5204, 73.8567)) between 200 and 500,
@@ -89,12 +91,12 @@ reset role;
 select ok(extensions.st_distance(pg_temp.at(pg_temp.m('02')), pg_temp.at(pg_temp.m('01'))) > 1,
   'another Member at the same point is stored with their own offset');
 
--- No location: the Area's centre
-select ok(extensions.st_equals(pg_temp.at(pg_temp.m('03'))::extensions.geometry,
-                               (select center from public.areas where id = 'baner')::extensions.geometry),
-  'a Member who never set a location is measured from their Area''s centre');
-select ok(extensions.st_distance(pg_temp.at(pg_temp.m('02')), (select center from public.areas where id = 'baner')) > 1000,
-  'a Member with a location is measured from it, not their Area');
+-- No location, or one older than 7 days: no point at all (no Area fallback)
+delete from public.member_locations where user_id = pg_temp.m('03');
+select ok(pg_temp.at(pg_temp.m('03')) is null, 'a Member who never set a location has no point');
+select pg_temp.place(pg_temp.m('03'), 18.559, 73.787);
+select pg_temp.hours_ago(pg_temp.m('02'), 8 * 24);
+select ok(pg_temp.at(pg_temp.m('02')) is null, 'a location older than 7 days is ignored');
 
 -- Discover range on the profile
 select is((select discover_range_km from public.profiles where id = pg_temp.m('03')), 10::smallint,
@@ -102,17 +104,17 @@ select is((select discover_range_km from public.profiles where id = pg_temp.m('0
 select pg_temp.act_as_member(pg_temp.m('03'));
 select lives_ok($$ update public.profiles set discover_range_km = 25 where id = auth.uid() $$,
   'a Member can set their discover range');
-select lives_ok($$ update public.profiles set discover_range_km = null where id = auth.uid() $$,
-  'a Member can choose anywhere in Pune');
-select is((select discover_range_km from public.profiles where id = auth.uid()), null::smallint,
-  'anywhere in Pune is saved as no range');
+select lives_ok($$ update public.profiles set discover_range_km = 100 where id = auth.uid() $$,
+  'a Member can choose 100 km');
+select is((select discover_range_km from public.profiles where id = auth.uid()), 100::smallint,
+  'the 100 km range is saved');
 select throws_ok($$ update public.profiles set discover_range_km = 7 where id = auth.uid() $$, '23514', null,
-  'a range other than 2, 5, 10, 25 or 50 km is refused');
+  'a range other than 2, 5, 10, 25, 50 or 100 km is refused');
 reset role;
 select pg_temp.act_as_member(pg_temp.m('02'));
 update public.profiles set discover_range_km = 50 where id = pg_temp.m('03');
 reset role;
-select is((select discover_range_km from public.profiles where id = pg_temp.m('03')), null::smallint,
+select is((select discover_range_km from public.profiles where id = pg_temp.m('03')), 100::smallint,
   'a Member cannot change someone else''s range');
 
 -- Account deletion removes the location
