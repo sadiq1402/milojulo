@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { brandWordmark, wordmarkAspectRatio } from '../../assets/brand';
 import { Button, Chip, Icon, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import type { FeedCard as FeedCardData } from '../../features/discover/api';
@@ -46,18 +48,19 @@ export function DiscoverScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
-        <Text
-          variant="h1"
+        <View
+          accessible
           accessibilityRole="header"
           accessibilityLabel="Discover"
         >
-          <Text variant="h1" color={colors.orchid}>
-            Milo
-          </Text>
-          <Text variant="h1" color={colors.violet}>
-            Julo
-          </Text>
-        </Text>
+          <Image
+            source={brandWordmark}
+            style={styles.wordmark}
+            resizeMode="contain"
+            accessibilityRole="image"
+            accessibilityLabel="MiloJulo"
+          />
+        </View>
       </View>
       {me.isError ? (
         <LoadError message={me.error.message} onRetry={() => me.refetch()} />
@@ -304,6 +307,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: layout.pageMargin,
   },
+  // The logo's own lettering, the height of the H1 line it replaces.
+  wordmark: { height: 32, aspectRatio: wordmarkAspectRatio },
   chipRow: { flexGrow: 0 },
   chips: {
     paddingHorizontal: layout.pageMargin,

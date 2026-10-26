@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react-native';
+import { brandWordmark } from '../src/assets/brand';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import * as catalog from '../src/features/catalog/api';
@@ -157,6 +158,16 @@ async function openProfile(name = 'Isha') {
 }
 
 describe('the Discover feed', () => {
+  test("the header is the logo's own wordmark, not typed text (#198)", async () => {
+    await renderApp(me);
+    const header = await screen.findByRole('header', { name: 'Discover' });
+    expect(within(header).getByLabelText('MiloJulo')).toHaveProp(
+      'source',
+      brandWordmark,
+    );
+    expect(within(header).queryByText('Milo')).toBeNull();
+  });
+
   test('shows a card per person with age, Area and distance, shared Mode, why you match and shared tags', async () => {
     await renderApp(me);
     const ishaCard = await cardFor('Isha');

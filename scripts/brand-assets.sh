@@ -31,12 +31,13 @@ GROUND="$(token ground)"
 # coverage (0-255) is at most <gap>: 0 for logo.png; 12 (about 5%) for logo-orchid.png, whose M
 # touches the J of the wordmark, so no row there is empty.
 # Finds them from the alpha (50% threshold, which ignores faint specks) and writes $TMP/<name>-mark.png
-# (above the wordmark, trimmed to its alpha box) and $TMP/<name>-logo.png (mark and wordmark, cut in
+# (above the wordmark, trimmed to its alpha box), $TMP/<name>-word.png (the wordmark band, trimmed
+# the same way) and $TMP/<name>-logo.png (mark and wordmark, cut in
 # the middle of the gap above the tagline). Sets CROP to "<width> <logo height> <mark box>".
 # With <clean> set, alpha islands under 150 px are dropped from the source (stray specks) and under
-# 2000 px from the cropped mark (a sliver of the wordmark's J above the cut).
+# 2000 px from the cropped mark and wordmark (slivers of the J or the M across the cut).
 crop_logo() {
-  local src="$1" name="$2" w h bands mark_end word_end tag_start logo_h box
+  local src="$1" name="$2" w h bands mark_end word_start word_end tag_start logo_h box
   if [ -n "${4:-}" ]; then
     despeckle "$src" "$TMP/$name-src.png" 150
     src="$TMP/$name-src.png"
@@ -53,12 +54,17 @@ crop_logo() {
     exit 1
   }
   read -r _ mark_end <<<"$(echo "$bands" | sed -n 1p)"
-  read -r _ word_end <<<"$(echo "$bands" | sed -n 2p)"
+  read -r word_start word_end <<<"$(echo "$bands" | sed -n 2p)"
   read -r tag_start _ <<<"$(echo "$bands" | sed -n 3p)"
   magick "$src" -crop "${w}x$((mark_end + 1))+0+0" +repage "$TMP/top.png"
   [ -z "${4:-}" ] || despeckle "$TMP/top.png" "$TMP/top.png" 2000
   box="$(magick "$TMP/top.png" -alpha extract -threshold 50% -format '%@' info:)"
   magick "$TMP/top.png" -crop "$box" +repage "$TMP/$name-mark.png"
+  # The wordmark alone, trimmed to its alpha box, with the same sliver cleanup as the mark.
+  magick "$src" -crop "${w}x$((word_end - word_start + 1))+0+$word_start" +repage "$TMP/word.png"
+  [ -z "${4:-}" ] || despeckle "$TMP/word.png" "$TMP/word.png" 2000
+  magick "$TMP/word.png" -crop "$(magick "$TMP/word.png" -alpha extract -threshold 50% -format '%@' info:)" \
+    +repage "$TMP/$name-word.png"
   logo_h=$(((word_end + tag_start) / 2 + 1))
   magick "$src" -crop "${w}x$logo_h+0+0" +repage "$TMP/$name-logo.png"
   CROP="$w $logo_h $box"
@@ -169,12 +175,22 @@ for sc in 1 2 3; do
   save "$TMP/out.png" "$ASSETS/mark$suffix.png"
 done
 
+# In-app wordmark (Discover's header, on the light surface), 32 pt high: the orchid logo's "MiloJulo" alone.
+read -r WW WH <<<"$(magick identify -format '%w %h' "$TMP/orchid-word.png")"
+for sc in 1 2 3; do
+  suffix=$([ "$sc" = 1 ] && echo "" || echo "@${sc}x")
+  magick "$TMP/orchid-word.png" -filter Lanczos -resize "x$((32 * sc))" "$TMP/out.png"
+  save "$TMP/out.png" "$ASSETS/wordmark$suffix.png"
+done
+
 cat >"$ASSETS/index.ts" <<EOF
-// Written by scripts/brand-assets.sh: the in-app logo (mark and wordmark, no tagline) and the mark alone.
+// Written by scripts/brand-assets.sh: the in-app logo (mark and wordmark, no tagline), the mark alone and the wordmark alone.
 export const brandLogo = require('./logo.png');
 export const logoAspectRatio = $W / $LOGO_H;
 export const brandMark = require('./mark.png');
 export const markAspectRatio = $MW / $MH;
+export const brandWordmark = require('./wordmark.png');
+export const wordmarkAspectRatio = $WW / $WH;
 EOF
 
 echo "Brand assets written: ink $INK, ground $GROUND, mark $BOX, orchid mark $ORCHID_BOX, logo ${W}x$LOGO_H."
