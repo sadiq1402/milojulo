@@ -138,9 +138,7 @@ const myActivity = detail({
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
-  jest
-    .mocked(profileSetup.fetchDraft)
-    .mockResolvedValue({ ...emptyDraft, areaId: 'baner' });
+  jest.mocked(profileSetup.fetchDraft).mockResolvedValue(emptyDraft);
   jest.mocked(catalog.fetchAreas).mockResolvedValue(
     areas({
       baner: 'Baner',
@@ -153,7 +151,7 @@ beforeEach(() => {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
@@ -317,7 +315,7 @@ describe('the Activity Board', () => {
       modes: ['friends'],
       paused: true,
       rangeKm: 10,
-      inServiceRegion: true,
+      hasLocation: true,
     });
     jest.mocked(activities.fetchBoard).mockResolvedValue([]);
     jest.mocked(discover.unpause).mockImplementation(async () => {
@@ -325,7 +323,7 @@ describe('the Activity Board', () => {
         modes: ['friends'],
         paused: false,
         rangeKm: 10,
-        inServiceRegion: true,
+        hasLocation: true,
       });
       jest.mocked(activities.fetchBoard).mockResolvedValue([chai]);
     });
@@ -417,7 +415,7 @@ describe('the Joined screen', () => {
 });
 
 describe('posting an Activity', () => {
-  test('Area offers mine and the 5 nearest, and All areas for the rest', async () => {
+  test('Area offers 6 Areas near each other, and All areas for the rest', async () => {
     mockPuneAreas();
     await openCreate();
     const nearby = ['Baner', 'Aundh', 'Balewadi', 'Pashan', 'Sus', 'Bavdhan'];
@@ -690,7 +688,6 @@ function chatWith(name: string, connectionId: string) {
       otherId: name.toLowerCase(),
       otherName: name,
       otherPhotoId: null,
-      otherAreaId: 'baner',
       mode: 'activities',
       status: 'accepted',
       direction: 'outgoing',
@@ -942,7 +939,6 @@ describe("the host's Join Requests", () => {
     requesterId: 'kabir',
     requesterName: 'Kabir',
     requesterPhotoId: null,
-    requesterAreaId: 'wakad',
     status: 'requested',
     createdAt: '2026-10-12T10:00:00Z',
     connectionId: null,
@@ -953,7 +949,6 @@ describe("the host's Join Requests", () => {
     id: 'req-neha',
     requesterId: 'neha',
     requesterName: 'Neha',
-    requesterAreaId: 'baner',
     status: 'accepted',
     connectionId: 'conn-neha',
   });
@@ -967,7 +962,6 @@ describe("the host's Join Requests", () => {
     expect(activities.fetchJoinRequests).toHaveBeenCalledWith('trek');
     const waiting = within(await screen.findByTestId('join-requests'));
     expect(waiting.getByText('Kabir')).toBeOnTheScreen();
-    expect(await waiting.findByText('Wakad')).toBeOnTheScreen();
     expect(
       waiting.getByRole('button', { name: "Accept Kabir's Join Request" }),
     ).toBeOnTheScreen();

@@ -14,7 +14,7 @@ import {
 } from '../../components';
 import { signOut } from '../../features/auth/api';
 import { useSession } from '../../features/auth/SessionProvider';
-import { useAreaName, useTagNames } from '../../features/catalog/queries';
+import { useTagNames } from '../../features/catalog/queries';
 import { useMyDiscoverState } from '../../features/discover/queries';
 import { ageOn } from '../../features/consents/birthDate';
 import { useOwnProfile } from '../../features/me/queries';
@@ -22,7 +22,7 @@ import { modeLabels } from '../../features/modes';
 import { usePhotoUrl } from '../../features/photos/queries';
 import { availabilityLabels } from '../../features/profileSetup/model';
 import type { MemberParams } from '../../navigation/types';
-import { colors, spacing } from '../../theme';
+import { spacing } from '../../theme';
 import { LoadErrorScreen, LoadingScreen } from '../StatusScreen';
 import { Section } from './Section';
 
@@ -34,7 +34,6 @@ export function MeScreen() {
   const userId = useSession().session!.user.id;
   const profile = useOwnProfile(userId);
   const state = useMyDiscoverState(userId);
-  const areaName = useAreaName();
   const tagNames = useTagNames();
   const cover = usePhotoUrl(profile.photos?.[0]?.id);
 
@@ -48,7 +47,6 @@ export function MeScreen() {
   const p = profile.draft;
   const name = p.displayName ?? '';
   const age = p.birthDate ? ageOn(p.birthDate, new Date()) : undefined;
-  const area = areaName(p.areaId);
   const list = (items: string[]) => items.filter(Boolean).join(', ');
   const edit = (section: MemberParams['EditProfile']['section']) => () =>
     navigation.navigate('EditProfile', { section });
@@ -61,18 +59,13 @@ export function MeScreen() {
           <Text variant="h2">
             {age === undefined ? name : `${name}, ${age}`}
           </Text>
-          {area ? <Text color={colors.secondary}>{area}</Text> : null}
           {state.data?.paused ? <Tag label="Paused" tone="butter" /> : null}
         </View>
       </View>
 
       <Section title="Edit profile">
         <List>
-          <ListRow
-            title="Name and Area"
-            subtitle={list([name, area ?? ''])}
-            onPress={edit('basics')}
-          />
+          <ListRow title="Name" subtitle={name} onPress={edit('basics')} />
           <ListRow
             title="Photos"
             subtitle={`${profile.photos.length} photos`}

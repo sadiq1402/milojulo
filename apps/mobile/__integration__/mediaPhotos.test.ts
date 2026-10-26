@@ -79,7 +79,7 @@ test('upload, replace, link, delete and the photo minimum, through the media fun
     .select('id')
     .order('sort_order')
     .limit(2);
-  await saveBasics(userId, { displayName: 'Asha', areaId: 'baner' });
+  await saveBasics(userId, { displayName: 'Asha' });
   await saveModes(userId, {
     modes: ['friends'],
     gender: null,

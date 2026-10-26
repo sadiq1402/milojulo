@@ -62,12 +62,12 @@ beforeEach(async () => {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
     .mockResolvedValue({ cards: [], nextCursor: null });
-  mockProfileSetup({ displayName: 'Asha', areaId: 'wakad' });
+  mockProfileSetup({ displayName: 'Asha' });
 });
 
 const open = () => renderApp(sessionFor('asha@example.com'));
@@ -86,13 +86,19 @@ test('a Member is asked for location, and allowing sends it', async () => {
   );
 });
 
-test('refusing in the phone dialog shows the area fallback once', async () => {
+test('refusing in the phone dialog says once that Discover needs location', async () => {
   jest.spyOn(device, 'requestPermission').mockResolvedValue(false);
   const app = await open();
   await fireEvent.press(await button('Allow location'));
-  expect(await header('Using your area instead')).toBeOnTheScreen();
-  expect(screen.getByText('Wakad')).toBeOnTheScreen();
-  await fireEvent.press(await button('Continue with Wakad'));
+  expect(await header('Discover needs your location')).toBeOnTheScreen();
+  expect(
+    screen.getByText(
+      "MiloJulo only shows people within the distance you choose, measured from where you are. Without it, you won't see anyone or be seen.",
+    ),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText(/area/i)).toBeNull();
+  expect(await button('Turn on in Settings')).toBeOnTheScreen();
+  await fireEvent.press(await button('Not now'));
   expect(await tabs()).toBeOnTheScreen();
   expect(location.setLocation).not.toHaveBeenCalled();
 
@@ -103,7 +109,7 @@ test('refusing in the phone dialog shows the area fallback once', async () => {
   expect(screen.queryByText('See who’s nearby')).toBeNull();
 });
 
-test('the fallback can open the phone settings', async () => {
+test('after refusing, it can open the phone settings', async () => {
   const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
   await open();
   await fireEvent.press(await button('Not now'));
@@ -115,7 +121,8 @@ test('the fallback can open the phone settings', async () => {
 test('after "Not now" the prompt comes back once, a week later', async () => {
   let app = await open();
   await fireEvent.press(await button('Not now'));
-  await fireEvent.press(await button('Continue with Wakad'));
+  await header('Discover needs your location');
+  await fireEvent.press(await button('Not now'));
   await tabs();
 
   await app.unmount();
@@ -128,7 +135,7 @@ test('after "Not now" the prompt comes back once, a week later', async () => {
   now = start + 7 * day;
   app = await open();
   await fireEvent.press(await button('Not now'));
-  // The area fallback was already shown once.
+  // What refusing means was already shown once.
   expect(await tabs()).toBeOnTheScreen();
 
   await app.unmount();
@@ -154,4 +161,23 @@ test('with permission already given there is no prompt, and location is refreshe
   now = start + 3 * 60 * 60 * 1000;
   await comeBack();
   await waitFor(() => expect(location.setLocation).toHaveBeenCalledTimes(2));
+});
+
+test('a location sent on opening the app reloads Discover, which needs a fresh one', async () => {
+  permission = true;
+  let fix: (coords: { lat: number; lng: number }) => void = () => {};
+  jest
+    .spyOn(device, 'currentPosition')
+    .mockImplementation(() => new Promise(resolve => (fix = resolve)));
+  jest.mocked(discover.fetchMyDiscoverState).mockImplementation(async () => ({
+    modes: ['friends'],
+    paused: false,
+    rangeKm: 10,
+    hasLocation: jest.mocked(location.setLocation).mock.calls.length > 0,
+  }));
+  await open();
+  expect(await header('Discover needs your location')).toBeOnTheScreen();
+  await act(async () => fix({ lat: 18.59, lng: 73.76 }));
+  expect(await screen.findByText('Nobody within 10 km yet')).toBeOnTheScreen();
+  expect(screen.queryByText('Discover needs your location')).toBeNull();
 });

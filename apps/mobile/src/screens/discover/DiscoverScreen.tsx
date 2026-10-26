@@ -1,4 +1,4 @@
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
@@ -16,15 +16,20 @@ import { Button, Chip, Icon, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import type { FeedCard as FeedCardData } from '../../features/discover/api';
 import type { RangeKm } from '../../features/discover/range';
-import { useAreaNames, useTagNames } from '../../features/catalog/queries';
+import { useTagNames } from '../../features/catalog/queries';
 import {
   useFeed,
   useMyDiscoverState,
   useSaveRange,
 } from '../../features/discover/queries';
+import { useTurnOnLocation } from '../../features/location/LocationGate';
 import { modeLabels, type Mode } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, sizes, spacing } from '../../theme';
+import {
+  needsLocationBody,
+  needsLocationTitle,
+} from '../location/LocationScreens';
 import { PausedNotice } from '../shared/PausedNotice';
 import { DistanceSheet, ModesSheet, rangeLabel } from './DiscoverSheets';
 import { FeedCard } from './FeedCard';
@@ -36,9 +41,9 @@ export function DiscoverScreen() {
   const [modes, setModes] = useState<Mode[]>([]);
   const [picker, setPicker] = useState<'distance' | 'modes' | null>(null);
   const paused = me.data?.paused;
-  const rangeKm = me.data?.rangeKm ?? null;
+  const rangeKm = me.data?.rangeKm ?? 10;
 
-  const chooseRange = (next: RangeKm | null) => {
+  const chooseRange = (next: RangeKm) => {
     setPicker(null);
     if (next !== rangeKm) {
       saveRange.mutate(next);
@@ -68,8 +73,8 @@ export function DiscoverScreen() {
         <View style={styles.padded}>
           <PausedNotice explanation="While you're Paused, nobody new sees you and Discover stays empty. Your Connections and chats carry on as usual." />
         </View>
-      ) : me.data?.inServiceRegion === false ? (
-        <NotInCity />
+      ) : me.data?.hasLocation === false ? (
+        <NoLocation />
       ) : paused === false ? (
         <>
           <ScrollView
@@ -142,7 +147,8 @@ const widerRange: Record<RangeKm, RangeKm | null> = {
   5: 10,
   10: 25,
   25: 50,
-  50: null,
+  50: 100,
+  100: null,
 };
 
 function Feed({
@@ -152,13 +158,12 @@ function Feed({
   onChooseDistance,
 }: {
   modes: Mode[];
-  rangeKm: RangeKm | null;
-  onWiden: (rangeKm: RangeKm | null) => void;
+  rangeKm: RangeKm;
+  onWiden: (rangeKm: RangeKm) => void;
   onChooseDistance: () => void;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const feed = useFeed(modes, rangeKm);
-  const areas = useAreaNames();
   const tags = useTagNames();
   // The score behind the cursor is live, so a profile edited between pages can come up twice.
   const cards = [
@@ -175,7 +180,7 @@ function Feed({
       <LoadError message={feed.error.message} onRetry={() => feed.refetch()} />
     );
   }
-  const wider = rangeKm === null ? null : widerRange[rangeKm];
+  const wider = widerRange[rangeKm];
   return (
     <FlatList
       testID="discover-feed"
@@ -185,7 +190,6 @@ function Feed({
       renderItem={({ item }: { item: FeedCardData }) => (
         <FeedCard
           card={item}
-          areaName={areas.data?.[item.areaId] ?? ''}
           tagNames={tags.data ?? {}}
           onPress={() => navigation.navigate('Profile', { memberId: item.id })}
         />
@@ -208,19 +212,18 @@ function Feed({
       ListEmptyComponent={
         !feed.isSuccess || feed.hasNextPage ? (
           <ActivityIndicator color={colors.orchid} />
-        ) : rangeKm === null ? (
-          <EmptyState title="Nobody here yet" body="Check back soon." />
+        ) : wider === null ? (
+          <EmptyState
+            title={`Nobody within ${rangeKm} km yet`}
+            body="Check back soon."
+          />
         ) : (
           <EmptyState
             title={`Nobody within ${rangeKm} km yet`}
             body="Try a wider distance to see more people."
           >
             <Button
-              label={
-                wider === null
-                  ? 'Show anywhere in Pune'
-                  : `Widen to ${wider} km`
-              }
+              label={`Widen to ${wider} km`}
               onPress={() => onWiden(wider)}
             />
             <Button
@@ -240,19 +243,12 @@ function Feed({
   );
 }
 
-function NotInCity() {
-  const navigation = useNavigation<NavigationProp<{ Me: undefined }>>();
+function NoLocation() {
+  const { turnOn, busy } = useTurnOnLocation();
   return (
     <View style={[styles.padded, styles.grow]}>
-      <EmptyState
-        title="MiloJulo isn't in your city yet"
-        body="We're starting in Pune. Your profile is saved."
-      >
-        <Button
-          label="Edit profile"
-          variant="secondary"
-          onPress={() => navigation.navigate('Me')}
-        />
+      <EmptyState title={needsLocationTitle} body={needsLocationBody}>
+        <Button label="Turn on location" onPress={turnOn} loading={busy} />
       </EmptyState>
     </View>
   );

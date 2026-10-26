@@ -6,7 +6,6 @@ export type FeedCard = {
   id: string;
   name: string;
   age: number;
-  areaId: string;
   // Eligible Modes: shared, and passing both sides' Dating Preferences.
   modes: Mode[];
   // Every Mode they chose that I may see, for the "They're here for" case.
@@ -25,7 +24,6 @@ export type Profile = {
   id: string;
   name: string;
   age: number;
-  areaId: string;
   // Shared Modes; theirModes are all their Modes; requestModes the ones I may send a request under.
   modes: Mode[];
   theirModes: Mode[];
@@ -37,12 +35,12 @@ export type Profile = {
   tagIds: number[];
 };
 
-// rangeKm null means Anywhere in Pune.
+// hasLocation: a location point from the last 7 days, without which Discover is empty both ways.
 export type DiscoverState = {
   modes: Mode[];
   paused: boolean;
-  rangeKm: RangeKm | null;
-  inServiceRegion: boolean;
+  rangeKm: RangeKm;
+  hasLocation: boolean;
 };
 
 export const feedPageSize = 20;
@@ -78,7 +76,6 @@ export async function fetchFeedPage({
       id: row.user_id,
       name: row.display_name,
       age: row.age,
-      areaId: row.area_id,
       modes: row.modes,
       theirModes: row.their_modes,
       distanceBand: row.distance_band,
@@ -108,7 +105,6 @@ export async function fetchProfile(memberId: string): Promise<Profile | null> {
     id: row.user_id,
     name: row.display_name,
     age: row.age,
-    areaId: row.area_id,
     modes: row.modes,
     theirModes: row.their_modes,
     requestModes: row.request_modes,
@@ -125,32 +121,32 @@ export async function fetchProfile(memberId: string): Promise<Profile | null> {
 }
 
 // My own Modes (Casual in the Modes filter), my distance, whether I'm Paused (an empty feed)
-// and whether I'm inside a service region.
+// and whether I have a fresh location.
 export async function fetchMyDiscoverState(
   userId: string,
 ): Promise<DiscoverState> {
-  const [profile, region] = await Promise.all([
+  const [profile, located] = await Promise.all([
     supabase
       .from('profiles')
       .select('modes, paused_at, discover_range_km')
       .eq('id', userId)
       .single(),
-    supabase.rpc('in_service_region'),
+    supabase.rpc('has_fresh_location'),
   ]);
-  if (profile.error || region.error) {
+  if (profile.error || located.error) {
     throw new Error(couldNotLoad);
   }
   return {
     modes: profile.data.modes,
     paused: profile.data.paused_at !== null,
-    rangeKm: profile.data.discover_range_km as RangeKm | null,
-    inServiceRegion: region.data,
+    rangeKm: profile.data.discover_range_km as RangeKm,
+    hasLocation: located.data,
   };
 }
 
 export async function saveRange(
   userId: string,
-  rangeKm: RangeKm | null,
+  rangeKm: RangeKm,
 ): Promise<void> {
   const { error } = await supabase
     .from('profiles')

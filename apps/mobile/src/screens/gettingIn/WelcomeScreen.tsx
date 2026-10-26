@@ -87,7 +87,7 @@ export function WelcomeScreen({
             ))}
           </View>
           <Text variant="display" color={colors.white}>
-            Meet people in Pune who want the same kind of hangout.
+            Meet people near you who want the same kind of hangout.
           </Text>
           <Text color={colors.white}>
             Friends, activities and more, with people who want the same thing.
@@ -98,13 +98,6 @@ export function WelcomeScreen({
               variant="inverse"
               onPress={() => navigation.navigate('Email')}
             />
-            <Text
-              variant="bodySmall"
-              color={colors.white}
-              style={styles.centred}
-            >
-              Now open in Pune.
-            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -133,7 +126,6 @@ const styles = StyleSheet.create({
   },
   stickerLabel: { fontFamily: fontFamily(fonts.text, '700') },
   actions: { gap: spacing.sm },
-  centred: { textAlign: 'center' },
   // Decoration from the mockup (390-wide frame).
   pinkBlob: {
     position: 'absolute',

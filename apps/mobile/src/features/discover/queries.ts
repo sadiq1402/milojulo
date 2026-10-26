@@ -17,11 +17,11 @@ import type { RangeKm } from './range';
 export const discoverKeys = {
   all: ['discover'],
   feeds: ['discover', 'feed'],
-  feed: (modes: Mode[], rangeKm: RangeKm | null) => [
+  feed: (modes: Mode[], rangeKm: RangeKm) => [
     'discover',
     'feed',
     [...modes].sort(),
-    rangeKm ?? 'anywhere',
+    rangeKm,
   ],
   me: ['discover', 'me'],
   profile: (memberId: string) => ['discover', 'profile', memberId],
@@ -35,7 +35,7 @@ export function useMyDiscoverState(userId: string) {
 }
 
 // The range is in the key so a new range starts a fresh feed.
-export function useFeed(modes: Mode[], rangeKm: RangeKm | null) {
+export function useFeed(modes: Mode[], rangeKm: RangeKm) {
   return useInfiniteQuery({
     queryKey: discoverKeys.feed(modes, rangeKm),
     queryFn: ({ pageParam }) => fetchFeedPage({ modes, cursor: pageParam }),
@@ -47,7 +47,7 @@ export function useFeed(modes: Mode[], rangeKm: RangeKm | null) {
 export function useSaveRange(userId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (rangeKm: RangeKm | null) => saveRange(userId, rangeKm),
+    mutationFn: (rangeKm: RangeKm) => saveRange(userId, rangeKm),
     onSuccess: (_, rangeKm) => {
       client.setQueryData<DiscoverState>(discoverKeys.me, state =>
         state ? { ...state, rangeKm } : state,

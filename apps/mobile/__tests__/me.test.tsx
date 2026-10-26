@@ -44,7 +44,7 @@ beforeEach(() => {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
@@ -52,7 +52,6 @@ beforeEach(() => {
   mockProfileSetup(
     {
       displayName: 'Asha',
-      areaId: 'baner',
       // 28 on any day of this year.
       birthDate: `${new Date().getUTCFullYear() - 28}-01-01`,
       modes: ['friends', 'activities'],
@@ -93,10 +92,10 @@ async function openMe() {
 }
 
 describe('the Me tab', () => {
-  test('shows name, age and Area with sections to edit, and no Approved badge', async () => {
+  test('shows name and age with sections to edit, no Area and no Approved badge', async () => {
     await openMe();
-    expect(await screen.findByText('Baner')).toBeOnTheScreen();
-    expect(await button(/^Name and Area/)).toBeOnTheScreen();
+    expect(await button('Name, Asha')).toBeOnTheScreen();
+    expect(screen.queryByText(/Area/)).toBeNull();
     expect(await button(/^Photos, 2 photos/)).toBeOnTheScreen();
     expect(await button(/^Prompts/)).toBeOnTheScreen();
     expect(
@@ -110,7 +109,7 @@ describe('the Me tab', () => {
 
   test('editing the name saves it and comes back to Me showing it', async () => {
     await openMe();
-    await fireEvent.press(await button(/^Name and Area/));
+    await fireEvent.press(await button(/^Name, /));
     await header('What should we call you?');
     expect(screen.queryByLabelText(/Step \d of 5/)).toBeNull();
     await fireEvent.changeText(screen.getByLabelText('First name'), 'Ashu');
@@ -118,7 +117,6 @@ describe('the Me tab', () => {
     expect(await screen.findByText('Ashu, 28')).toBeOnTheScreen();
     expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
       displayName: 'Ashu',
-      areaId: 'baner',
     });
   });
 
@@ -137,7 +135,7 @@ describe('the Me tab', () => {
 
   test('Back saves the edit, as setup does', async () => {
     await openMe();
-    await fireEvent.press(await button(/^Name and Area/));
+    await fireEvent.press(await button(/^Name, /));
     await fireEvent.changeText(
       await screen.findByLabelText('First name'),
       'Ashu',
@@ -146,7 +144,6 @@ describe('the Me tab', () => {
     expect(await screen.findByText('Ashu, 28')).toBeOnTheScreen();
     expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
       displayName: 'Ashu',
-      areaId: 'baner',
     });
   });
 
@@ -164,7 +161,7 @@ describe('the Me tab', () => {
       .mocked(profileSetup.saveBasics)
       .mockRejectedValue(new SetupError('Add your first name.', 'basics'));
     await openMe();
-    await fireEvent.press(await button(/^Name and Area/));
+    await fireEvent.press(await button(/^Name, /));
     await fireEvent.changeText(await screen.findByLabelText('First name'), '');
     await fireEvent.press(await button('Back'));
     expect(await screen.findByText('Add your first name.')).toBeOnTheScreen();
@@ -195,7 +192,7 @@ describe('the Me tab', () => {
       modes: ['friends'],
       paused: true,
       rangeKm: 10,
-      inServiceRegion: true,
+      hasLocation: true,
     });
     await openMe();
     expect(await screen.findByText('Paused')).toBeOnTheScreen();
@@ -226,7 +223,7 @@ describe('Settings', () => {
       modes: ['friends'],
       paused: true,
       rangeKm: 10,
-      inServiceRegion: true,
+      hasLocation: true,
     });
     await openSettings();
     const toggle = await screen.findByRole('switch', {

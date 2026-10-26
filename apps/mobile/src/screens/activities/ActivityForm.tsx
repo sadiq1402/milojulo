@@ -38,10 +38,8 @@ import {
   lastStartMinutes,
   minutesStep,
 } from '../../features/activities/time';
-import { useSession } from '../../features/auth/SessionProvider';
 import { areaShortlist } from '../../features/catalog/nearest';
 import { useAllAreas } from '../../features/catalog/queries';
-import { useProfileDraft } from '../../features/profileSetup/queries';
 import {
   colors,
   sizes,
@@ -52,7 +50,7 @@ import {
 } from '../../theme';
 import { AreaSheet } from '../profileSetup/AreaPicker';
 
-// Mine and the nearest to it; the rest are under All areas.
+// The chosen Area and the nearest to it; the rest are under All areas.
 const shortlistSize = 6;
 
 export type FormValues = {
@@ -144,7 +142,6 @@ export function ActivityForm({
   circleName,
 }: Props) {
   const areas = useAllAreas();
-  const draft = useProfileDraft(useSession().session!.user.id);
   const [pickingArea, setPickingArea] = useState(false);
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
@@ -303,15 +300,11 @@ export function ActivityForm({
         <>
           <View {...anchor('areaId')}>
             <ChipField label="Area" error={errors.areaId}>
-              {/* Held until my Area is known, so the chips don't jump into place. */}
-              {(draft.isPending
-                ? []
-                : areaShortlist(
-                    areas.data ?? [],
-                    draft.data?.areaId ?? null,
-                    values.areaId,
-                    shortlistSize,
-                  )
+              {areaShortlist(
+                areas.data ?? [],
+                null,
+                values.areaId,
+                shortlistSize,
               ).map(area => (
                 <Chip
                   key={area.id}

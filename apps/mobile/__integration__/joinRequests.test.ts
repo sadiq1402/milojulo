@@ -134,7 +134,6 @@ test('the host lists requests, accepts one into an Activity Connection and decli
       id: fromRavi,
       requesterId: ravi.id,
       requesterName: 'Ravi',
-      requesterAreaId: 'baner',
       status: 'requested',
       connectionId: null,
     }),

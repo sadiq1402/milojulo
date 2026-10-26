@@ -66,8 +66,8 @@ test('a Mode the pair do not share is refused', async () => {
 });
 
 test('a Member beyond my Discover range is refused, with friendly copy', async () => {
-  const far = await createMember('Neha');
-  await admin.from('profiles').update({ area_id: 'kharadi' }).eq('id', far.id);
+  // Kharadi, about 16 km from Baner.
+  const far = await createMember('Neha', { at: { lat: 18.551, lng: 73.94 } });
   await expect(sendRequest(far.id, 'friends')).rejects.toThrow(
     "This Member is outside your Discover range, so you can't send them a request.",
   );

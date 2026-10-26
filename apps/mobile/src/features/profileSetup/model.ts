@@ -25,7 +25,7 @@ export type PromptAnswer = {
   answer: string;
 };
 
-export type Basics = { displayName: string; areaId: string };
+export type Basics = { displayName: string };
 
 export type ModeFields = {
   modes: Mode[];
@@ -44,7 +44,6 @@ export type Interests = { tagIds: number[]; availability: AvailabilitySlot[] };
 // Everything profile setup edits, as saved so far.
 export type ProfileDraft = {
   displayName: string | null;
-  areaId: string | null;
   birthDate: string | null;
   prompts: PromptAnswer[];
 } & ModeFields &
@@ -62,10 +61,8 @@ export const nameMaxLength = 30;
 export const answerMaxLength = 140;
 export const professionMaxLength = 40;
 
-export function basicsDone(
-  draft: Pick<ProfileDraft, 'displayName' | 'areaId'>,
-) {
-  return !!draft.displayName?.trim() && !!draft.areaId;
+export function basicsDone(draft: Pick<ProfileDraft, 'displayName'>) {
+  return !!draft.displayName?.trim();
 }
 
 export function promptsDone(prompts: PromptAnswer[]) {

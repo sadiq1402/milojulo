@@ -78,9 +78,9 @@ describe('the word filter', () => {
   test('a refused first name reads as friendly copy', async () => {
     const eq = jest.fn().mockResolvedValue({ error: { message: wordFilter } });
     stub.from = jest.fn(() => ({ update: () => ({ eq }) }));
-    await expect(
-      saveBasics('me', { displayName: 'x', areaId: 'baner' }),
-    ).rejects.toMatchObject({ message: copy });
+    await expect(saveBasics('me', { displayName: 'x' })).rejects.toMatchObject({
+      message: copy,
+    });
   });
 
   test('a refused prompt answer reads as friendly copy', async () => {

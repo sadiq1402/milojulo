@@ -65,8 +65,8 @@ const circleActivity: BoardActivity = {
 };
 
 const members: CircleMember[] = [
-  { id: 'kabir', name: 'Kabir', coverPhotoId: null, areaId: 'baner' },
-  { id: 'meera', name: 'Meera', coverPhotoId: null, areaId: 'wakad' },
+  { id: 'kabir', name: 'Kabir', coverPhotoId: null },
+  { id: 'meera', name: 'Meera', coverPhotoId: null },
 ];
 
 beforeEach(() => {
@@ -82,7 +82,7 @@ beforeEach(() => {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
@@ -142,7 +142,7 @@ describe('the Circles list', () => {
       modes: ['friends'],
       paused: true,
       rangeKm: 10,
-      inServiceRegion: true,
+      hasLocation: true,
     });
     jest.mocked(circles.fetchCircles).mockResolvedValue([]);
     await openCircles();

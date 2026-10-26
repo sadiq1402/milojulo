@@ -21,7 +21,6 @@ import {
   Text,
 } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
-import { useAreaNames } from '../../features/catalog/queries';
 import { closeConnection, setMuted } from '../../features/chat/api';
 import {
   chatKeys,
@@ -65,7 +64,6 @@ export function ChatScreen({
   const myId = useSession().session!.user.id;
   const client = useQueryClient();
   const conversations = useConversations();
-  const areas = useAreaNames();
   const chat = useChat(connectionId, myId, useIsFocused());
   const [draft, setDraft] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -147,11 +145,6 @@ export function ChatScreen({
             {name}
           </Text>
           <View style={styles.subline}>
-            {conversation?.otherAreaId ? (
-              <Text variant="caption" color={colors.secondary}>
-                {areas.data?.[conversation.otherAreaId] ?? ''}
-              </Text>
-            ) : null}
             {conversation ? (
               <Tag
                 label={modeLabels[conversation.mode]}

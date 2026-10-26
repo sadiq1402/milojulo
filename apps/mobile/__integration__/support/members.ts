@@ -23,11 +23,17 @@ function otherClient(): SupabaseClient<Database> {
   );
 }
 
+// Members sit in Baner unless placed elsewhere; `at: null` leaves them without a location.
+export const baner = { lat: 18.559, lng: 73.786 };
+
 // A Member with a Submitted Profile, signed in through the real email-code flow.
 // Pass `app: true` to sign the app's own client in as them.
 export async function createMember(
   name: string,
-  { app = false } = {},
+  {
+    app = false,
+    at = baner,
+  }: { app?: boolean; at?: { lat: number; lng: number } | null } = {},
 ): Promise<TestMember> {
   const client = app ? appClient : otherClient();
   const email = `${name.toLowerCase()}-${Date.now()}-${counter++}@test.milojulo`;
@@ -54,7 +60,7 @@ export async function createMember(
   await check(
     admin
       .from('profiles')
-      .update({ display_name: name, area_id: 'baner', modes: ['friends'] })
+      .update({ display_name: name, modes: ['friends'] })
       .eq('id', id),
   );
   const { data: questions } = await admin
@@ -82,6 +88,9 @@ export async function createMember(
     ),
   );
   await check(client.rpc('submit_profile'));
+  if (at) {
+    await check(client.rpc('set_location', at));
+  }
   return { id, name, client };
 }
 
