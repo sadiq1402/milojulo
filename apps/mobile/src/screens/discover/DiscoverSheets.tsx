@@ -5,8 +5,8 @@ import { rangeSteps, type RangeKm } from '../../features/discover/range';
 import { modeLabels, type Mode } from '../../features/modes';
 import { colors, spacing } from '../../theme';
 
-export function rangeLabel(rangeKm: RangeKm | null): string {
-  return rangeKm === null ? 'Anywhere in Pune' : `Within ${rangeKm} km`;
+export function rangeLabel(rangeKm: RangeKm): string {
+  return `Within ${rangeKm} km`;
 }
 
 // Choices are drafts until Show people; reopening starts from the current value.
@@ -27,12 +27,11 @@ export function DistanceSheet({
   onChoose,
 }: {
   visible: boolean;
-  value: RangeKm | null;
+  value: RangeKm;
   onClose: () => void;
-  onChoose: (rangeKm: RangeKm | null) => void;
+  onChoose: (rangeKm: RangeKm) => void;
 }) {
   const [draft, setDraft] = useDraft(visible, value);
-  const options: (RangeKm | null)[] = [...rangeSteps, null];
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <Text variant="h2" accessibilityRole="header">
@@ -42,12 +41,12 @@ export function DistanceSheet({
         Measured from where your phone is. Distances on cards are rounded.
       </Text>
       <ScrollView contentContainerStyle={styles.options}>
-        {options.map(km => (
+        {rangeSteps.map(km => (
           <OptionCard
-            key={km ?? 'anywhere'}
+            key={km}
             role="radio"
             compact
-            title={km === null ? 'Anywhere in Pune' : `${km} km`}
+            title={`${km} km`}
             checked={draft === km}
             onChange={() => setDraft(km)}
           />

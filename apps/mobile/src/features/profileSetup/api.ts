@@ -22,7 +22,6 @@ const refusals: Record<string, { message: string; step?: SetupStep }> = {
     message: 'Accept the terms and give your date of birth first.',
   },
   'add your first name': { message: 'Add your first name.', step: 'basics' },
-  'choose your area': { message: 'Choose your area.', step: 'basics' },
   'choose at least one mode': {
     message: 'Choose at least one Mode.',
     step: 'modes',
@@ -54,7 +53,7 @@ export async function fetchDraft(userId: string): Promise<ProfileDraft> {
     supabase
       .from('profiles')
       .select(
-        'display_name, area_id, date_of_birth, modes, availability, gender, pref_genders, pref_age_min, pref_age_max, pref_max_km, profession, industry_id, career_stage',
+        'display_name, date_of_birth, modes, availability, gender, pref_genders, pref_age_min, pref_age_max, pref_max_km, profession, industry_id, career_stage',
       )
       .eq('id', userId)
       .single(),
@@ -71,7 +70,6 @@ export async function fetchDraft(userId: string): Promise<ProfileDraft> {
   const p = profile.data;
   return {
     displayName: p.display_name,
-    areaId: p.area_id,
     birthDate: p.date_of_birth,
     modes: p.modes,
     availability: p.availability,
@@ -108,7 +106,6 @@ async function updateProfile(
 export async function saveBasics(userId: string, basics: Basics) {
   await updateProfile(userId, {
     display_name: basics.displayName.trim(),
-    area_id: basics.areaId,
   });
 }
 

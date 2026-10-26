@@ -45,7 +45,6 @@ const conversation = (overrides: Partial<Conversation>): Conversation => ({
   otherId: 'rohan',
   otherName: 'Rohan',
   otherPhotoId: null,
-  otherAreaId: 'wakad',
   mode: 'friends',
   status: 'requested',
   direction: 'incoming',
@@ -120,8 +119,7 @@ beforeEach(() => {
 async function openInbox() {
   const app = await renderApp(me);
   await fireEvent.press(await screen.findByRole('tab', { name: /^Inbox/ }));
-  // Let the area names land too before the test goes on.
-  await screen.findAllByText('Wakad');
+  await screen.findByText('Waiting for you');
   return app;
 }
 

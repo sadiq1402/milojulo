@@ -8,14 +8,13 @@ import { PhotoPager } from './PhotoPager';
 
 type Props = {
   card: FeedCardData;
-  areaName: string;
   tagNames: Record<number, string>;
   onPress: () => void;
 };
 
-export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
+export function FeedCard({ card, tagNames, onPress }: Props) {
   const tags = card.sharedTagIds.map(id => tagNames[id]).filter(Boolean);
-  const place = [areaName, card.distanceBand].filter(Boolean).join(' · ');
+  const place = card.distanceBand;
   // With no Mode in common, the card shows what they're here for.
   const modes = card.modes.length > 0 ? card.modes : card.theirModes;
   return (
@@ -33,7 +32,7 @@ export function FeedCard({ card, areaName, tagNames, onPress }: Props) {
           onPress={onPress}
         >
           {place ? (
-            <View style={styles.area}>
+            <View style={styles.place}>
               <Tag label={place} tone="onPhoto" />
             </View>
           ) : null}
@@ -73,7 +72,7 @@ export function MatchNote({ text }: { text: string }) {
 
 // Initial sized to the feed media as in the mockup.
 const styles = StyleSheet.create({
-  area: { position: 'absolute', left: spacing.sm, bottom: spacing.sm },
+  place: { position: 'absolute', left: spacing.sm, bottom: spacing.sm },
   modes: {
     position: 'absolute',
     right: spacing.sm,

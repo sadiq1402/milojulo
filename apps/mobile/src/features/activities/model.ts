@@ -85,7 +85,6 @@ export type JoinRequest = {
   requesterId: string;
   requesterName: string;
   requesterPhotoId: string | null;
-  requesterAreaId: string | null;
   status: JoinRequestStatus;
   createdAt: string;
   connectionId: string | null;

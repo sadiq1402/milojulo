@@ -62,7 +62,7 @@ beforeEach(() => {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
@@ -239,7 +239,7 @@ describe('accepting again after withdrawing', () => {
     await fireEvent.press(await button('Delete my account'));
     expect(
       await screen.findByText(
-        'Meet people in Pune who want the same kind of hangout.',
+        'Meet people near you who want the same kind of hangout.',
       ),
     ).toBeOnTheScreen();
     expect(account.deleteAccount).toHaveBeenCalled();
@@ -323,7 +323,7 @@ describe('deleting the account', () => {
     await fireEvent.press(await button('Delete my account'));
     expect(
       await screen.findByText(
-        'Meet people in Pune who want the same kind of hangout.',
+        'Meet people near you who want the same kind of hangout.',
       ),
     ).toBeOnTheScreen();
     expect(account.deleteAccount).toHaveBeenCalled();
@@ -342,7 +342,7 @@ describe('deleting the account', () => {
     );
     await fireEvent.press(await button('Delete my account'));
     await screen.findByText(
-      'Meet people in Pune who want the same kind of hangout.',
+      'Meet people near you who want the same kind of hangout.',
     );
     expect(app.client.getQueryData(['my-consents'])).toBeUndefined();
     expect(

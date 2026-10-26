@@ -9,7 +9,6 @@ const row = (id: string) => ({
   user_id: id,
   display_name: 'Asha',
   age: 27,
-  area_id: 'baner',
   modes: ['friends'],
   their_modes: ['friends'],
   distance_band: '<2 km',

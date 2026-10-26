@@ -18,7 +18,6 @@ export type CircleMember = {
   id: string;
   name: string;
   coverPhotoId: string | null;
-  areaId: string | null;
 };
 
 export function memberCountLabel(count: number): string {

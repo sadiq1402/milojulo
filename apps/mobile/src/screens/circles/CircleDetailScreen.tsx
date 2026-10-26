@@ -20,11 +20,7 @@ import {
   useJoinCircle,
   useLeaveCircle,
 } from '../../features/circles/queries';
-import {
-  useAreaName,
-  useAreaNames,
-  useTagNames,
-} from '../../features/catalog/queries';
+import { useAreaNames, useTagNames } from '../../features/catalog/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, spacing } from '../../theme';
 import { ActivityCard } from '../activities/ActivityCard';
@@ -154,7 +150,6 @@ function CircleMembers({
   onOpenMember: (memberId: string) => void;
 }) {
   const members = useCircleMembers(circleId);
-  const areaName = useAreaName();
   return (
     <View style={styles.section} testID="circle-members">
       <Text variant="h2" accessibilityRole="header">
@@ -170,7 +165,6 @@ function CircleMembers({
             <ListRow
               key={member.id}
               title={member.name}
-              subtitle={areaName(member.areaId)}
               left={
                 <MemberAvatar
                   name={member.name}

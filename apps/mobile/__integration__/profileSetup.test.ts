@@ -83,7 +83,6 @@ test('a new account starts with an empty draft and its date of birth', async () 
   const draft = await fetchDraft(userId);
   expect(draft).toMatchObject({
     displayName: null,
-    areaId: null,
     birthDate: '1996-05-04',
     modes: [],
     prompts: [],
@@ -103,7 +102,7 @@ test('each step saves, and the draft reads it all back', async () => {
     .limit(1)
     .single();
 
-  await saveBasics(userId, { displayName: '  Asha ', areaId: 'wakad' });
+  await saveBasics(userId, { displayName: '  Asha ' });
   await savePrompts(userId, [
     { position: 1, questionId: q1, answer: 'Chai and a trek' },
     { position: 2, questionId: q2, answer: 'Play badminton' },
@@ -135,7 +134,6 @@ test('each step saves, and the draft reads it all back', async () => {
 
   expect(await fetchDraft(userId)).toEqual({
     displayName: 'Asha',
-    areaId: 'wakad',
     birthDate: '1996-05-04',
     prompts: [
       { position: 1, questionId: q1, answer: 'Misal and a trek' },
@@ -163,7 +161,7 @@ test('submitting names the step that still needs work, in order, then makes a Me
     message: 'Add your first name.',
     step: 'basics',
   });
-  await saveBasics(userId, { displayName: 'Asha', areaId: 'baner' });
+  await saveBasics(userId, { displayName: 'Asha' });
   await expect(submitProfile()).rejects.toMatchObject({ step: 'modes' });
   await saveModes(userId, { ...friendsOnly, modes: ['casual'] });
   await expect(submitProfile()).rejects.toMatchObject({

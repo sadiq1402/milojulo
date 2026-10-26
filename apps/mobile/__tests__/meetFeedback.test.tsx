@@ -31,7 +31,6 @@ const isha: Conversation = {
   otherId: 'isha',
   otherName: 'Isha',
   otherPhotoId: null,
-  otherAreaId: 'baner',
   mode: 'friends',
   status: 'accepted',
   direction: 'incoming',
@@ -49,7 +48,7 @@ beforeEach(() => {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)

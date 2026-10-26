@@ -55,7 +55,6 @@ test('members map to profile rows', async () => {
         member_id: 'm1',
         display_name: 'Kabir',
         cover_photo_id: null,
-        area_id: 'wakad',
       },
     ],
     error: null,
@@ -66,7 +65,6 @@ test('members map to profile rows', async () => {
     id: 'm1',
     name: 'Kabir',
     coverPhotoId: null,
-    areaId: 'wakad',
   });
 });
 

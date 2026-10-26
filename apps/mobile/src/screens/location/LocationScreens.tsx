@@ -1,15 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import {
-  Button,
-  Card,
-  FlowScreen,
-  Icon,
-  List,
-  ListRow,
-  Tag,
-  Text,
-} from '../../components';
+import { Button, Card, FlowScreen, Icon, Text } from '../../components';
 import { colors, fontFamily, fonts, sizes, spacing } from '../../theme';
 
 const privacy = [
@@ -82,40 +73,30 @@ export function LocationScreen({
   );
 }
 
+export const needsLocationTitle = 'Discover needs your location';
+export const needsLocationBody =
+  "MiloJulo only shows people within the distance you choose, measured from where you are. Without it, you won't see anyone or be seen.";
+
 // Shown once after location is refused (LocationOff mockup).
 export function LocationOffScreen({
-  area,
   onOpenSettings,
   onContinue,
 }: {
-  area?: string;
   onOpenSettings: () => void;
   onContinue: () => void;
 }) {
   return (
     <FlowScreen
       icon={<PinBadge background={colors.butterSoft} color={colors.ink} />}
-      title="Using your area instead"
-      intro="Without location, we measure distance from the centre of your area, so it’s less accurate. You can turn location on any time."
+      title={needsLocationTitle}
+      intro={needsLocationBody}
       footer={
         <View style={styles.actions}>
           <Button label="Turn on in Settings" onPress={onOpenSettings} />
-          <Button
-            label={area ? `Continue with ${area}` : 'Continue'}
-            variant="text"
-            onPress={onContinue}
-          />
+          <Button label="Not now" variant="text" onPress={onContinue} />
         </View>
       }
-    >
-      <List>
-        <ListRow
-          title="Your area"
-          subtitle="Distances are measured from here"
-          right={area ? <Tag label={area} /> : undefined}
-        />
-      </List>
-    </FlowScreen>
+    />
   );
 }
 

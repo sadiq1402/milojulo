@@ -23,7 +23,6 @@ const isha: Conversation = {
   otherId: 'isha',
   otherName: 'Isha',
   otherPhotoId: 'isha-1',
-  otherAreaId: 'baner',
   mode: 'friends',
   status: 'accepted',
   direction: 'incoming',

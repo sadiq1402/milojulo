@@ -58,7 +58,6 @@ export async function fetchCircleMembers(
     id: row.member_id,
     name: row.display_name,
     coverPhotoId: row.cover_photo_id ?? null,
-    areaId: row.area_id ?? null,
   }));
 }
 

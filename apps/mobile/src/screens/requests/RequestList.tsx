@@ -6,7 +6,6 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Icon, List, ListRow, Tag, Text } from '../../components';
 import { formatWhen } from '../../features/activities/time';
 import type { Conversation } from '../../features/chat/api';
-import { useAreaName } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
 import { modeLabels } from '../../features/modes';
 import { respondRequest } from '../../features/requests/api';
@@ -25,7 +24,6 @@ export function RequestList() {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const { conversations, joinRequests, waiting, sent, joinWaiting, joinSent } =
     useRequests();
-  const areaName = useAreaName();
   const openActivity = (activityId: string) =>
     navigation.navigate('ActivityDetail', { activityId });
 
@@ -65,7 +63,6 @@ export function RequestList() {
               <RequestCard
                 key={request.connectionId}
                 request={request}
-                area={areaName(request.otherAreaId)}
                 tone={i}
               />
             ))}
@@ -105,7 +102,6 @@ export function RequestList() {
               <ListRow
                 key={request.connectionId}
                 title={request.otherName}
-                subtitle={areaName(request.otherAreaId)}
                 left={
                   <MemberAvatar
                     name={request.otherName}
@@ -158,11 +154,9 @@ export function RequestList() {
 
 function RequestCard({
   request,
-  area,
   tone,
 }: {
   request: Conversation;
-  area?: string;
   tone: number;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
@@ -183,7 +177,6 @@ function RequestCard({
     <AnswerCard
       name={otherName}
       photoId={request.otherPhotoId}
-      detail={area}
       tone={tone}
       tag={<Tag label={modeLabels[request.mode]} tone={request.mode} />}
       onViewProfile={() =>
