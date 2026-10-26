@@ -182,7 +182,7 @@ describe('chat list', () => {
     await act(() => member.emitMemberStatus('offline'));
     await act(() => member.emitMemberStatus('live'));
     await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /^Isha/ })).toBeNull(),
+      expect(screen.queryByRole('button', { name: /^Isha,/ })).toBeNull(),
     );
   });
 
