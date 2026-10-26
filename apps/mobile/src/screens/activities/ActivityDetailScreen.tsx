@@ -42,7 +42,7 @@ import {
   useWithdrawJoinRequest,
 } from '../../features/activities/queries';
 import { formatWhen } from '../../features/activities/time';
-import { useAreaName, useAreaNames } from '../../features/catalog/queries';
+import { useAreaNames } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
 import {
@@ -343,7 +343,6 @@ function HostJoinRequests({
   onOpenChat: (connectionId: string) => void;
 }) {
   const requests = useJoinRequests(activity.id);
-  const areaName = useAreaName();
 
   if (requests.isError) {
     return (
@@ -383,7 +382,6 @@ function HostJoinRequests({
                 requestId={request.id}
                 name={request.requesterName}
                 photoId={request.requesterPhotoId}
-                detail={areaName(request.requesterAreaId)}
                 tone={i}
                 canAnswer={canAnswer}
               />
@@ -400,20 +398,10 @@ function HostJoinRequests({
         ) : (
           <List>
             {going.map(
-              (
-                {
-                  id,
-                  requesterName,
-                  requesterPhotoId,
-                  requesterAreaId,
-                  connectionId,
-                },
-                i,
-              ) => (
+              ({ id, requesterName, requesterPhotoId, connectionId }, i) => (
                 <ListRow
                   key={id}
                   title={requesterName}
-                  subtitle={areaName(requesterAreaId)}
                   left={
                     <MemberAvatar
                       name={requesterName}

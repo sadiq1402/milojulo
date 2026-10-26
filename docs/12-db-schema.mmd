@@ -43,23 +43,13 @@ erDiagram
     banned_terms {
         text term PK
     }
-    service_regions {
-        smallint id PK
-        text name UK
-        float8 min_lat
-        float8 max_lat
-        float8 min_lng
-        float8 max_lng
-        bool active
-    }
 
     profiles {
         uuid id PK "auth.users.id"
         varchar display_name
         date date_of_birth "never exposed"
         gender gender "nullable"
-        text area_id FK
-        smallint discover_range_km "2,5,10,25,50 or null"
+        smallint discover_range_km "2,5,10,25,50,100"
         mode_array modes
         availability_slot_array availability
         varchar profession "display-only"
@@ -81,7 +71,7 @@ erDiagram
     }
     member_locations {
         uuid user_id PK, FK
-        geography point "offset, latest only"
+        geography point "offset, latest only, ignored after 7 days"
         float8 offset_m
         float8 offset_azimuth
         timestamptz updated_at
@@ -288,7 +278,6 @@ erDiagram
         int objects_deleted
     }
 
-    areas ||--o{ profiles : "lives in"
     areas ||--o{ activities : "located in"
     areas ||--o{ circles : "based in"
     tags ||--o{ profile_tags : ""

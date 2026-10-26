@@ -2,12 +2,12 @@
 
 Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-map.md, revised after the 2026-10-07 design session (glossary in CONTEXT.md, decisions 15 to 17, docs/adr/). V1 only: no columns for deferred features. Where this differs from docs/03 or docs/11, this file wins.
 
-33 tables in `public`, plus a policy on `realtime.messages`. Every table has RLS enabled, default deny.
+32 tables in `public`, plus a policy on `realtime.messages`. Every table has RLS enabled, default deny.
 
 ## Conventions
 - Primary keys: `uuid default gen_random_uuid()`, except user-keyed tables (`profiles.id = auth.users.id`) and messages (client-generated id).
 - User references point at `profiles(id)`; `profiles.id` references `auth.users(id) on delete cascade`, so deleting the auth user removes everything the user owns, including both sides of their Connections and messages. Admin columns point at `auth.users` instead (`photos.removed_by`, `reports.handled_by`, on delete set null); `admin_actions.admin_id`, `circles.created_by` and `completed_erasures.member_id` have no foreign key.
-- Times are `timestamptz`. Most tables have `created_at default now()` (not `banned_terms`, `service_regions`, `member_locations`, `device_tokens`, `meet_nudges`, `completed_erasures`).
+- Times are `timestamptz`. Most tables have `created_at default now()` (not `banned_terms`, `member_locations`, `device_tokens`, `meet_nudges`, `completed_erasures`).
 - Fixed lists are Postgres enums (adding a value later is one `alter type`). Lists admins edit are catalog tables.
 - Admin = `auth.jwt() -> 'app_metadata' ->> 'role' = 'admin'`, set only with the service role. Wrapped in `is_admin()`. No admin table.
 - Owners edit only safe columns: `grant update (col, ...)` to `authenticated`, never table-wide update. Status and moderation columns change only through functions or admin.
@@ -43,7 +43,7 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 ### Catalogs (seeded by migration; signed-in people read them; changed by migration or from the dashboard, except `banned_terms`)
 | Table | Columns |
 |---|---|
-| `areas` | `id text pk` (slug: baner, wakad, ...), `name`, `center geography(Point)` (area centroid, used for distance), `is_active`, `zone` (west, pimpri_chinchwad, central, east, south; groups the picker), `lat` and `lng` (generated from `center`, so the app can suggest the nearest Area on the phone). 55 Pune Areas (decision 50). Signed-in people read it; signed-out visitors see nothing |
+| `areas` | `id text pk` (slug: baner, wakad, ...), `name`, `center geography(Point)` (area centroid), `is_active`, `zone` (west, pimpri_chinchwad, central, east, south; groups the picker), `lat` and `lng` (generated from `center`, so the app can suggest the nearest Area on the phone). 55 Pune Areas (decision 50). Only Activities and Circles still take an Area; Members have none since #203. Signed-in people read it; signed-out visitors see nothing |
 | `tags` | `id smallint identity pk`, `slug unique`, `label`, `kind tag_kind`, `sort_order`, `is_active` |
 | `industries` | `id smallint identity pk`, `slug unique`, `label`, `sort_order`, `is_active` |
 | `prompt_questions` | `id smallint identity pk`, `text`, `sort_order`, `is_active` |
@@ -60,13 +60,12 @@ Not built yet: a disposable-email blocklist table and signup hook (#71).
 | `display_name varchar(30)` | first name |
 | `date_of_birth date` | never leaves the server; functions return age |
 | `gender gender` | nullable; required while a Dating Mode is held |
-| `area_id` → areas | neighbourhood; its centre stands in for a Member with no `member_locations` row |
-| `discover_range_km smallint` | 2, 5, 10, 25 or 50, or null for anywhere in Pune; default 10; owner updates it |
+| `discover_range_km smallint not null` | 2, 5, 10, 25, 50 or 100 (km); default 10; owner updates it. No "anywhere" (#203: earlier nulls became 100) |
 | `modes mode[]` | at least one once submitted; GIN index |
 | `availability availability_slot[]` | three fixed slots |
 | `profession varchar(40)` | optional, Networking, display-only |
 | `industry_id` → industries, `career_stage career_stage` | optional, Networking; used to rank the Networking feed |
-| `pref_age_min`, `pref_age_max smallint`, `pref_genders gender[]`, `pref_max_km smallint` | Dating Preferences; required while a Dating Mode is held; checks: 18 ≤ min ≤ max |
+| `pref_age_min`, `pref_age_max smallint`, `pref_genders gender[]`, `pref_max_km smallint` | Dating Preferences; required while a Dating Mode is held; checks: 18 ≤ min ≤ max; `pref_max_km` is measured between the two Members' fresh Member Locations |
 | `notify_messages bool`, `notify_activities bool` | default true |
 | `status account_status` | default active |
 | `submitted_at` | set once by `submit_profile()`; marks a Submitted Profile |
@@ -75,15 +74,13 @@ Not built yet: a disposable-email blocklist table and signup hook (#71).
 | `banned_at`, `banned_reason` | |
 | `deleted_at` | set by `delete_account()`; hides the Member at once until the purge runs |
 
-**`member_locations`** (decision 40, docs/adr/0003): `user_id pk` → profiles, `point geography(Point)` (the phone's latest point moved by the offset), `offset_m`, `offset_azimuth` (drawn once: 200 to 500 m, random direction), `updated_at`. RLS on, no policies: nobody reads or writes it directly, owner and admins included.
+**`member_locations`** (decision 40, docs/adr/0003): `user_id pk` → profiles, `point geography(Point)` (the phone's latest point moved by the offset; GiST index), `offset_m`, `offset_azimuth` (drawn once: 200 to 500 m, random direction), `updated_at`. RLS on, no policies: nobody reads or writes it directly, owner and admins included. Any point on Earth is taken (no Service Regions since #203). A point not updated in the last 7 days is ignored, and a Member with no fresh point is not a Discover candidate and sees an empty feed; there is no fallback.
 
 **`completed_erasures`** (#96): `member_id pk` (no foreign key, so it survives the cascade), `requested_at`, `completed_at`, `objects_deleted`. Admins select; written only by `record_erasure()` (service role, the `account-purge` function).
 
-**`service_regions`** (decision 42): `id smallint identity pk`, `name unique`, `min_lat`, `max_lat`, `min_lng`, `max_lng`, `active` (default true). RLS on, no policies, no client grants; rows added by migration or an admin. Seeded with Pune (18.40-18.75 N, 73.65-74.05 E).
+Owner can select own row and update: display_name, discover_range_km, modes, availability, gender, profession, industry_id, career_stage, pref_*, notify_*, paused_at (via `set_paused()`). Everyone else: only through `discover_feed()` / `get_profile()`.
 
-Owner can select own row and update: display_name, area_id, discover_range_km, modes, availability, gender, profession, industry_id, career_stage, pref_*, notify_*, paused_at (via `set_paused()`). Everyone else: only through `discover_feed()` / `get_profile()`.
-
-**Profile minimum** (trigger `enforce_profile_minimum`, active once `submitted_at` is set): a first name, at least 2 live photos, 2 prompts, 1 Mode, an Area, and gender plus Dating Preferences while a Dating Mode is held. Deletes or updates that would break it are rejected; replacing is fine. An admin Takedown of a photo may break the photo minimum: the Member is then not visible until they add one.
+**Profile minimum** (trigger `enforce_profile_minimum`, active once `submitted_at` is set): a first name, at least 2 live photos, 2 prompts, 1 Mode, and gender plus Dating Preferences while a Dating Mode is held. Deletes or updates that would break it are rejected; replacing is fine. An admin Takedown of a photo may break the photo minimum: the Member is then not visible until they add one.
 
 | Table | Columns | Access |
 |---|---|---|
@@ -109,7 +106,7 @@ Reviewer Account: seeded per environment by `supabase/seed/reviewer.sql` (servic
 
 Connection rules (docs/adr/0001):
 - One Requested or Accepted Connection per pair; older rows stay as history.
-- `send_request()`: mode must be an Eligible Mode from sender to recipient (one the recipient chose that the sender may see in Discover, decision 39); accepting keeps that Mode on the Connection; sender and recipient both visible (so neither paused); recipient inside the sender's Discover Range (null range: the sender's Service Region), else `that member is not in your Discover` (decision 43; accepting and Mode Changes are not re-checked); Request Cap of 10 per rolling 24 h; no re-request by the same sender within 30 days of a decline; never while a Block stands.
+- `send_request()`: mode must be an Eligible Mode from sender to recipient (one the recipient chose that the sender may see in Discover, decision 39); accepting keeps that Mode on the Connection; sender and recipient both visible (so neither paused); recipient inside the sender's Discover Range (both with a fresh Member Location), else `that member is not in your Discover` (decision 43; accepting and Mode Changes are not re-checked); Request Cap of 10 per rolling 24 h; no re-request by the same sender within 30 days of a decline; never while a Block stands.
 - Mode Change: one open proposal per Connection; `to_mode` must be an Eligible Mode from the proposer to the other side, checked again when they accept; an open proposal older than 7 days counts as lapsed; a declined proposer cannot propose again for 7 days. Accepting updates `connections.mode`.
 - Dropping a Mode from a profile leaves existing Connections and their Mode untouched.
 
@@ -178,12 +175,12 @@ Business functions:
 | `photo_links(viewer, photo_ids)` | service role only: of the asked-for photos, those the viewer may see, with object keys to sign. Owner: every confirmed photo not taken down. Anyone else: live photos of a Member not banned, deleted or Auto-hidden, with no Block either way (`is_blocked`), whom the viewer may see in Discover/profile view, or who shares with them a Connection (any status but declined, so a waiting request counts), a waiting or accepted Join Request (host and requester), a place among an Activity's accepted joiners, or a Circle with both Visible, decision 46 (`shares_photos_with`; Join Requests count after the Activity is cancelled or over, as history); a banned or deleted viewer gets only their own |
 | `set_paused(paused)` | sets or clears the caller's `paused_at` |
 | `requestable_modes(a, b)` | internal: the Modes a Connection Request may go under, which is **either** side's (decision 63), with Casual needing both (decision 39) and a Dating Mode needing both Dating Preferences to fit and the range to reach. `eligible_modes(a, b)` is the narrower rule, still used for what Discover calls a shared Mode and for Mode Changes |
-| `discover_feed(mode_filter, page_size, after)` | decision 45: every Visible, unblocked Member inside the caller's Discover Range (null: same Service Region), with all their Modes; the filter keeps Members who chose that Mode. Columns: `user_id, display_name, age, area_id, modes` (shared visible Modes, may be empty), `their_modes` (the Modes the caller may see), `distance_band` (`<2 km` / `~N km`), `photo_ids` (every live photo, in position order; the first is the cover, #199), `shared_tag_ids, why_you_match` (shared Modes, tags, availability; the other's Modes when none shared; the distance), `cursor` (opaque `rank:score:id`). Score: shared tags + availability + shared Modes + nearness (3/2/1 under 2/5/10 km); the Networking filter ranks by shared Industry and Career Stage first |
+| `discover_feed(mode_filter, page_size, after)` | decision 45: every Visible, unblocked Member inside the caller's Discover Range (measured between both Members' fresh Member Locations; a caller without one gets nothing), with all their Modes; the filter keeps Members who chose that Mode. Columns: `user_id, display_name, age, modes` (shared visible Modes, may be empty), `their_modes` (the Modes the caller may see), `distance_band` (`<2 km` / `~N km`), `photo_ids` (every live photo, in position order; the first is the cover, #199), `shared_tag_ids, why_you_match` (shared Modes, tags, availability; the other's Modes when none shared; the distance), `cursor` (opaque `rank:score:id`). Score: shared tags + availability + shared Modes + nearness (3/2/1 under 2/5/10 km); the Networking filter ranks by shared Industry and Career Stage first |
 | `get_profile(member_id)` | full profile view under the feed's rules; also returns `their_modes`, `distance_band` and `request_modes` (the caller's Eligible Modes towards this Member) |
 | `match_reason(a, b)` | internal (no client role): the templated `why_you_match` text for `discover_feed()` / `get_profile()` |
 | `send_request(to, mode, note)`, `respond_request(id, accept)`, `close_connection(id)` | rules above |
 | `propose_mode_change(connection, mode)`, `respond_mode_change(id, accept)` | rules above |
-| `my_connections()` | the caller's Connections for the Inbox and chat list: requests both ways (with direction and note), accepted, and closed as history; declined left out, and so are Connections with a deleted Member (the other side can still read that history directly from `messages` until the purge erases it). A consent-withdrawn Member's Connections stay, as a Paused Member's do. Other side: first name, cover photo id and Area only, also while Paused; banned or Auto-hidden Members keep their name but no photo. Plus Mode, status, the newest message not removed by moderation, and unread = the other side's messages newer than my `last_read_at`. Newest activity first. A Block's closed Connection looks like any other close (decision 19) |
+| `my_connections()` | the caller's Connections for the Inbox and chat list: requests both ways (with direction and note), accepted, and closed as history; declined left out, and so are Connections with a deleted Member (the other side can still read that history directly from `messages` until the purge erases it). A consent-withdrawn Member's Connections stay, as a Paused Member's do. Other side: first name and cover photo id only, also while Paused; banned or Auto-hidden Members keep their name but no photo. Plus Mode, status, the newest message not removed by moderation, and unread = the other side's messages newer than my `last_read_at`. Newest activity first. A Block's closed Connection looks like any other close (decision 19) |
 | `my_blocks()` | Members the caller has blocked, first name only; never who has blocked the caller |
 | `join_activity_request(activity)`, `respond_activity_request(id, accept)`, `withdraw_activity_request(id)` | rules above; join returns the request id, respond returns the Activity Connection's id on accept |
 | `activity_board()`, `joined_activities()`, `get_activity(activity)` | the board (above); the caller's waiting requests on Activities not yet started and accepted ones not yet over, with `request_status`; one Activity for its host, a visible caller who may see it on the board, or an accepted joiner until it ends, with `venue_detail` (host and accepted joiners only), `is_locked`, `my_request_id`, `my_request_status` and the accepted joiner's `connection_id` |
@@ -206,10 +203,12 @@ Business functions:
 | `expired_chat_media(batch, skip)`, `mark_chat_media_deleted(message_ids)` | service role only (`purge-chat-media`): up to 1000 media messages older than 90 days not yet marked, leaving out any whose report evidence is still being copied (#160, they come back on a later run); then sets `media_deleted_at` |
 | `pending_evidence_copies(batch, skip)`, `mark_evidence_copied(report_ids)` | service role only (`copy-evidence`): reports whose evidence copy is still to be made, oldest first, with the source and the key to copy it to; marking them returns the originals nothing points at any more, for the job to delete (#160) |
 | `erasure_queue()`, `erasure_media_keys(member)`, `record_erasure(member, requested_at, objects_deleted)` | service role only (`account-purge`): Members with a pending erasure request, oldest first; the R2 keys to delete (see `delete_account()`); the `completed_erasures` row |
-| `set_location(lat, lng)` | the caller's Member Location; not executable by anon. Refuses `create your profile first` (no profile, or deleted), `MiloJulo isn't in your city yet` (null, or outside every active `service_regions` box: the implausible-jump check), `you can update your location once an hour` |
-| `member_point(member)` | internal (no client role): the Member's offset point if updated in the last 7 days, else their Area's centre; for `discover_feed()` |
-| `in_service_region()` | not anon: false when the caller's point (as `member_point`) lies in no active Service Region, so the app can say MiloJulo isn't in their city yet |
-| `region_of(point)`, `within_range(owner, other)`, `discover_modes(viewer, member)`, `discover_pair(viewer, member)`, `distance_band(m)`, `mode_phrase(mode)` | internal (no client role): Discover's rules, shared by `discover_feed`, `get_profile`, `match_reason` and `shares_photos_with` (photo links follow Discover) |
+| `set_location(lat, lng)` | the caller's Member Location, anywhere on Earth; not executable by anon. Refuses `create your profile first` (no profile, or deleted), `that location is not valid` (a null coordinate, or latitude outside -90..90 / longitude outside -180..180), `you can update your location once an hour` |
+| `member_point(member)` | internal (no client role): the Member's offset point if updated in the last 7 days, else null; for Discover and Dating distance |
+| `has_fresh_location()` | authenticated only: true when the caller has a Member Location updated in the last 7 days; false sends the app to its turn-location-on screen (Discover is empty without one) |
+| `within_range(owner, other)` | internal: true only when both Members have a fresh point and other is within owner's `discover_range_km` |
+| `fits_dating_preferences(seeker, candidate)` | internal: candidate's gender and age fit seeker's preferences and the two fresh points are within seeker's `pref_max_km`; false when either has no fresh point |
+| `discover_modes(viewer, member)`, `discover_modes(viewer, member)`, `discover_pair(viewer, member)`, `distance_band(m)`, `mode_phrase(mode)` | internal (no client role): Discover's rules, shared by `discover_feed`, `get_profile`, `match_reason` and `shares_photos_with` (photo links follow Discover) |
 | `needs_reconsent()` | true when the caller has a current consent document not accepted or withdrawn (the data notice moved to v2 with location); the app sends them to Reconsent. Not executable by anon |
 
 Triggers: word filter (`reject_banned_terms` on profiles.display_name, profile_prompts.answer, activities title and description; `flag_banned_message` after a message insert), profile minimum (`enforce_profile_minimum` on profiles, photo and prompt deletes), `check_message_media`, `add_connection_members` (on accept), `reset_media_consent` (Mode change into Casual), broadcasts (`broadcast_message`, `broadcast_message_removed` (a takedown, to both sides, #163), `broadcast_member_change`, `broadcast_mode_change`, `broadcast_connection_change`, `broadcast_join_request_change`), push (`push_on_connection`, `push_on_message`, `push_on_join_request`, `push_queue_dispatch`), `refuse_audit_change` (admin_actions append-only). No generic `updated_at` trigger (only `member_locations.updated_at`, set by `set_location()`).
@@ -222,7 +221,7 @@ Edge Functions (supabase/functions, thin): `media` (photo and chat upload, confi
 - `availability` table → `profiles.availability` array (three fixed slots).
 - `notification_settings` table → two booleans on `profiles`.
 - `photos.is_primary` dropped: position 1 is the cover.
-- `profiles.coarse_cell` dropped; distance uses `member_locations` (decision 40), falling back to `areas.center`.
+- `profiles.coarse_cell` dropped; distance uses `member_locations` (decision 40) only. `profiles.area_id` and `service_regions` dropped (#203).
 - `profiles.intents` → `profiles.modes` (glossary: Mode).
 - No pre-approval: `profile_status` → `account_status` (active, banned) plus `paused_at`; `photo_status`, `approved_at`, `approved_by`, `reviewed_*` dropped; `hidden_at` / `removed_at` added for after-the-fact moderation.
 - Added `connection_members`, `connection_mode_changes`, `activity_venues`, `industries`.

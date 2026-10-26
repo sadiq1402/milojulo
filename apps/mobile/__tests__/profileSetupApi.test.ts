@@ -11,7 +11,6 @@ const rpc = jest.fn();
 
 test.each([
   ['add your first name', 'Add your first name.', 'basics'],
-  ['choose your area', 'Choose your area.', 'basics'],
   ['choose at least one mode', 'Choose at least one Mode.', 'modes'],
   [
     'add your gender',

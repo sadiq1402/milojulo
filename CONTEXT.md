@@ -18,7 +18,7 @@ _Avoid_: Intent (reserve "intent-first" for positioning copy only)
 Any of Dating, Serious or Casual; holding one requires the Member's own gender and dating preferences.
 
 **Dating Preferences**:
-The genders, age range and maximum distance a Member in a Dating Mode will accept. The distance is measured between the two Members' Area centres, not their Member Locations. Applied in both directions, and only to Eligible Modes (Connection Requests and Mode Changes): Discover shows every Mode whatever the preferences (decision 45).
+The genders, age range and maximum distance a Member in a Dating Mode will accept. The distance is measured between the two Members' Member Locations; without a fresh one on either side, the preferences don't fit. Applied in both directions, and only to Eligible Modes (Connection Requests and Mode Changes): Discover shows every Mode whatever the preferences (decision 45).
 
 **Account Status**:
 Whether a Member is Active or Banned. There is no pre-approval: a Member is Active from the moment their profile is submitted, and moderation happens after the fact through reports.
@@ -31,7 +31,7 @@ Removed by an admin with a stated reason (`admin_ban`); there is no unban yet. T
 A Member's own choice to stop meeting new people: not a Visible Member, so hidden from Discover and Circle member lists, and their own Discover, Activity Board and Circles come back empty; cannot post Activities, ask to join one or send Connection Requests. Existing Connections and chats carry on, and their hosted Activities stay on the board. Independent of Account Status.
 
 **Submitted Profile**:
-A profile that has met the minimum (a first name, 2 photos, 2 prompts, a Mode, an Area, and gender and Dating Preferences if a Dating Mode is held) and been submitted once; it can never fall back below the minimum.
+A profile that has met the minimum (a first name, 2 photos, 2 prompts, a Mode, and gender and Dating Preferences if a Dating Mode is held) and been submitted once; it can never fall back below the minimum.
 
 **Visible Member**:
 A Member who is Active, has a Submitted Profile with at least 2 live photos (uploaded, not Auto-hidden, not taken down), is not Paused, not Auto-hidden, not deleted and has accepted every current required consent (none missing or withdrawn); the only kind others can discover (`is_visible()`).
@@ -130,19 +130,15 @@ A small admin-created community tied to one Area and one interest, which Members
 _Avoid_: Group, community (as a noun for this concept)
 
 **Area**:
-One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South), that a Member, Activity or Circle belongs to; its centre stands in for a Member who has no recent Member Location. Profile setup suggests the nearest Area when its centre is within 3 km of the phone.
+One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South), that an Activity or Circle belongs to. Members have no Area and nothing stands in for a missing Member Location (#203); Activities and Circles are next to lose it.
 _Avoid_: cell
 
 **Member Location**:
-The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. At most one update an hour, inside an active Service Region only, ignored once older than 7 days, no history, deleted with the account (decisions 40, 42).
-_Avoid_: Location history, GPS, exact location (in product copy)
+The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. Taken anywhere in the world, at most one update an hour, no history, deleted with the account (decision 40). Ignored once older than 7 days: a Member without a fresh one is not discoverable and sees an empty Discover until they share their location again (`has_fresh_location()`, #203).
+_Avoid_: Location history, GPS, exact location (in product copy); Service Region, city box, Pune box (retired: there is no region or city boundary any more, #203)
 
 **Discover Range**:
-How far from their Member Location a Member wants Discover to look: 2, 5, 10, 25 or 50 km, or anywhere in their Service Region (the app says "Anywhere in Pune"); 10 km by default. One-way: it limits what that Member sees and whom they can send a Connection Request to (decision 43); the other Member's range matters only for a Dating Mode, which is an Eligible Mode only when the recipient's range includes the sender (decision 45).
-
-**Service Region**:
-A city MiloJulo runs in (a bounding box, active or not; Pune first). Locations outside every active one are refused with "MiloJulo isn't in your city yet".
-_Avoid_: city box, Pune box
+How far from their Member Location a Member wants Discover to look: 2, 5, 10, 25, 50 or 100 km; 10 km by default. There is no "anywhere". One-way: it limits what that Member sees and whom they can send a Connection Request to (decision 43); the other Member's range matters only for a Dating Mode, which is an Eligible Mode only when the recipient's range includes the sender (decision 45).
 
 ### Moderation
 

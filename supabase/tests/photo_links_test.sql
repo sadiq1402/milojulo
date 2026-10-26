@@ -21,7 +21,7 @@ select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003601');
 insert into public.photos (user_id, object_key, position, uploaded_at, hidden_at, removed_at) values
   ('00000000-0000-0000-0000-000000003601', 'asha/3.jpg', 3, now(), now(), null),
   ('00000000-0000-0000-0000-000000003601', 'asha/4.jpg', 4, now(), null, now());
-update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000003601';
+select pg_temp.place('00000000-0000-0000-0000-000000003601', 18.5515, 73.9348);
 select id as asha_cover from public.photos
 where user_id = '00000000-0000-0000-0000-000000003601' and position = 1 \gset
 
@@ -36,7 +36,7 @@ reset role;
 
 -- Discover and profile view: 02 lives near Asha; 03 is 16 km away in Baner.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003602');
-update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000003602';
+select pg_temp.place('00000000-0000-0000-0000-000000003602', 18.5515, 73.9348);
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003603', '{networking}');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000003602', '00000000-0000-0000-0000-000000003601'), 2,
   'a Member who may see Asha in Discover gets her live photos, not the hidden or taken-down ones');
@@ -107,7 +107,7 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000003601', '00000000-0000-00
 -- Join Requests and Activities: Asha hosts one; 10 is waiting, 11 was declined, 12 and 13 are going.
 -- 10 lives in Kharadi, beyond the Baner Members' Discover range.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003610', '{networking}');
-update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000003610';
+select pg_temp.place('00000000-0000-0000-0000-000000003610', 18.5515, 73.9348);
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003611', '{networking}');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003612', '{activities}');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000003613', '{networking}');
@@ -176,9 +176,10 @@ reset role;
 
 -- 36c1 chose only Casual, in Kharadi beside Asha, who did not choose Casual.
 select pg_temp.create_complete_member('00000000-0000-0000-0000-0000000036c1');
-update public.profiles set area_id = 'kharadi', modes = '{casual}', gender = 'man', pref_genders = '{woman}',
+update public.profiles set modes = '{casual}', gender = 'man', pref_genders = '{woman}',
   pref_age_min = 18, pref_age_max = 60, pref_max_km = 50
 where id = '00000000-0000-0000-0000-0000000036c1';
+select pg_temp.place('00000000-0000-0000-0000-0000000036c1', 18.5515, 73.9348);
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036c1');
 select public.submit_profile();
 reset role;

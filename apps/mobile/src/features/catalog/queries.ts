@@ -67,15 +67,6 @@ export function useAllAreas() {
   });
 }
 
-export function useAreaList() {
-  return useQuery({
-    queryKey: catalogKeys.areas,
-    queryFn: fetchAreas,
-    staleTime: Infinity,
-    select: activeOnly,
-  });
-}
-
 export function useTagList() {
   return useQuery({
     queryKey: catalogKeys.tags,

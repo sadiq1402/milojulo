@@ -85,9 +85,10 @@ select '00000000-0000-0000-0000-0000000000f1', id from public.tags where slug in
 
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000f2', '{friends,networking}');
 update public.profiles
-set availability = '{weekends}', area_id = 'wakad',
+set availability = '{weekends}',
     date_of_birth = (now() at time zone 'Asia/Kolkata')::date - interval '25 years'
 where id = '00000000-0000-0000-0000-0000000000f2';
+select pg_temp.place('00000000-0000-0000-0000-0000000000f2', 18.5989, 73.76);
 insert into public.profile_tags (user_id, tag_id)
 select '00000000-0000-0000-0000-0000000000f2', id from public.tags where slug in ('cafes', 'badminton', 'cricket');
 update public.photos set id = '00000000-0000-0000-0000-0000000f2001'
@@ -116,14 +117,14 @@ select '00000000-0000-0000-0000-0000000000f4', id from public.tags where slug in
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000f1');
 select set_eq(
   $$ select jsonb_object_keys(to_jsonb(f)) from public.discover_feed() f $$,
-  array['user_id', 'display_name', 'age', 'area_id', 'modes', 'their_modes', 'distance_band', 'photo_ids', 'shared_tag_ids',
+  array['user_id', 'display_name', 'age', 'modes', 'their_modes', 'distance_band', 'photo_ids', 'shared_tag_ids',
         'why_you_match', 'cursor'],
   'a feed card carries only safe columns, never date of birth');
 select is(
-  (select row(display_name, age, area_id, modes)::text from public.discover_feed()
+  (select row(display_name, age, modes)::text from public.discover_feed()
    where user_id = '00000000-0000-0000-0000-0000000000f2'),
-  row('Test', 25, 'wakad', '{friends}'::public.mode[])::text,
-  'a feed card shows name, age, Area and only the Modes both Members hold');
+  row('Test', 25, '{friends}'::public.mode[])::text,
+  'a feed card shows name, age and only the Modes both Members hold');
 select is(
   (select age from public.discover_feed() where user_id = '00000000-0000-0000-0000-0000000000f3'),
   24, 'age counts only birthdays already reached');

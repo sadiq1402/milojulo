@@ -23,14 +23,14 @@ const documents = {
 };
 
 describe('welcome', () => {
-  test('pitches MiloJulo as open, without promising that a person reviews profiles', async () => {
+  test('pitches MiloJulo for people nearby anywhere, without promising that a person reviews profiles', async () => {
     await renderApp(null);
     expect(
       await screen.findByText(
-        'Meet people in Pune who want the same kind of hangout.',
+        'Meet people near you who want the same kind of hangout.',
       ),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Now open in Pune.')).toBeOnTheScreen();
+    expect(screen.queryByText(/Pune/)).not.toBeOnTheScreen();
     expect(screen.queryByText(/invite/i)).not.toBeOnTheScreen();
     expect(screen.queryByText(/reviewed by a person/)).not.toBeOnTheScreen();
   });
@@ -255,7 +255,7 @@ test('signing out from profile setup returns to welcome', async () => {
   );
   expect(
     await screen.findByText(
-      'Meet people in Pune who want the same kind of hangout.',
+      'Meet people near you who want the same kind of hangout.',
     ),
   ).toBeOnTheScreen();
 });

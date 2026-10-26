@@ -25,7 +25,6 @@ import { usePhotoUrl } from '../../features/photos/queries';
 import { chatKeys, useConversations } from '../../features/chat/queries';
 import type { Profile } from '../../features/discover/api';
 import {
-  useAreaNames,
   usePromptQuestions,
   useTagNames,
 } from '../../features/catalog/queries';
@@ -119,10 +118,8 @@ function ProfileBody({ profile }: { profile: Profile }) {
       memberId: profile.id,
       memberName: profile.name,
     });
-  const areas = useAreaNames();
   const tags = useTagNames();
   const questions = usePromptQuestions();
-  const areaName = areas.data?.[profile.areaId];
   const tagLabels = profile.tagIds
     .map(id => tags.data?.[id])
     .filter((label): label is string => Boolean(label));
@@ -148,11 +145,6 @@ function ProfileBody({ profile }: { profile: Profile }) {
           uri={hero.data}
           style={styles.hero}
         >
-          {areaName ? (
-            <View style={styles.area}>
-              <Tag label={areaName} tone="onPhoto" />
-            </View>
-          ) : null}
           <View style={styles.modes}>
             {profile.modes.map(mode => (
               <Tag key={mode} label={modeLabels[mode]} tone={mode} />
@@ -259,7 +251,6 @@ const styles = StyleSheet.create({
     aspectRatio: sizes.photo.heroW / sizes.photo.heroH,
     borderRadius: radius.r32,
   },
-  area: { position: 'absolute', left: spacing.sm, bottom: spacing.sm },
   modes: {
     position: 'absolute',
     right: spacing.sm,

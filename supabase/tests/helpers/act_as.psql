@@ -60,13 +60,25 @@ begin
 end;
 $$;
 
--- A Member whose profile meets the minimum but is not yet submitted. Run as postgres.
+-- Puts the Member's Member Location at a point, fresh (two hours old, so set_location still
+-- takes a new one) unless an age is given. Run as postgres.
+create function pg_temp.place(member_id uuid, lat double precision, lng double precision,
+  age interval default interval '2 hours') returns void
+language sql as $$
+  insert into public.member_locations (user_id, point, updated_at)
+  values (member_id, extensions.st_setsrid(extensions.st_makepoint(lng, lat), 4326)::extensions.geography, now() - age)
+  on conflict (user_id) do update set point = excluded.point, updated_at = excluded.updated_at;
+$$;
+
+-- A Member whose profile meets the minimum but is not yet submitted, located near Baner, Pune.
+-- Run as postgres.
 create function pg_temp.create_complete_member(member_id uuid) returns void
 language plpgsql as $$
 begin
   perform pg_temp.create_member(member_id);
-  update public.profiles set display_name = 'Test', area_id = 'baner', modes = '{friends}'
+  update public.profiles set display_name = 'Test', modes = '{friends}'
   where id = member_id;
+  perform pg_temp.place(member_id, 18.559, 73.787);
   insert into public.profile_prompts (user_id, position, question_id, answer)
   select member_id, p, (select min(id) from public.prompt_questions), 'An answer'
   from generate_series(1, 2) p;

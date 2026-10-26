@@ -663,23 +663,17 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "area_id": string | null,"availability": (Database["public"]['Enums']["availability_slot"])[],"banned_at": string | null,"banned_reason": string | null,"career_stage": Database["public"]['Enums']["career_stage"] | null,"created_at": string,"date_of_birth": string | null,"deleted_at": string | null,"discover_range_km": number | null,"display_name": string | null,"gender": Database["public"]['Enums']["gender"] | null,"hidden_at": string | null,"id": string,"industry_id": number | null,"modes": (Database["public"]['Enums']["mode"])[],"notify_activities": boolean,"notify_messages": boolean,"paused_at": string | null,"pref_age_max": number | null,"pref_age_min": number | null,"pref_genders": (Database["public"]['Enums']["gender"])[] | null,"pref_max_km": number | null,"profession": string | null,"status": Database["public"]['Enums']["account_status"],"submitted_at": string | null
+                    "availability": (Database["public"]['Enums']["availability_slot"])[],"banned_at": string | null,"banned_reason": string | null,"career_stage": Database["public"]['Enums']["career_stage"] | null,"created_at": string,"date_of_birth": string | null,"deleted_at": string | null,"discover_range_km": number,"display_name": string | null,"gender": Database["public"]['Enums']["gender"] | null,"hidden_at": string | null,"id": string,"industry_id": number | null,"modes": (Database["public"]['Enums']["mode"])[],"notify_activities": boolean,"notify_messages": boolean,"paused_at": string | null,"pref_age_max": number | null,"pref_age_min": number | null,"pref_genders": (Database["public"]['Enums']["gender"])[] | null,"pref_max_km": number | null,"profession": string | null,"status": Database["public"]['Enums']["account_status"],"submitted_at": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "area_id"?: string | null,"availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number | null,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id": string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"notify_activities"?: boolean,"notify_messages"?: boolean,"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
+                    "availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id": string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"notify_activities"?: boolean,"notify_messages"?: boolean,"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
                   }
                   Update: {
-                    "area_id"?: string | null,"availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number | null,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id"?: string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"notify_activities"?: boolean,"notify_messages"?: boolean,"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
+                    "availability"?: (Database["public"]['Enums']["availability_slot"])[],"banned_at"?: string | null,"banned_reason"?: string | null,"career_stage"?: Database["public"]['Enums']["career_stage"] | null,"created_at"?: string,"date_of_birth"?: string | null,"deleted_at"?: string | null,"discover_range_km"?: number,"display_name"?: string | null,"gender"?: Database["public"]['Enums']["gender"] | null,"hidden_at"?: string | null,"id"?: string,"industry_id"?: number | null,"modes"?: (Database["public"]['Enums']["mode"])[],"notify_activities"?: boolean,"notify_messages"?: boolean,"paused_at"?: string | null,"pref_age_max"?: number | null,"pref_age_min"?: number | null,"pref_genders"?: (Database["public"]['Enums']["gender"])[] | null,"pref_max_km"?: number | null,"profession"?: string | null,"status"?: Database["public"]['Enums']["account_status"],"submitted_at"?: string | null
                   }
                   Relationships: [
                     {
-      foreignKeyName: "profiles_area_id_fkey"
-      columns: ["area_id"]
-isOneToOne: false
-      referencedRelation: "areas"
-      referencedColumns: ["id"]
-    },{
       foreignKeyName: "profiles_industry_id_fkey"
       columns: ["industry_id"]
 isOneToOne: false
@@ -747,20 +741,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"service_regions": {
-                  Row: {
-                    "active": boolean,"id": number,"max_lat": number,"max_lng": number,"min_lat": number,"min_lng": number,"name": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "active"?: boolean,"id"?: never,"max_lat": number,"max_lng": number,"min_lat": number,"min_lng": number,"name": string
-                  }
-                  Update: {
-                    "active"?: boolean,"id"?: never,"max_lat"?: number,"max_lng"?: number,"min_lat"?: number,"min_lng"?: number,"name"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
                 },"tags": {
                   Row: {
                     "created_at": string,"id": number,"is_active": boolean,"kind": Database["public"]['Enums']["tag_kind"],"label": string,"slug": string,"sort_order": number
@@ -808,7 +788,7 @@ isOneToOne: false
                            },
 "activity_join_requests":
 { Args: { "activity_id": string }; Returns: {
-              "connection_id": string,"created_at": string,"request_id": string,"requester_area_id": string,"requester_id": string,"requester_name": string,"requester_photo_id": string,"status": Database["public"]['Enums']["request_status"]
+              "connection_id": string,"created_at": string,"request_id": string,"requester_id": string,"requester_name": string,"requester_photo_id": string,"status": Database["public"]['Enums']["request_status"]
             }[]
                            },
 "activity_spots_left":
@@ -900,7 +880,7 @@ isOneToOne: false
                            },
 "circle_members_of":
 { Args: { "circle_id": string }; Returns: {
-              "area_id": string,"cover_photo_id": string,"display_name": string,"member_id": string
+              "cover_photo_id": string,"display_name": string,"member_id": string
             }[]
                            },
 "close_connection":
@@ -932,7 +912,7 @@ isOneToOne: false
                            },
 "discover_feed":
 { Args: { "after"?: string,"mode_filter"?: (Database["public"]['Enums']["mode"])[],"page_size"?: number }; Returns: {
-              "age": number,"area_id": string,"cursor": string,"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"shared_tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
+              "age": number,"cursor": string,"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"shared_tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
             }[]
                            },
 "discover_modes":
@@ -1004,14 +984,14 @@ isOneToOne: false
                            },
 "get_profile":
 { Args: { "member_id": string }; Returns: {
-              "age": number,"area_id": string,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"request_modes": (Database["public"]['Enums']["mode"])[],"tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
+              "age": number,"availability": (Database["public"]['Enums']["availability_slot"])[],"display_name": string,"distance_band": string,"modes": (Database["public"]['Enums']["mode"])[],"photo_ids": (string)[],"prompts": Json,"request_modes": (Database["public"]['Enums']["mode"])[],"tag_ids": (number)[],"their_modes": (Database["public"]['Enums']["mode"])[],"user_id": string,"why_you_match": string
             }[]
+                           },
+"has_fresh_location":
+{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "hosts_activity":
 { Args: { "activity_id": string }; Returns: boolean
-                           },
-"in_service_region":
-{ Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -1089,7 +1069,7 @@ isOneToOne: false
                            },
 "my_connections":
 { Args: Record<PropertyKey, never>; Returns: {
-              "connection_id": string,"direction": Database["public"]['Enums']["connection_direction"],"last_message_at": string,"last_message_body": string,"last_message_type": Database["public"]['Enums']["message_type"],"mode": Database["public"]['Enums']["mode"],"note": string,"other_area_id": string,"other_id": string,"other_name": string,"other_photo_id": string,"status": Database["public"]['Enums']["connection_status"],"unread_count": number
+              "connection_id": string,"direction": Database["public"]['Enums']["connection_direction"],"last_message_at": string,"last_message_body": string,"last_message_type": Database["public"]['Enums']["message_type"],"mode": Database["public"]['Enums']["mode"],"note": string,"other_id": string,"other_name": string,"other_photo_id": string,"status": Database["public"]['Enums']["connection_status"],"unread_count": number
             }[]
                            },
 "my_join_requests":
@@ -1142,9 +1122,6 @@ isOneToOne: false
 "record_erasure":
 { Args: { "member": string,"objects_deleted": number,"requested_at": string }; Returns: undefined
                            },
-"region_of":
-{ Args: { "point": unknown }; Returns: number
-                           },
 "register_device_token":
 { Args: { "platform": string,"token": string }; Returns: undefined
                            },
@@ -1153,6 +1130,9 @@ isOneToOne: false
                            },
 "request_data_copy":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"requestable_modes":
+{ Args: { "a": string,"b": string }; Returns: (Database["public"]['Enums']["mode"])[]
                            },
 "respond_activity_request":
 { Args: { "accept": boolean,"request_id": string }; Returns: string

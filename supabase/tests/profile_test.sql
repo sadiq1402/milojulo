@@ -7,12 +7,12 @@ select pg_temp.create_member('00000000-0000-0000-0000-0000000000e2');
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000e1');
 select lives_ok(
-  $$ update public.profiles set display_name = 'Asha', area_id = 'baner',
+  $$ update public.profiles set display_name = 'Asha',
        modes = '{friends,activities}', availability = '{weekends}' $$,
-  'a Member can set their name, Area, Modes and availability');
+  'a Member can set their name, Modes and availability');
 select results_eq(
-  'select display_name::text, area_id, modes::text[], availability::text[] from public.profiles',
-  $$ values ('Asha', 'baner', '{friends,activities}'::text[], '{weekends}'::text[]) $$,
+  'select display_name::text, modes::text[], availability::text[] from public.profiles',
+  $$ values ('Asha', '{friends,activities}'::text[], '{weekends}'::text[]) $$,
   'the Member sees what they saved');
 
 select throws_ok($$ update public.profiles set status = 'banned' $$, '42501', null,

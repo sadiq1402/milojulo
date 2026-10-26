@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(9);
+select plan(8);
 
 select pg_temp.create_complete_member('00000000-0000-0000-0000-0000000000a1');
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a1');
@@ -38,13 +38,6 @@ update public.profiles set modes = '{}' where id = '00000000-0000-0000-0000-0000
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a5');
 select throws_ok('select public.submit_profile()', 'P0001', 'choose at least one mode',
   'submission is refused without a Mode');
-reset role;
-
-select pg_temp.create_complete_member('00000000-0000-0000-0000-0000000000a6');
-update public.profiles set area_id = null where id = '00000000-0000-0000-0000-0000000000a6';
-select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a6');
-select throws_ok('select public.submit_profile()', 'P0001', 'choose your area',
-  'submission is refused without an Area');
 reset role;
 
 select pg_temp.create_complete_member('00000000-0000-0000-0000-0000000000a7');

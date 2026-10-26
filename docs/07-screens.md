@@ -8,22 +8,22 @@ The app is in apps/mobile/src/screens; routes are in apps/mobile/src/navigation 
 
 | Flow | Mockup | Route / app file | What it does |
 |---|---|---|---|
-| Get in | Main | `Welcome` / gettingIn/WelcomeScreen | Full-orchid hero, tilted sticker chips for Modes, logo mark, "Get started". The mockup's "I have an invite code" link is not built (decision 27) |
+| Get in | Main | `Welcome` / gettingIn/WelcomeScreen | Full-orchid hero, tilted sticker chips for Modes, logo mark, "Meet people near you who want the same kind of hangout.", "Get started". The mockup's "I have an invite code" link is not built (decision 27) |
 | | Email | `Email` / gettingIn/EmailScreen | Email entry, "Send code"; note that a verified email only confirms an inbox |
 | | Otp | `Otp` / gettingIn/OtpScreen | 6 code boxes, Verify, "Resend code" after 30 s |
 | | AgeConsent | `AgeConsent` / gettingIn/AgeConsentScreen | Date of birth (DD MM YYYY, 18+), itemised data notice, data-use checkbox, Terms and Community Guidelines checkbox |
 | | (none) | `Reconsent` / gettingIn/ReconsentScreen | Shown instead of the tabs after a consent is withdrawn or a document gets a new version: accept the current documents again (date of birth kept) or "Delete my account instead" |
-| Profile setup | Setup1Basics, Setup1AreaSuggested, Setup1AreaPicker, Setup1AreaSearch | `ProfileSetup` / profileSetup/BasicsStep, AreaPicker | First name; Area from the phone's location (nearest Area within a few km chosen, "Change" reopens the list) or from the sheet: search, nearest Areas with distance bands, then zones; typing gives a flat filtered list (#142) |
+| Profile setup | Setup1Basics | `ProfileSetup` / profileSetup/BasicsStep | First name only; no Area (#203). Location is asked after submitting, by `LocationGate` |
 | | Setup2Photos | profileSetup/PhotosStep, PhotoSlot | 2 to 4 photo slots (4:5); take or choose a photo, make main, move earlier or later, replace, remove. Intro is "Clear photos where your face is visible." (no review notice: no pre-approval, ADR 0002) |
 | | Setup3Prompts | profileSetup/PromptsStep | Two prompts from the catalog |
 | | Setup4Modes | profileSetup/ModesStep | Six Mode rows (Casual tagged "18+ · adults only"). Choosing Dating, Serious or Casual shows own gender, who to meet, age range and distance on the same step; choosing Networking shows profession, industry and career stage. There is no separate Dating step |
 | | Setup5Interests | profileSetup/InterestsStep | Interest chips and availability chips; the last step submits the profile, which goes live at once and opens Discover |
-| | Location | location/LocationScreens (`LocationScreen`) | Asks for location before the phone's own dialog ("Allow location" / "Not now"); shown by `LocationGate` in front of the tabs when due |
-| | LocationOff | location/LocationScreens (`LocationOffScreen`) | Shown once after location is refused: distances are measured from the Area centre; "Turn on in Settings" |
-| Discover and connect | Discover, DiscoverDistance, DiscoverDistanceSheet, DiscoverModesSheet | `Discover` tab / discover/DiscoverScreen, DiscoverSheets, FeedCard | Two filter chips: distance (2, 5, 10, 25, 50 km or Anywhere in Pune, saved as the Discover Range) and Modes (several at once); Same Vibe cards with photo, Area and distance band, Mode tags, why-you-match note and shared tags; pull to refresh, paged |
-| | DiscoverEmpty | DiscoverScreen | "Nobody within N km yet" with "Widen to …" and "Choose distance"; "Nobody here yet" when already Anywhere in Pune |
-| | DiscoverNotInCity | DiscoverScreen | "MiloJulo isn't in your city yet", "Edit profile" |
-| | ProfileDetail | `Profile` / profile/ProfileScreen, ProfileMenu | Hero photo (first photo only) with Area and Mode tags, name and age, Why you match, prompts, interests; "Send request", "Request sent" or "Open chat"; menu with Block and Report; long-press the photo to report it |
+| | Location | location/LocationScreens (`LocationScreen`) | Asks for location before the phone's own dialog ("Allow location" / "Not now"); shown by `LocationGate` in front of the tabs when due, including right after a new Member submits; allowing sends the location at once |
+| | LocationOff | location/LocationScreens (`LocationOffScreen`) | Shown once after location is refused: "Discover needs your location", without it you won't see anyone or be seen; "Turn on in Settings", "Not now" |
+| Discover and connect | Discover, DiscoverDistance, DiscoverDistanceSheet, DiscoverModesSheet | `Discover` tab / discover/DiscoverScreen, DiscoverSheets, FeedCard | Two filter chips: distance (2, 5, 10, 25, 50 or 100 km, saved as the Discover Range) and Modes (several at once); Same Vibe cards with photo, distance band, Mode tags, why-you-match note and shared tags; pull to refresh, paged |
+| | DiscoverEmpty | DiscoverScreen | "Nobody within N km yet" with "Widen to …" and "Choose distance"; at 100 km just "Check back soon." |
+| | DiscoverNoLocation | DiscoverScreen | Without a location from the last 7 days: "Discover needs your location" and "Turn on location", which asks for permission (or opens the phone Settings once the phone's dialog was refused), sends the location and reloads Discover |
+| | ProfileDetail | `Profile` / profile/ProfileScreen, ProfileMenu | Hero photo (first photo only) with Mode tags, name and age, Why you match, prompts, interests; "Send request", "Request sent" or "Open chat"; menu with Block and Report; long-press the photo to report it |
 | | SendRequest, SendRequestModes, SendRequestNoShared | profile/ProfileScreen → requests/SendRequestSheet | Bottom sheet: "Connect as" chips of the other Member's Modes, shared ones first and tagged Shared, Casual tagged 18+; optional note with counter |
 | | Inbox | `Inbox` tab, Requests segment / inbox/InboxScreen, requests/RequestList, AnswerCard | Connection Requests and Join Requests to answer (Accept / Decline), then the Member's own sent ones; tab badge counts the waiting ones |
 | | Chats | `Inbox` tab, Chats segment / inbox/InboxScreen | Chat list with last message preview, time and unread dot |
@@ -38,7 +38,7 @@ The app is in apps/mobile/src/screens; routes are in apps/mobile/src/navigation 
 | | MeetFeedback | `MeetFeedback` / meetFeedback/MeetFeedbackScreen | Did you two meet? Keep the connection? Only you see your answer; kept when both say yes. Opened after an Activity or from "We met" in Chat |
 | Safety and account | Report | `Report` / reports/ReportScreen | Reason list, optional details, optional "also block", 24-hour line |
 | | SafetyCentre | `SafetyCentre` / me/SafetyCentreScreen | Before-you-meet tips, how to report, Block someone, Pause my profile, Call 112, Contact support |
-| | Me | `Me` tab / me/MeScreen | Profile summary and a Paused tag; rows to edit Name and Area, Photos, Prompts, Modes and preferences, Interests and availability; Safety Centre, Settings, Sign out |
+| | Me | `Me` tab / me/MeScreen | Profile summary and a Paused tag; rows to edit Name, Photos, Prompts, Modes and preferences, Interests and availability; Safety Centre, Settings, Sign out |
 | | (none) | `EditProfile` / me/EditProfileScreen | One setup step on its own, button "Save" |
 | | Settings | `Settings` / me/SettingsScreen | Pause my profile; notification switches (Requests and messages, Activity updates); Consent settings, Blocked people, Request a copy of my data; Delete account |
 | | (none) | `ConsentSettings` / account/ConsentSettingsScreen | Accepted documents with version; Withdraw (hides the profile until accepted again) |
@@ -53,6 +53,7 @@ Navigation: bottom tabs are Discover, Activities, Circles, Inbox, Me (the Inbox 
 | Mockup / element | Status |
 |---|---|
 | InviteCode, and "I have an invite code" on Main | Dropped (decision 27: open sign-up) |
+| Setup1AreaSuggested, Setup1AreaPicker, Setup1AreaSearch | Dropped from sign-up with Areas (#203); the Activity form's Area sheet still follows Setup1AreaSearch until Activities lose their Area |
 | UnderReview | Dropped (decision 15, ADR 0002: no pre-approval; submitting goes straight to Discover) |
 | Activity plan card in Chat | The message type exists (`activity_card`) and a received one renders as a plain "Shared an Activity" card, but nothing in the app or database creates one and it doesn't open the Activity |
 | Join / Joined buttons on the Circles list | The list shows a Joined tag; joining is on the Circle screen |

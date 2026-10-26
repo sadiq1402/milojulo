@@ -19,7 +19,7 @@ $$;
 -- 01 hosts in Baner; 02 lives in Kharadi, beyond 01's Discover range, so only the board links them.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004101');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004102');
-update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000004102';
+select pg_temp.place('00000000-0000-0000-0000-000000004102', 18.5515, 73.9348);
 insert into public.activities (host_id, title, type, area_id, starts_at, capacity)
 values ('00000000-0000-0000-0000-000000004101', 'Badminton', 'sports', 'baner', now() + interval '2 days', 3);
 
@@ -38,7 +38,7 @@ reset role;
 
 -- 04 blocked the host, so the Activity is not on 04's board.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004104');
-update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000004104';
+select pg_temp.place('00000000-0000-0000-0000-000000004104', 18.5515, 73.9348);
 insert into public.blocks (blocker_id, blocked_id) values
   ('00000000-0000-0000-0000-000000004104', '00000000-0000-0000-0000-000000004101');
 select is(pg_temp.seen('00000000-0000-0000-0000-000000004104', '00000000-0000-0000-0000-000000004101'), 0,
@@ -46,7 +46,7 @@ select is(pg_temp.seen('00000000-0000-0000-0000-000000004104', '00000000-0000-00
 
 -- 03 is Paused, so the board is empty for them.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004103');
-update public.profiles set area_id = 'kharadi' where id = '00000000-0000-0000-0000-000000004103';
+select pg_temp.place('00000000-0000-0000-0000-000000004103', 18.5515, 73.9348);
 select pg_temp.act_as_member('00000000-0000-0000-0000-000000004103');
 select public.set_paused(true);
 reset role;

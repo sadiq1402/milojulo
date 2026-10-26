@@ -3,9 +3,6 @@ import type { Area } from './api';
 export type Point = { lat: number; lng: number };
 export type NearArea = { area: Area; km: number };
 
-// The nearest Area is suggested only within this distance; further away the Member picks.
-export const suggestWithinKm = 3;
-
 const earthKm = 6371;
 const rad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -28,16 +25,6 @@ export function nearestAreas(
     .map(area => ({ area, km: distanceKm(point, area) }))
     .sort((a, b) => a.km - b.km)
     .slice(0, count);
-}
-
-export function suggestedArea(point: Point, areas: Area[]): Area | undefined {
-  const [nearest] = nearestAreas(point, areas, 1);
-  return nearest && nearest.km <= suggestWithinKm ? nearest.area : undefined;
-}
-
-// As the server's distance_band: never finer than a kilometre.
-export function distanceBand(km: number): string {
-  return km < 2 ? '<2 km' : `~${Math.round(km)} km`;
 }
 
 // The Areas to offer first: mine, then the nearest open ones, always including the one chosen.

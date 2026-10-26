@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Linking } from 'react-native';
 import {
   act,
   fireEvent,
@@ -12,6 +14,8 @@ import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import * as location from '../src/features/location/api';
+import * as device from '../src/features/location/device';
 import * as photos from '../src/features/photos/api';
 import type { FeedCard, Profile } from '../src/features/discover/api';
 import * as reports from '../src/features/reports/api';
@@ -24,6 +28,7 @@ jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/activities/api');
 jest.mock('../src/features/discover/api');
+jest.mock('../src/features/location/api');
 jest.mock('../src/features/photos/api');
 // Keep the real reason list; only the call to the database is stood in.
 jest.mock('../src/features/reports/api', () => ({
@@ -57,7 +62,6 @@ const card = (overrides: Partial<FeedCard>): FeedCard => ({
   id: 'isha',
   name: 'Isha',
   age: 27,
-  areaId: 'baner',
   modes: ['friends'],
   theirModes: ['friends'],
   distanceBand: '~3 km',
@@ -72,7 +76,6 @@ const rohan = card({
   id: 'rohan',
   name: 'Rohan',
   age: 29,
-  areaId: 'wakad',
   modes: ['friends', 'activities'],
   theirModes: ['friends', 'activities'],
   distanceBand: '~8 km',
@@ -85,7 +88,6 @@ const ishaProfile: Profile = {
   id: 'isha',
   name: 'Isha',
   age: 27,
-  areaId: 'baner',
   modes: ['friends', 'activities'],
   theirModes: ['activities', 'friends', 'networking', 'casual'],
   requestModes: ['activities', 'friends', 'networking'],
@@ -104,7 +106,6 @@ const conversation = (overrides: Partial<Conversation>): Conversation => ({
   otherId: 'isha',
   otherName: 'Isha',
   otherPhotoId: null,
-  otherAreaId: 'baner',
   mode: 'friends',
   status: 'accepted',
   direction: 'outgoing',
@@ -133,7 +134,7 @@ beforeEach(() => {
     modes: ['friends', 'activities'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
@@ -168,15 +169,16 @@ describe('the Discover feed', () => {
     expect(within(header).queryByText('Milo')).toBeNull();
   });
 
-  test('shows a card per person with age, Area and distance, shared Mode, why you match and shared tags', async () => {
+  test('shows a card per person with age, distance, shared Mode, why you match and shared tags', async () => {
     await renderApp(me);
     const ishaCard = await cardFor('Isha');
     expect(ishaCard).toHaveAccessibleName(
-      'Isha, 27, Baner · ~3 km. You both want friends, like badminton and cafes.',
+      'Isha, 27, ~3 km. You both want friends, like badminton and cafes.',
     );
     const inCard = within(ishaCard);
     expect(inCard.getByText('Isha, 27')).toBeOnTheScreen();
-    expect(inCard.getByText('Baner · ~3 km')).toBeOnTheScreen();
+    expect(inCard.getByText('~3 km')).toBeOnTheScreen();
+    expect(inCard.queryByText(/Baner/)).toBeNull();
     expect(inCard.getByText('Friends')).toBeOnTheScreen();
     expect(
       inCard.getByText('You both want friends, like badminton and cafes.'),
@@ -282,7 +284,7 @@ describe('the Discover feed', () => {
       modes: ['casual'],
       paused: false,
       rangeKm: 10,
-      inServiceRegion: true,
+      hasLocation: true,
     });
     await renderApp(me);
     await cardFor('Isha');
@@ -294,7 +296,7 @@ describe('the Discover feed', () => {
     ).toBeOnTheScreen();
   });
 
-  test('the distance chip shows my saved range and saves a new one', async () => {
+  test('the distance chip shows my saved range and saves a new one, from 2 to 100 km', async () => {
     await renderApp(me);
     await cardFor('Isha');
     await fireEvent.press(
@@ -302,15 +304,17 @@ describe('the Discover feed', () => {
     );
     expect(await screen.findByText('How far?')).toBeOnTheScreen();
     expect(
+      screen.getAllByRole('radio').map(radio => radio.props.accessibilityLabel),
+    ).toEqual(['2 km', '5 km', '10 km', '25 km', '50 km', '100 km']);
+    expect(
       screen.getByRole('radio', { name: '10 km', checked: true }),
     ).toBeOnTheScreen();
-    await fireEvent.press(
-      screen.getByRole('radio', { name: 'Anywhere in Pune' }),
-    );
+    expect(screen.queryByText(/Anywhere/)).toBeNull();
+    await fireEvent.press(screen.getByRole('radio', { name: '100 km' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Show people' }));
-    expect(discover.saveRange).toHaveBeenCalledWith(me.user.id, null);
+    expect(discover.saveRange).toHaveBeenCalledWith(me.user.id, 100);
     expect(
-      await screen.findByRole('button', { name: 'Distance: Anywhere in Pune' }),
+      await screen.findByRole('button', { name: 'Distance: Within 100 km' }),
     ).toBeOnTheScreen();
   });
 
@@ -372,37 +376,111 @@ describe('the Discover feed', () => {
     expect(discover.saveRange).toHaveBeenCalledWith(me.user.id, 25);
   });
 
-  test('with Anywhere in Pune and nobody around, there is nothing to widen', async () => {
+  test('widening stops at 100 km, with no Anywhere beyond it', async () => {
     jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
       modes: ['friends'],
       paused: false,
-      rangeKm: null,
-      inServiceRegion: true,
+      rangeKm: 50,
+      hasLocation: true,
     });
     jest
       .mocked(discover.fetchFeedPage)
       .mockResolvedValue({ cards: [], nextCursor: null });
     await renderApp(me);
-    expect(await screen.findByText('Nobody here yet')).toBeOnTheScreen();
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Widen to 100 km' }),
+    );
+    expect(discover.saveRange).toHaveBeenCalledWith(me.user.id, 100);
+    expect(
+      await screen.findByText('Nobody within 100 km yet'),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Check back soon.')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: /Widen/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Widen|Anywhere/ })).toBeNull();
   });
 
-  test('outside every service region, says MiloJulo is not in their city yet', async () => {
-    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
-      modes: ['friends'],
+  describe('without a fresh location', () => {
+    const noLocation = {
+      modes: ['friends' as const],
       paused: false,
-      rangeKm: 10,
-      inServiceRegion: false,
+      rangeKm: 10 as const,
+      hasLocation: false,
+    };
+    let permission = false;
+
+    // Location was put off in the prompt, so the gate lets the Member through to Discover.
+    const putOff = (answer: 'notNow' | 'denied') =>
+      AsyncStorage.setItem(
+        `location_prompt:${me.user.id}`,
+        JSON.stringify({ answer, notNowCount: 2, offShown: true }),
+      );
+
+    beforeEach(async () => {
+      await AsyncStorage.clear();
+      permission = false;
+      jest
+        .spyOn(device, 'hasPermission')
+        .mockImplementation(async () => permission);
+      jest.spyOn(device, 'requestPermission').mockImplementation(async () => {
+        permission = true;
+        return true;
+      });
+      jest
+        .spyOn(device, 'currentPosition')
+        .mockResolvedValue({ lat: 48.85, lng: 2.35 });
+      jest.mocked(location.setLocation).mockResolvedValue();
+      jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue(noLocation);
     });
-    await renderApp(me);
-    expect(
-      await screen.findByText("MiloJulo isn't in your city yet"),
-    ).toBeOnTheScreen();
-    expect(
-      screen.getByText("We're starting in Pune. Your profile is saved."),
-    ).toBeOnTheScreen();
-    expect(discover.fetchFeedPage).not.toHaveBeenCalled();
+
+    // The device spies and the saved answer would otherwise reach the tests after these.
+    afterEach(async () => {
+      jest.restoreAllMocks();
+      await AsyncStorage.clear();
+    });
+
+    test('Discover says it needs my location and shows nobody', async () => {
+      await putOff('notNow');
+      await renderApp(me);
+      expect(
+        await screen.findByRole('header', {
+          name: 'Discover needs your location',
+        }),
+      ).toBeOnTheScreen();
+      expect(
+        screen.getByText(
+          "MiloJulo only shows people within the distance you choose, measured from where you are. Without it, you won't see anyone or be seen.",
+        ),
+      ).toBeOnTheScreen();
+      expect(discover.fetchFeedPage).not.toHaveBeenCalled();
+    });
+
+    test('Turn on location asks for permission, sends my location and shows the feed', async () => {
+      await putOff('notNow');
+      await renderApp(me);
+      const turnOn = await screen.findByRole('button', {
+        name: 'Turn on location',
+      });
+      jest
+        .mocked(discover.fetchMyDiscoverState)
+        .mockResolvedValue({ ...noLocation, hasLocation: true });
+      await fireEvent.press(turnOn);
+      expect(device.requestPermission).toHaveBeenCalled();
+      expect(location.setLocation).toHaveBeenCalledWith(48.85, 2.35);
+      expect(await cardFor('Isha')).toBeOnTheScreen();
+      expect(screen.queryByText('Discover needs your location')).toBeNull();
+    });
+
+    test('once the phone dialog was refused, Turn on location opens the phone Settings', async () => {
+      const openSettings = jest
+        .spyOn(Linking, 'openSettings')
+        .mockResolvedValue();
+      await putOff('denied');
+      await renderApp(me);
+      await fireEvent.press(
+        await screen.findByRole('button', { name: 'Turn on location' }),
+      );
+      expect(openSettings).toHaveBeenCalled();
+      expect(device.requestPermission).not.toHaveBeenCalled();
+    });
   });
 
   test('a failed load offers a retry', async () => {
@@ -423,13 +501,13 @@ describe('the Discover feed', () => {
         modes: ['friends'],
         paused: true,
         rangeKm: 10,
-        inServiceRegion: true,
+        hasLocation: true,
       })
       .mockResolvedValue({
         modes: ['friends'],
         paused: false,
         rangeKm: 10,
-        inServiceRegion: true,
+        hasLocation: true,
       });
     jest.mocked(discover.unpause).mockResolvedValue();
     await renderApp(me);
@@ -444,10 +522,10 @@ describe('the Discover feed', () => {
 });
 
 describe('a profile', () => {
-  test('tapping a card opens the profile with Area, shared Modes, why you match, prompts and tags', async () => {
+  test('tapping a card opens the profile with shared Modes, why you match, prompts and tags', async () => {
     await openProfile();
     expect(discover.fetchProfile).toHaveBeenCalledWith('isha');
-    expect(screen.getByText('Baner')).toBeOnTheScreen();
+    expect(screen.queryByText('Baner')).toBeNull();
     expect(screen.getByText('Friends')).toBeOnTheScreen();
     expect(screen.getByText('Activities')).toBeOnTheScreen();
     expect(screen.getByText('Why you match')).toBeOnTheScreen();

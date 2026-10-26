@@ -45,7 +45,6 @@ const conversation = (overrides: Partial<Conversation>): Conversation => ({
   otherId: 'rohan',
   otherName: 'Rohan',
   otherPhotoId: null,
-  otherAreaId: 'wakad',
   mode: 'friends',
   status: 'requested',
   direction: 'incoming',
@@ -122,8 +121,7 @@ async function openInbox() {
   await fireEvent.press(await screen.findByRole('tab', { name: /^Inbox/ }));
   // The Inbox opens on Chats; these tests are about the Requests segment.
   await fireEvent.press(screen.getByRole('tab', { name: 'Requests' }));
-  // Let the area names land too before the test goes on.
-  await screen.findAllByText('Wakad');
+  await screen.findByText('Waiting for you');
   return app;
 }
 

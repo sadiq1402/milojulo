@@ -9,12 +9,11 @@ import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
 import * as location from '../src/features/location/api';
 import * as device from '../src/features/location/device';
-import { emptyRecord, saveRecord } from '../src/features/location/prompt';
 import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import { SetupError } from '../src/features/profileSetup/model';
 import * as catalog from '../src/features/catalog/api';
-import { areas, numbered } from '../test/catalog';
+import { numbered } from '../test/catalog';
 import { mockProfileSetup } from '../test/profileSetup';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -33,7 +32,7 @@ const twoPhotos = [
   { id: 'p1', position: 1 },
   { id: 'p2', position: 2 },
 ];
-const basics = { displayName: 'Asha', areaId: 'baner' };
+const basics = { displayName: 'Asha' };
 const prompts = [
   { position: 1 as const, questionId: 1, answer: 'Chai and a trek' },
   { position: 2 as const, questionId: 2, answer: 'Play badminton' },
@@ -70,7 +69,7 @@ function mockMemberTabs() {
     modes: ['friends'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
   jest
     .mocked(discover.fetchFeedPage)
@@ -85,30 +84,28 @@ const header = (name: string) => screen.findByRole('header', { name });
 const button = (name: string) => screen.getByRole('button', { name });
 
 describe('basics', () => {
-  test('a new Member starts here; Next waits for a first name and an Area, then saves', async () => {
+  test('a new Member starts here; Next waits only for a first name, then saves', async () => {
     mockProfileSetup();
     await open();
     expect(await header('What should we call you?')).toBeOnTheScreen();
     expect(screen.getByLabelText('Step 1 of 5')).toBeOnTheScreen();
+    expect(screen.queryByText(/area/i)).toBeNull();
     expect(
-      screen.getByText(
-        'No one sees your location. Others see a rounded distance, like "~3 km".',
-      ),
-    ).toBeOnTheScreen();
+      screen.queryByRole('button', { name: 'Use my location' }),
+    ).toBeNull();
     expect(button('Next')).toBeDisabled();
 
-    await fireEvent.changeText(screen.getByLabelText('First name'), ' Asha ');
+    await fireEvent.changeText(screen.getByLabelText('First name'), '  ');
     expect(button('Next')).toBeDisabled();
-    await fireEvent.press(button('Choose from the list'));
-    await fireEvent.press(await screen.findByRole('radio', { name: 'Wakad' }));
+    await fireEvent.changeText(screen.getByLabelText('First name'), ' Asha ');
     await fireEvent.press(button('Next'));
 
     expect(await header('Add 2 to 4 photos')).toBeOnTheScreen();
     expect(screen.getByLabelText('Step 2 of 5')).toBeOnTheScreen();
     expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
       displayName: ' Asha ',
-      areaId: 'wakad',
     });
+    expect(device.requestPermission).not.toHaveBeenCalled();
   });
 
   test('a save that fails stays on the step with the reason', async () => {
@@ -124,126 +121,6 @@ describe('basics', () => {
     expect(
       screen.getByRole('header', { name: 'What should we call you?' }),
     ).toBeOnTheScreen();
-  });
-});
-
-describe('the Area step', () => {
-  // Centres as in the catalog; the test phone sits in Aundh.
-  const pune = areas(
-    {
-      aundh: 'Aundh',
-      baner: 'Baner',
-      kondhwa: 'Kondhwa',
-      'koregaon-park': 'Koregaon Park',
-      kothrud: 'Kothrud',
-      'pimple-nilakh': 'Pimple Nilakh',
-    },
-    {
-      aundh: { zone: 'central', lat: 18.558, lng: 73.808 },
-      baner: { zone: 'west', lat: 18.559, lng: 73.786 },
-      kondhwa: { zone: 'south', lat: 18.465, lng: 73.89 },
-      'koregaon-park': { zone: 'central', lat: 18.536, lng: 73.894 },
-      kothrud: { zone: 'central', lat: 18.507, lng: 73.808 },
-      'pimple-nilakh': { zone: 'pimpri_chinchwad', lat: 18.58, lng: 73.808 },
-    },
-  );
-  const inAundh = { lat: 18.556, lng: 73.807 };
-
-  async function openAt(point: { lat: number; lng: number } | null) {
-    mockProfileSetup({ displayName: 'Asha' });
-    jest.mocked(catalog.fetchAreas).mockResolvedValue(pune);
-    jest.spyOn(device, 'requestPermission').mockResolvedValue(!!point);
-    if (point) {
-      jest.spyOn(device, 'currentPosition').mockResolvedValue(point);
-    }
-    await open();
-    await header('What should we call you?');
-    await fireEvent.press(button('Use my location'));
-  }
-
-  test('the nearest Area within 3 km is chosen, and Next saves it', async () => {
-    await openAt(inAundh);
-    expect(await screen.findByText('Aundh')).toBeOnTheScreen();
-    expect(screen.getByText("Looks like you're near here")).toBeOnTheScreen();
-    expect(
-      screen.queryByRole('header', { name: 'Choose your area' }),
-    ).toBeNull();
-    await fireEvent.press(button('Next'));
-    await header('Add 2 to 4 photos');
-    expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
-      displayName: 'Asha',
-      areaId: 'aundh',
-    });
-  });
-
-  test('further than 3 km, the list opens with nothing chosen and the nearest on top', async () => {
-    await openAt({ lat: 18.6, lng: 73.7 });
-    expect(await header('Choose your area')).toBeOnTheScreen();
-    expect(screen.queryByRole('radio', { checked: true })).toBeNull();
-    expect(
-      screen.getByRole('header', { name: 'Nearest to you' }),
-    ).toBeOnTheScreen();
-    expect(
-      screen.getByRole('radio', { name: 'Baner, ~10 km' }),
-    ).toBeOnTheScreen();
-    expect(button('Next')).toBeDisabled();
-  });
-
-  test('a refused permission opens the list, and the location prompt is not shown again after setup', async () => {
-    await openAt(null);
-    expect(await header('Choose your area')).toBeOnTheScreen();
-    expect(screen.queryByText('Nearest to you')).toBeNull();
-    expect(screen.getByRole('header', { name: 'West' })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('radio', { name: 'Kothrud' }));
-    expect(await screen.findByText('Kothrud')).toBeOnTheScreen();
-    expect(screen.queryByText("Looks like you're near here")).toBeNull();
-    expect(location.setLocation).not.toHaveBeenCalled();
-
-    // Setup done: the Member's tabs open without asking for location again.
-    await screen.unmount();
-    mockMemberTabs();
-    await open();
-    expect(
-      await screen.findByRole('tab', { name: 'Discover', selected: true }),
-    ).toBeOnTheScreen();
-    expect(screen.queryByText('See who’s nearby')).toBeNull();
-  });
-
-  test('"Change" overrides the suggestion', async () => {
-    await openAt(inAundh);
-    await fireEvent.press(
-      await screen.findByRole('button', { name: 'Change' }),
-    );
-    expect(await header('Choose your area')).toBeOnTheScreen();
-    expect(
-      screen.getByRole('radio', { name: 'Aundh, <2 km', checked: true }),
-    ).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('radio', { name: 'Kothrud' }));
-    expect(await screen.findByText('Kothrud')).toBeOnTheScreen();
-    expect(screen.queryByText("Looks like you're near here")).toBeNull();
-    await fireEvent.press(button('Next'));
-    await header('Add 2 to 4 photos');
-    expect(profileSetup.saveBasics).toHaveBeenCalledWith(userId, {
-      displayName: 'Asha',
-      areaId: 'kothrud',
-    });
-  });
-
-  test('searching filters by name, any case, with the zone and a hint', async () => {
-    await openAt(null);
-    await header('Choose your area');
-    await fireEvent.changeText(screen.getByLabelText('Search areas'), 'KO');
-    expect(
-      screen.getAllByRole('radio').map(row => row.props.accessibilityLabel),
-    ).toEqual(['Kondhwa, South', 'Koregaon Park, Central', 'Kothrud, Central']);
-    expect(
-      screen.getByText(
-        'Not listed? Pick the closest area. More of Pune is coming.',
-      ),
-    ).toBeOnTheScreen();
-    expect(screen.queryByRole('header', { name: 'Central' })).toBeNull();
-    // The matched letters are picked out in each name.
-    expect(screen.getAllByText('Ko')).toHaveLength(3);
   });
 });
 
@@ -265,8 +142,6 @@ describe('resuming', () => {
     await fireEvent.press(button('Back'));
     await header('What should we call you?');
     expect(screen.getByLabelText('First name')).toHaveDisplayValue('Asha');
-    expect(await screen.findByText('Baner')).toBeOnTheScreen();
-    expect(button('Change')).toBeOnTheScreen();
   });
 
   test('a Dating Mode without its preferences reopens the Modes step', async () => {
@@ -647,7 +522,7 @@ describe('interests and submit', () => {
       modes: ['friends'],
       paused: false,
       rangeKm: 10,
-      inServiceRegion: true,
+      hasLocation: true,
     });
     jest
       .mocked(discover.fetchFeedPage)
@@ -674,10 +549,9 @@ describe('interests and submit', () => {
     expect(profileSetup.submitProfile).toHaveBeenCalled();
   });
 
-  test('with location allowed in setup, submitting sends it before the first feed loads', async () => {
+  test('once submitted, a new Member is asked for location, and allowing sends it', async () => {
     mockProfileSetup(complete, twoPhotos);
-    await saveRecord(userId, { ...emptyRecord, answer: 'allowed' });
-    jest.spyOn(device, 'hasPermission').mockResolvedValue(true);
+    jest.spyOn(device, 'requestPermission').mockResolvedValue(true);
     jest
       .spyOn(device, 'currentPosition')
       .mockResolvedValue({ lat: 18.556, lng: 73.807 });
@@ -688,16 +562,14 @@ describe('interests and submit', () => {
     await header('What do you enjoy?');
     await fireEvent.press(button('Finish and submit'));
 
+    expect(await header('See who’s nearby')).toBeOnTheScreen();
+    expect(location.setLocation).not.toHaveBeenCalled();
+    await fireEvent.press(button('Allow location'));
     expect(
       await screen.findByRole('tab', { name: 'Discover', selected: true }),
     ).toBeOnTheScreen();
-    await waitFor(() => expect(discover.fetchFeedPage).toHaveBeenCalled());
-    expect(location.setLocation).toHaveBeenCalledTimes(1);
-    expect(location.setLocation).toHaveBeenCalledWith(18.556, 73.807);
-    expect(
-      jest.mocked(location.setLocation).mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      jest.mocked(discover.fetchFeedPage).mock.invocationCallOrder[0],
+    await waitFor(() =>
+      expect(location.setLocation).toHaveBeenCalledWith(18.556, 73.807),
     );
   });
 

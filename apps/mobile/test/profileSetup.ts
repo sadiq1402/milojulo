@@ -7,7 +7,6 @@ import { areas, numbered } from './catalog';
 // A profile row right after the age gate and consents.
 export const emptyDraft: ProfileDraft = {
   displayName: null,
-  areaId: null,
   birthDate: '1998-03-21',
   prompts: [],
   modes: [],

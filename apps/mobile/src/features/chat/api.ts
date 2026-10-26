@@ -11,7 +11,6 @@ export type Conversation = {
   otherId: string;
   otherName: string;
   otherPhotoId: string | null;
-  otherAreaId: string | null;
   mode: Mode;
   status: Enums['connection_status'];
   direction: Enums['connection_direction'];
@@ -35,7 +34,6 @@ export async function fetchConversations(): Promise<Conversation[]> {
     otherId: row.other_id,
     otherName: row.other_name,
     otherPhotoId: row.other_photo_id,
-    otherAreaId: row.other_area_id,
     mode: row.mode,
     status: row.status,
     direction: row.direction,

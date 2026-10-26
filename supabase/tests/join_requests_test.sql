@@ -62,8 +62,8 @@ select pg_temp.create_visible_member(pg_temp.m(s))
 from unnest(array['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'ea', 'eb', 'ec', 'ed']) s;
 select pg_temp.create_complete_member(pg_temp.m('e9'));
 update public.profiles set display_name = 'Host' where id = pg_temp.m('e1');
-update public.profiles set display_name = 'Mira', area_id = 'wakad' where id = pg_temp.m('e3');
-update public.profiles set display_name = 'Kabir', area_id = 'kharadi' where id = pg_temp.m('e4');
+update public.profiles set display_name = 'Mira' where id = pg_temp.m('e3');
+update public.profiles set display_name = 'Kabir' where id = pg_temp.m('e4');
 select pg_temp.keep(s || ' cover', (select id from public.photos where user_id = pg_temp.m(s) and position = 1))
 from unnest(array['e1', 'e3', 'e4']) s;
 
@@ -466,11 +466,11 @@ insert into public.blocks (blocker_id, blocked_id) values (pg_temp.m('ed'), pg_t
 
 select pg_temp.as_member('e1');
 select results_eq(
-  $$ select request_id, requester_id, requester_name, requester_photo_id, requester_area_id, status, connection_id
+  $$ select request_id, requester_id, requester_name, requester_photo_id, status, connection_id
      from public.activity_join_requests(pg_temp.id('brunch')) $$,
-  $$ values (pg_temp.id('e4 brunch'), pg_temp.m('e4'), 'Kabir'::varchar, pg_temp.id('e4 cover'), 'kharadi'::text,
+  $$ values (pg_temp.id('e4 brunch'), pg_temp.m('e4'), 'Kabir'::varchar, pg_temp.id('e4 cover'),
              'accepted'::public.request_status, pg_temp.id('e4 brunch connection')),
-            (pg_temp.id('e3 brunch'), pg_temp.m('e3'), 'Mira'::varchar, pg_temp.id('e3 cover'), 'wakad'::text,
+            (pg_temp.id('e3 brunch'), pg_temp.m('e3'), 'Mira'::varchar, pg_temp.id('e3 cover'),
              'requested'::public.request_status, null::uuid) $$,
   'the host lists waiting and accepted Join Requests, oldest first, without declined, cancelled, banned, deleted, Auto-hidden or blocked requesters');
 select ok((select created_at = now() - interval '5 minutes' from public.activity_join_requests(pg_temp.id('brunch'))

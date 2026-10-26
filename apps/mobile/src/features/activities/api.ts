@@ -273,7 +273,6 @@ export async function fetchJoinRequests(
     requesterId: row.requester_id,
     requesterName: row.requester_name,
     requesterPhotoId: row.requester_photo_id ?? null,
-    requesterAreaId: row.requester_area_id ?? null,
     status: row.status,
     createdAt: row.created_at,
     connectionId: row.connection_id ?? null,

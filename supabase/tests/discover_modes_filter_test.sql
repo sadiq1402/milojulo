@@ -9,7 +9,7 @@ language plpgsql as $$
 begin
   perform pg_temp.create_complete_member(member_id);
   update public.profiles
-  set area_id = 'baner', modes = member_modes, gender = member_gender, pref_genders = wants,
+  set modes = member_modes, gender = member_gender, pref_genders = wants,
       pref_age_min = 25, pref_age_max = 35, pref_max_km = 10,
       date_of_birth = (now() at time zone 'Asia/Kolkata')::date - make_interval(years => 30)
   where id = member_id;

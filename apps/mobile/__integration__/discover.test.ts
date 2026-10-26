@@ -77,7 +77,6 @@ test('the feed shows visible Members nearby, with why we match and shared tags',
   expect(feed.find(card => card.id === ravi.id)).toMatchObject({
     name: 'Ravi',
     age: expect.any(Number),
-    areaId: 'baner',
     modes: ['friends', 'activities'],
     sharedTagIds: [tags.badminton],
     whyYouMatch: expect.stringContaining('like badminton'),
@@ -95,18 +94,18 @@ test('filtering by a Mode shows only Members who share that Mode', async () => {
   expect(activities).not.toContain(neha.id);
 });
 
-test('my own Modes, pause state, range and service region come from my profile', async () => {
+test('my own Modes, pause state, range and whether I have a fresh location', async () => {
   expect(await fetchMyDiscoverState(me.id)).toEqual({
     modes: ['friends', 'activities'],
     paused: false,
     rangeKm: 10,
-    inServiceRegion: true,
+    hasLocation: true,
   });
 });
 
-test('the chosen range is saved on my profile, Anywhere in Pune as no range', async () => {
-  await saveRange(me.id, null);
-  expect((await fetchMyDiscoverState(me.id)).rangeKm).toBeNull();
+test('the chosen range is saved on my profile, up to 100 km', async () => {
+  await saveRange(me.id, 100);
+  expect((await fetchMyDiscoverState(me.id)).rangeKm).toBe(100);
   await saveRange(me.id, 25);
   expect((await fetchMyDiscoverState(me.id)).rangeKm).toBe(25);
   await saveRange(me.id, 10);
@@ -137,7 +136,6 @@ test('the profile view has the shared Modes, prompts and all their tags', async 
     id: ravi.id,
     name: 'Ravi',
     age: expect.any(Number),
-    areaId: 'baner',
     modes: ['friends', 'activities'],
     whyYouMatch: expect.stringContaining('You both'),
     tagIds: [tags.badminton, tags.trekking],
@@ -169,6 +167,19 @@ test('a profile without a shared Mode still opens, naming their Mode', async () 
     modes: [],
     whyYouMatch: "Less than 2 km away. They're here for Networking.",
   });
+});
+
+test('without a fresh location I am told so, see nobody and am not seen', async () => {
+  const away = await createMember('Dev', { at: null });
+  expect((await fetchMyDiscoverState(me.id)).hasLocation).toBe(true);
+  expect(ids(await wholeFeed())).not.toContain(away.id);
+  const { data: located } = await away.client.rpc('has_fresh_location');
+  expect(located).toBe(false);
+  const { data: feed } = await away.client.rpc('discover_feed', {
+    mode_filter: [],
+    page_size: 20,
+  });
+  expect(feed).toEqual([]);
 });
 
 test('after blocking, the Member leaves the feed and their profile closes', async () => {

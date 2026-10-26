@@ -29,8 +29,12 @@ on conflict (id) do nothing;
 insert into public.profiles (id, date_of_birth) values (:'rohan', '1995-03-02'), (:'kabir', '1999-11-20')
 on conflict (id) do nothing;
 update public.profiles set display_name = coalesce(display_name, case when id = :'rohan' then 'Rohan' else 'Kabir' end),
-  area_id = coalesce(area_id, case when id = :'rohan' then 'baner' else 'wakad' end), modes = '{friends,activities}'
+  modes = '{friends,activities}'
 where id in (:'rohan', :'kabir');
+-- Rohan near Baner, Kabir near Wakad.
+insert into public.member_locations (user_id, point)
+values (:'rohan', 'SRID=4326;POINT(73.7868 18.5590)'), (:'kabir', 'SRID=4326;POINT(73.7600 18.5989)')
+on conflict (user_id) do nothing;
 insert into public.profile_prompts (user_id, position, question_id, answer)
 select u, p, (select min(id) from public.prompt_questions), 'Weekend treks and cutting chai'
 from unnest(array[:'rohan', :'kabir']::uuid[]) u, generate_series(1, 2) p

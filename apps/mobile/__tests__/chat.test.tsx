@@ -40,7 +40,6 @@ const conversation = (overrides: Partial<Conversation>): Conversation => ({
   otherId: 'isha',
   otherName: 'Isha',
   otherPhotoId: null,
-  otherAreaId: 'baner',
   mode: 'friends',
   status: 'accepted',
   direction: 'incoming',
@@ -127,8 +126,8 @@ async function openChatWith(name: string) {
     await screen.findByRole('button', { name: new RegExp(`^${name}`) }),
   );
   await screen.findByLabelText('Chat menu');
-  // Let the screen's loads (area names, messages, read state) land before the test goes on.
-  await screen.findByText(name === 'Isha' ? 'Baner' : name);
+  // Let the screen's loads (messages, read state) land before the test goes on.
+  await waitFor(() => expect(chat.fetchChatState).toHaveBeenCalled());
   return app;
 }
 
@@ -250,7 +249,7 @@ describe('a chat', () => {
   test('shows the other Member, the first-meet safety note and the messages, and marks them read', async () => {
     await openChatWith('Isha');
     expect(screen.getByRole('header', { name: 'Isha' })).toBeOnTheScreen();
-    expect(await screen.findByText('Baner')).toBeOnTheScreen();
+    expect(screen.queryByText('Baner')).toBeNull();
     expect(
       screen.getByText(/Meet in public places and tell a friend/),
     ).toBeOnTheScreen();

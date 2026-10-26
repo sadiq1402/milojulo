@@ -45,7 +45,6 @@ const isha: Conversation = {
   otherId: 'isha',
   otherName: 'Isha',
   otherPhotoId: null,
-  otherAreaId: 'baner',
   mode: 'friends',
   status: 'accepted',
   direction: 'incoming',
@@ -161,7 +160,7 @@ async function openChat() {
   await fireEvent.press(await screen.findByRole('tab', { name: /^Inbox/ }));
   await fireEvent.press(screen.getByRole('tab', { name: 'Chats' }));
   await fireEvent.press(await screen.findByRole('button', { name: /^Isha/ }));
-  await screen.findByText('Baner');
+  await screen.findByLabelText('Chat menu');
   // The server's limits and allowance arrive before anything is tapped; Query hands results
   // to the screen on a timer, so let one pass once both are in.
   await waitFor(() => {

@@ -6,16 +6,18 @@ select plan(13);
 create function pg_temp.create_dater(
   member_id uuid, member_modes public.mode[], member_gender public.gender,
   wants public.gender[], age_min integer default 25, age_max integer default 35,
-  max_km integer default 10, member_age integer default 30, member_area text default 'baner'
+  max_km integer default 10, member_age integer default 30,
+  lat double precision default 18.559, lng double precision default 73.787
 ) returns void
 language plpgsql as $$
 begin
   perform pg_temp.create_complete_member(member_id);
   update public.profiles
-  set area_id = member_area, modes = member_modes, gender = member_gender, pref_genders = wants,
+  set modes = member_modes, gender = member_gender, pref_genders = wants,
       pref_age_min = age_min, pref_age_max = age_max, pref_max_km = max_km,
       date_of_birth = (now() at time zone 'Asia/Kolkata')::date - make_interval(years => member_age)
   where id = member_id;
+  perform pg_temp.place(member_id, lat, lng);
   perform pg_temp.act_as_member(member_id);
   perform public.submit_profile();
   reset role;
@@ -50,17 +52,17 @@ select pg_temp.create_dater('00000000-0000-0000-0000-0000000000a5', '{dating}', 
 select pg_temp.create_dater('00000000-0000-0000-0000-0000000000a6', '{dating}', 'man', '{woman}', 31, 40);
 select pg_temp.create_dater('00000000-0000-0000-0000-0000000000a7', '{dating}', 'man', '{woman}',
   30, 30, member_age => 35);
--- Centroids: Baner to Kharadi is about 15.7 km, Baner to Wakad about 5.2 km.
+-- Member Locations: Baner to Kharadi is about 15.7 km, Baner to Wakad about 5.2 km.
 select pg_temp.create_dater('00000000-0000-0000-0000-0000000000a8', '{dating}', 'man', '{woman}',
-  max_km => 50, member_area => 'kharadi');
+  max_km => 50, lat => 18.5515, lng => 73.9348);
 select pg_temp.create_dater('00000000-0000-0000-0000-0000000000a9', '{dating}', 'man', '{woman}',
-  max_km => 5, member_area => 'wakad');
+  max_km => 5, lat => 18.5989, lng => 73.76);
 select pg_temp.create_dater('00000000-0000-0000-0000-00000000a010', '{dating}', 'man', '{woman}',
-  max_km => 6, member_area => 'wakad');
+  max_km => 6, lat => 18.5989, lng => 73.76);
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000a1');
--- Anywhere in Pune, so only the Dating Preferences decide.
-update public.profiles set discover_range_km = null where id = auth.uid();
+-- The widest range, so only the Dating Preferences decide.
+update public.profiles set discover_range_km = 100 where id = auth.uid();
 select ok(pg_temp.can_request('00000000-0000-0000-0000-0000000000a2', 'dating'),
   'two Members who fit each other''s Dating Preferences may request each other in Dating');
 select ok(not pg_temp.can_request('00000000-0000-0000-0000-0000000000a3', 'dating'),
