@@ -741,20 +741,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"service_regions": {
-                  Row: {
-                    "active": boolean,"id": number,"max_lat": number,"max_lng": number,"min_lat": number,"min_lng": number,"name": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "active"?: boolean,"id"?: never,"max_lat": number,"max_lng": number,"min_lat": number,"min_lng": number,"name": string
-                  }
-                  Update: {
-                    "active"?: boolean,"id"?: never,"max_lat"?: number,"max_lng"?: number,"min_lat"?: number,"min_lng"?: number,"name"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
                 },"tags": {
                   Row: {
                     "created_at": string,"id": number,"is_active": boolean,"kind": Database["public"]['Enums']["tag_kind"],"label": string,"slug": string,"sort_order": number
@@ -1136,9 +1122,6 @@ isOneToOne: false
 "record_erasure":
 { Args: { "member": string,"objects_deleted": number,"requested_at": string }; Returns: undefined
                            },
-"region_of":
-{ Args: { "point": unknown }; Returns: number
-                           },
 "register_device_token":
 { Args: { "platform": string,"token": string }; Returns: undefined
                            },
@@ -1147,6 +1130,9 @@ isOneToOne: false
                            },
 "request_data_copy":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"requestable_modes":
+{ Args: { "a": string,"b": string }; Returns: (Database["public"]['Enums']["mode"])[]
                            },
 "respond_activity_request":
 { Args: { "accept": boolean,"request_id": string }; Returns: string
