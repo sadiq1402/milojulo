@@ -50,7 +50,7 @@ select lives_ok(
 
 select results_eq(
   $$ select d.kind::text, d.version from public.consents c join public.consent_documents d on d.id = c.document_id order by 1 $$,
-  $$ values ('data_notice', 'v2'), ('guidelines', 'v1'), ('terms', 'v1') $$,
+  $$ values ('data_notice', 'v3'), ('guidelines', 'v2'), ('terms', 'v2') $$,
   'the Member''s consent to each current document and version is recorded');
 
 reset role;

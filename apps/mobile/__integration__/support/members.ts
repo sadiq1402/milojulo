@@ -48,11 +48,18 @@ export async function createMember(
   );
   const id = (await client.auth.getUser()).data.user!.id;
 
-  const { data: docs } = await client.from('consent_documents').select('id');
+  // Accept only the current version of each document, as the app does.
+  const { data: docs } = await client
+    .from('consent_documents')
+    .select('id, kind, effective_at')
+    .lte('effective_at', new Date().toISOString())
+    .order('effective_at', { ascending: false });
+  const current = new Map<string, string>();
+  docs!.forEach(d => current.has(d.kind) || current.set(d.kind, d.id));
   await check(
     client.rpc('accept_consents', {
       birth_date: '1996-05-04',
-      document_ids: docs!.map(d => d.id),
+      document_ids: [...current.values()],
     }),
   );
 
