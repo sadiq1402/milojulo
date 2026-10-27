@@ -19,7 +19,7 @@ import * as device from '../src/features/location/device';
 import * as photos from '../src/features/photos/api';
 import type { FeedCard, Profile } from '../src/features/discover/api';
 import * as reports from '../src/features/reports/api';
-import { areas, numbered } from '../test/catalog';
+import { numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -118,9 +118,6 @@ const conversation = (overrides: Partial<Conversation>): Conversation => ({
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
-  jest
-    .mocked(catalog.fetchAreas)
-    .mockResolvedValue(areas({ baner: 'Baner', wakad: 'Wakad' }));
   jest
     .mocked(catalog.fetchTags)
     .mockResolvedValue(numbered({ 1: 'Badminton', 2: 'Cafes', 3: 'Trekking' }));

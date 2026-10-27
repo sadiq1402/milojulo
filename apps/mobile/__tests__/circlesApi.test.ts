@@ -20,11 +20,12 @@ const refuse = (message: string) =>
 const circleRow = {
   circle_id: 'c1',
   name: 'Weekend Trekkers',
-  area_id: 'baner',
+  place_name: 'Baner, Pune',
   tag_id: 7,
   description: 'Sunday treks.',
   member_count: 4,
   i_am_member: true,
+  distance_band: '~3 km',
 };
 
 test('browse maps the circle rows and keeps the database order', async () => {
@@ -34,7 +35,8 @@ test('browse maps the circle rows and keeps the database order', async () => {
   expect(circles[0]).toEqual({
     id: 'c1',
     name: 'Weekend Trekkers',
-    areaId: 'baner',
+    placeName: 'Baner, Pune',
+    distanceBand: '~3 km',
     tagId: 7,
     description: 'Sunday treks.',
     memberCount: 4,

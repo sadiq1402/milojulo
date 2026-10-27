@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   fireEvent,
   screen,
@@ -12,7 +13,9 @@ import * as chat from '../src/features/chat/api';
 import * as circles from '../src/features/circles/api';
 import type { Circle, CircleMember } from '../src/features/circles/model';
 import * as discover from '../src/features/discover/api';
-import { areas, numbered } from '../test/catalog';
+import * as location from '../src/features/location/api';
+import * as device from '../src/features/location/device';
+import { numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -22,13 +25,15 @@ jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/circles/api');
 jest.mock('../src/features/discover/api');
+jest.mock('../src/features/location/api');
 
 const me = sessionFor('asha@example.com');
 
 const circle = (overrides: Partial<Circle> = {}): Circle => ({
   id: 'trekkers',
   name: 'Weekend Trekkers',
-  areaId: 'baner',
+  placeName: 'Baner, Pune',
+  distanceBand: '~3 km',
   tagId: 1,
   description: 'Sunday treks around the city.',
   memberCount: 4,
@@ -43,6 +48,7 @@ const badminton = circle({
   description: 'Weekly doubles, all levels.',
   memberCount: 12,
   iAmMember: true,
+  distanceBand: null,
 });
 
 const circleActivity: BoardActivity = {
@@ -71,9 +77,6 @@ const members: CircleMember[] = [
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
-  jest
-    .mocked(catalog.fetchAreas)
-    .mockResolvedValue(areas({ baner: 'Baner', wakad: 'Wakad' }));
   jest
     .mocked(catalog.fetchTags)
     .mockResolvedValue(numbered({ 1: 'Trekking', 2: 'Badminton' }));
@@ -119,16 +122,32 @@ async function openDetail(name: string) {
 }
 
 describe('the Circles list', () => {
-  test('shows each Circle with its Area, interest and member count', async () => {
+  test('shows each Circle with its place, distance, interest and member count', async () => {
     await openCircles();
     const card = within(await cardFor('Weekend Trekkers'));
     expect(card.getByText('Sunday treks around the city.')).toBeOnTheScreen();
-    expect(await card.findByText('Baner')).toBeOnTheScreen();
+    expect(card.getByText('Baner, Pune')).toBeOnTheScreen();
+    expect(card.getByText('~3 km')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', {
+        name: /^Weekend Trekkers, Baner, Pune, ~3 km, /,
+      }),
+    ).toBeOnTheScreen();
     expect(card.getByText('Trekking')).toBeOnTheScreen();
     expect(card.getByText('4 members')).toBeOnTheScreen();
     const joined = within(await cardFor('Baner Badminton'));
     expect(joined.getByText('Joined')).toBeOnTheScreen();
     expect(joined.getByText('12 members')).toBeOnTheScreen();
+    expect(joined.queryByText(/km/)).toBeNull();
+  });
+
+  test('says each Circle gathers people near one place', async () => {
+    await openCircles();
+    expect(
+      await screen.findByText(
+        /^Each Circle gathers people near one place around one interest\./,
+      ),
+    ).toBeOnTheScreen();
   });
 
   test('with no Circles, says so', async () => {
@@ -164,7 +183,8 @@ describe('the Circles list', () => {
 describe('a Circle I have not joined', () => {
   test('offers Join and hides the members list', async () => {
     await openDetail('Weekend Trekkers');
-    expect(await screen.findByText('Baner')).toBeOnTheScreen();
+    expect(screen.getByText('Baner, Pune')).toBeOnTheScreen();
+    expect(screen.getByText('~3 km')).toBeOnTheScreen();
     expect(screen.getByText('Trekking')).toBeOnTheScreen();
     expect(screen.getByText('Sunday treks around the city.')).toBeOnTheScreen();
     expect(
@@ -277,5 +297,81 @@ describe('the Circle label on an Activity card', () => {
     expect(labelled.getByText('Weekend Trekkers')).toBeOnTheScreen();
     const archived = within(await cardFor('Old trek'));
     expect(archived.queryByText('Weekend Trekkers')).toBeNull();
+  });
+});
+
+describe('without a fresh location', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    // Location was put off in the prompt, so the gate lets the Member through.
+    await AsyncStorage.setItem(
+      `location_prompt:${me.user.id}`,
+      JSON.stringify({ answer: 'notNow', notNowCount: 2, offShown: true }),
+    );
+    let permission = false;
+    jest
+      .spyOn(device, 'hasPermission')
+      .mockImplementation(async () => permission);
+    jest.spyOn(device, 'requestPermission').mockImplementation(async () => {
+      permission = true;
+      return true;
+    });
+    jest
+      .spyOn(device, 'currentPosition')
+      .mockResolvedValue({ lat: 18.56, lng: 73.78 });
+    jest.mocked(location.setLocation).mockResolvedValue();
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: false,
+      rangeKm: 10,
+      hasLocation: false,
+    });
+    jest.mocked(circles.fetchCircles).mockResolvedValue([badminton]);
+  });
+
+  afterEach(async () => {
+    jest.restoreAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  test('asks for my location above the Circles I joined', async () => {
+    await openCircles();
+    expect(
+      await screen.findByRole('header', { name: 'Circles need your location' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'MiloJulo shows Circles within the distance you choose, measured from where you are.',
+      ),
+    ).toBeOnTheScreen();
+    expect(await cardFor('Baner Badminton')).toBeOnTheScreen();
+    expect(screen.queryByText('No Circles yet')).toBeNull();
+  });
+
+  test('with nothing joined, shows the location block alone', async () => {
+    jest.mocked(circles.fetchCircles).mockResolvedValue([]);
+    await openCircles();
+    expect(
+      await screen.findByRole('header', { name: 'Circles need your location' }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('No Circles yet')).toBeNull();
+  });
+
+  test('Turn on location sends my location and reloads the Circles', async () => {
+    await openCircles();
+    await cardFor('Baner Badminton');
+    jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+      modes: ['friends'],
+      paused: false,
+      rangeKm: 10,
+      hasLocation: true,
+    });
+    jest.mocked(circles.fetchCircles).mockResolvedValue([badminton, circle()]);
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Turn on location' }),
+    );
+    expect(location.setLocation).toHaveBeenCalledWith(18.56, 73.78);
+    expect(await cardFor('Weekend Trekkers')).toBeOnTheScreen();
+    expect(screen.queryByText('Circles need your location')).toBeNull();
   });
 });

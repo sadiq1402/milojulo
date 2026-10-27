@@ -13,7 +13,7 @@ import {
 } from '../src/features/profileSetup/api';
 import type { ModeFields } from '../src/features/profileSetup/model';
 import { fetchAccountStage } from '../src/features/account/api';
-import { fetchAreas, fetchIndustries } from '../src/features/catalog/api';
+import { fetchIndustries } from '../src/features/catalog/api';
 import { admin } from './support/admin';
 import { signInNewAccount } from './support/signIn';
 
@@ -65,16 +65,6 @@ async function promptQuestionIds(): Promise<number[]> {
 
 test('setup offers the active catalogs in order', async () => {
   await newAccountPastConsent();
-  const areas = await fetchAreas();
-  const labels = areas.map(area => area.label);
-  expect(areas).toHaveLength(55);
-  expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
-  expect(areas.find(area => area.id === 'kothrud')).toMatchObject({
-    label: 'Kothrud',
-    zone: 'central',
-    lat: 18.507,
-    lng: 73.808,
-  });
   expect((await fetchIndustries()).length).toBeGreaterThan(0);
 });
 

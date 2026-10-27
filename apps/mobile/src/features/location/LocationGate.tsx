@@ -15,6 +15,7 @@ import {
 } from '../../screens/location/LocationScreens';
 import { useSession } from '../auth/SessionProvider';
 import { activityKeys } from '../activities/queries';
+import { circleKeys } from '../circles/queries';
 import { discoverKeys } from '../discover/queries';
 import { setLocation } from './api';
 import { currentPosition, hasPermission, requestPermission } from './device';
@@ -36,7 +37,7 @@ const TurnOnContext = createContext<TurnOn>({
   busy: false,
 });
 
-// For a screen that needs location (Discover, the Activity Board): asks for it, or opens the phone Settings once
+// For a screen that needs location (Discover, the Activity Board, Circles): asks for it, or opens the phone Settings once
 // the phone's dialog was refused, then sends it.
 export const useTurnOnLocation = () => useContext(TurnOnContext);
 
@@ -59,8 +60,8 @@ export function LocationGate({ children }: { children: ReactNode }) {
     [userId],
   );
 
-  // Discover and the Activity Board are empty without a fresh point, so they reload once one
-  // is sent.
+  // Discover, the Activity Board and Circles are empty (Circles: joined only) without a fresh
+  // point, so they reload once one is sent.
   const send = useCallback(async () => {
     const { lat, lng } = await currentPosition();
     await setLocation(lat, lng);
@@ -68,6 +69,7 @@ export function LocationGate({ children }: { children: ReactNode }) {
     await Promise.all([
       client.invalidateQueries({ queryKey: discoverKeys.all }),
       client.invalidateQueries({ queryKey: activityKeys.all }),
+      client.invalidateQueries({ queryKey: circleKeys.all }),
     ]);
   }, [save, client]);
 

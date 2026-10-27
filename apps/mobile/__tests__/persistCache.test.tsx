@@ -1,11 +1,9 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
-import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import * as photos from '../src/features/photos/api';
-import { areas } from '../test/catalog';
 import storage from '../test/memoryStorage';
 import { renderApp, sessionFor } from '../test/render';
 
@@ -50,7 +48,6 @@ async function untilSaved(check: (cache: string) => boolean) {
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
-  jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ baner: 'Baner' }));
   jest.mocked(chat.fetchConversations).mockResolvedValue([isha]);
   jest.mocked(photos.fetchPhotoUrls).mockResolvedValue({
     'isha-1': 'https://r2.example/isha-1.jpg?X-Amz-Signature=abc',

@@ -30,7 +30,7 @@ import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import { emptyDraft } from '../test/profileSetup';
 import * as reports from '../src/features/reports/api';
-import { areas, numbered } from '../test/catalog';
+import { numbered } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -143,12 +143,6 @@ const myActivity = detail({
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(profileSetup.fetchDraft).mockResolvedValue(emptyDraft);
-  jest.mocked(catalog.fetchAreas).mockResolvedValue(
-    areas({
-      baner: 'Baner',
-      wakad: 'Wakad',
-    }),
-  );
   jest.mocked(catalog.fetchTags).mockResolvedValue(numbered({}));
   jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(numbered({}));
   jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
