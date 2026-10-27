@@ -72,6 +72,14 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .match{background:var(--selected);color:var(--orchid-dark);border-radius:16px;padding:10px 12px;font-size:13px;line-height:18px;font-weight:500}
 .float{position:absolute;background:#fff;border-radius:20px;padding:10px 14px;box-shadow:0 12px 30px rgba(142,31,96,.16);font-size:13px;line-height:18px;font-weight:600}
 
+.card,.act{transition:background-color .25s ease,translate .25s ease,box-shadow .25s ease}
+.card:hover{background:var(--hov,var(--tint));translate:0 -4px;box-shadow:0 14px 32px rgba(142,31,96,.14)}
+.mode:has(.fr){--hov:#CFF1E5}.mode:has(.ac){--hov:#FFF1B8}.mode:has(.nw){--hov:#D6ECFF}.mode:has(.dt){--hov:#FFE3F1}.mode:has(.cs){--hov:#E3D4FF}.mode:has(.ci){--hov:#FBEAF3}
+.mode:hover .tag{background:#fff}
+.step:hover .num{background:var(--orchid-dark)}
+.safe .card:hover .ico{background:#fff}
+.act:hover{translate:0 -4px;box-shadow:0 14px 32px rgba(43,18,51,.22)}
+@media (prefers-reduced-motion:reduce){.card:hover,.act:hover{translate:none}}
 /* modes */
 .modes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:24px}
 .mode{display:flex;flex-direction:column;gap:8px}
