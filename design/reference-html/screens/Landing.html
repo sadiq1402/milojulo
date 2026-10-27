@@ -35,12 +35,23 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .tag{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:14px;font-size:12px;line-height:16px;font-weight:600;white-space:nowrap}
 .fr{background:#CFF1E5;color:#0B4A3E}.ac{background:#FFF1B8;color:#2B1233}.nw{background:#D6ECFF;color:#1F4E79}.dt{background:#FFE3F1;color:#8E1F60}.cs{background:#E3D4FF;color:#4B2BB8}.ci{background:#FBEAF3;color:#4A2F55}
 
-/* roaming bubbles */
-.bubbles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.bub{position:absolute;left:0;top:0;border-radius:50%;will-change:transform}
-.bub .bub{opacity:.9}
+
+/* two figures walk together into the logo */
+.duo{position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:.16}
+.stage{position:relative;width:min(78vmin,620px);aspect-ratio:434/401}
+.stage img{position:absolute;display:block;max-width:none}
+.duo .l,.duo .r{top:0;width:50%}
+.duo .l{left:0;animation:walk-l 2.4s cubic-bezier(.25,.8,.25,1) both}
+.duo .r{right:0;animation:walk-r 2.4s cubic-bezier(.25,.8,.25,1) both}
+.duo .h{left:35.6%;top:0;width:29.7%;animation:pop .7s 2.2s cubic-bezier(.3,1.6,.5,1) both}
+.duo .m{inset:0;width:100%;opacity:0;animation:reveal 1.2s 2.9s ease both}
+@keyframes walk-l{0%{translate:-70vw 0;rotate:-6deg}55%{rotate:4deg}75%{rotate:-2deg}100%{translate:0 0;rotate:0deg}}
+@keyframes walk-r{0%{translate:70vw 0;rotate:6deg}55%{rotate:-4deg}75%{rotate:2deg}100%{translate:0 0;rotate:0deg}}
+@keyframes pop{0%{scale:0;translate:0 40%;opacity:0}100%{scale:1;translate:0 0;opacity:1}}
+@keyframes reveal{0%{opacity:0;filter:drop-shadow(0 0 0 rgba(204,46,134,0))}50%{opacity:1;filter:drop-shadow(0 0 40px rgba(204,46,134,.9))}100%{opacity:1;filter:drop-shadow(0 0 12px rgba(204,46,134,.4))}}
 .top,main,footer{position:relative;z-index:1}
 .top{z-index:10}
+@media (prefers-reduced-motion:reduce){.duo .l,.duo .r,.duo .h{animation:none}.duo .m{animation:none;opacity:1}}
 
 /* header */
 .top{position:sticky;top:0;z-index:10;background:rgba(255,247,251,.9);backdrop-filter:blur(10px)}
@@ -150,13 +161,12 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 </style>
 </head>
 <body>
-<div class="bubbles" aria-hidden="true">
-  <div class="bub" data-r="210" style="background:var(--tint)"><div class="bub" data-r="36" style="background:var(--butter)"></div></div>
-  <div class="bub" data-r="110" style="background:var(--lilac-soft)"><div class="bub" data-r="22" style="background:var(--lilac)"></div></div>
-  <div class="bub" data-r="70" style="background:var(--butter-soft)"></div>
-  <div class="bub" data-r="64" style="background:#CFF1E5"></div>
-  <div class="bub" data-r="76" style="background:#D6ECFF"></div>
-</div>
+<div class="duo" aria-hidden="true"><div class="stage">
+  <img class="l" src="../../brand/landing/mark-left.png" alt="">
+  <img class="r" src="../../brand/landing/mark-right.png" alt="">
+  <img class="h" src="../../brand/landing/mark-heart.png" alt="">
+  <img class="m" src="../../brand/landing/mark.png" alt="">
+</div></div>
 
 <header class="top">
   <div class="wrap">
@@ -317,69 +327,5 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   </div>
 </footer>
 
-<script>
-(() => {
-  const small = () => innerWidth < 600 ? 0.6 : 1;
-  const rand = (a, b) => a + Math.random() * (b - a);
-  const dir = s => { const a = rand(0, Math.PI * 2); return [Math.cos(a) * s, Math.sin(a) * s]; };
-  const starts = [[0.75, 0.25], [0.15, 0.75], [0.45, 0.6], [0.85, 0.8], [0.3, 0.2]];
-  const items = [...document.querySelectorAll('.bubbles > .bub')].map((el, i) => {
-    const inEl = el.querySelector('.bub');
-    const [vx, vy] = dir(rand(28, 44)), [ivx, ivy] = dir(rand(30, 50));
-    return { el, inEl, R0: +el.dataset.r, r0: inEl ? +inEl.dataset.r : 0,
-      x: innerWidth * starts[i][0], y: innerHeight * starts[i][1], vx, vy, ix: 0, iy: 0, ivx, ivy };
-  });
-  const size = () => items.forEach(b => {
-    b.R = b.R0 * small(); b.r = b.r0 * small();
-    b.el.style.width = b.el.style.height = 2 * b.R + 'px';
-    if (b.inEl) b.inEl.style.width = b.inEl.style.height = 2 * b.r + 'px';
-  });
-  const draw = () => items.forEach(b => {
-    b.el.style.transform = `translate(${b.x - b.R}px,${b.y - b.R}px)`;
-    if (b.inEl) b.inEl.style.transform = `translate(${b.R + b.ix - b.r}px,${b.R + b.iy - b.r}px)`;
-  });
-  size(); draw();
-  addEventListener('resize', size);
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  let last = performance.now();
-  const step = now => {
-    const dt = Math.min((now - last) / 1000, 0.05); last = now;
-    const W = innerWidth, H = innerHeight;
-    for (const b of items) {
-      // outer bubble bounces off the window edges, half of it allowed past them
-      b.x += b.vx * dt; b.y += b.vy * dt;
-      const m = b.R * 0.5;
-      if (b.x < m) { b.x = m; b.vx = Math.abs(b.vx); }
-      if (b.x > W - m) { b.x = W - m; b.vx = -Math.abs(b.vx); }
-      if (b.y < m) { b.y = m; b.vy = Math.abs(b.vy); }
-      if (b.y > H - m) { b.y = H - m; b.vy = -Math.abs(b.vy); }
-      if (!b.inEl) continue;
-      // inner bubble reflects off the outer bubble's rim
-      b.ix += b.ivx * dt; b.iy += b.ivy * dt;
-      const lim = b.R - b.r, d = Math.hypot(b.ix, b.iy);
-      if (d > lim) {
-        const nx = b.ix / d, ny = b.iy / d, dot = b.ivx * nx + b.ivy * ny;
-        if (dot > 0) { b.ivx -= 2 * dot * nx; b.ivy -= 2 * dot * ny; }
-        b.ix = nx * lim; b.iy = ny * lim;
-      }
-    }
-    // outer bubbles collide elastically, mass by area
-    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
-      const a = items[i], c = items[j];
-      const dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy) || 1, min = a.R + c.R;
-      if (d >= min) continue;
-      const nx = dx / d, ny = dy / d, ma = a.R * a.R, mc = c.R * c.R;
-      const push = (min - d) / (ma + mc);
-      a.x -= nx * push * mc; a.y -= ny * push * mc; c.x += nx * push * ma; c.y += ny * push * ma;
-      const rel = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
-      if (rel <= 0) continue;
-      const k = 2 * rel / (ma + mc);
-      a.vx -= k * mc * nx; a.vy -= k * mc * ny; c.vx += k * ma * nx; c.vy += k * ma * ny;
-    }
-    draw(); requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-})();
-</script>
 </body>
 </html>
