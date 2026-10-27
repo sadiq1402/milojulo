@@ -55,7 +55,8 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-size:22px}
 .brand img{height:36px}
 .brand b{color:var(--violet)}
-.top .btn{min-height:44px;padding:0 20px;font-size:15px}
+.top .btn{min-height:44px;padding:0 20px;font-size:15px;white-space:nowrap}
+.hero > .wrap > *{min-width:0}
 
 /* hero */
 .hero{padding:32px 0 64px;position:relative;overflow:hidden}
@@ -78,7 +79,8 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 @media (prefers-reduced-motion:reduce){.stickers .tag,.float{animation:none}}
 
 /* phone */
-.phone{width:300px;margin:0 auto;background:#fff;border-radius:40px;padding:12px;box-shadow:0 24px 60px rgba(142,31,96,.18);position:relative}
+.phonewrap{position:relative;width:100%;max-width:380px;margin:0 auto;padding:12px 0}
+.phone{width:min(300px,100%);margin:0 auto;background:#fff;border-radius:40px;padding:12px;box-shadow:0 24px 60px rgba(142,31,96,.18);position:relative}
 .screen{background:var(--ground);border-radius:30px;overflow:hidden;padding:16px 14px 20px}
 .fcard{background:#fff;border-radius:24px;box-shadow:0 8px 24px rgba(142,31,96,.08);overflow:hidden}
 .photo{aspect-ratio:7/6;background:linear-gradient(160deg,#FFD1E8,#E3D4FF);position:relative;display:flex;align-items:center;justify-content:center;font-size:64px;color:rgba(43,18,51,.42)}
@@ -139,7 +141,22 @@ footer .wrap{display:flex;flex-direction:column;gap:16px}
 footer nav{display:flex;flex-wrap:wrap;gap:4px 20px}
 footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48px;display:inline-flex;align-items:center}
 
+@media (max-width:379px){
+  .top .btn{padding:0 14px;font-size:14px}
+  .brand{font-size:19px}.brand img{height:30px}
+  h1{font-size:34px;line-height:38px}
+  .float{font-size:12px;padding:8px 12px}
+}
+@media (min-width:600px){
+  .form.inline{flex-direction:row;flex-wrap:wrap}
+  .form.inline .inp{flex:1 1 200px}
+  .form.inline .btn{flex:1 1 100%}
+  .steps{grid-template-columns:repeat(3,1fr)}
+  .step{flex-direction:column}
+  .acts{grid-template-columns:repeat(3,1fr)}
+}
 @media (min-width:880px){
+  .form.inline .btn{flex:0 0 auto}
   h1{font-size:56px;line-height:60px}
   h2{font-size:36px;line-height:40px}
   section{padding:96px 0}
@@ -191,7 +208,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
       </div>
     </div>
 
-    <div style="position:relative">
+    <div class="phonewrap">
       <div class="phone" role="img" aria-label="The Discover screen in the MiloJulo app">
         <div class="screen">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
