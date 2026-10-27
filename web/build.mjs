@@ -15,6 +15,15 @@ main{max-width:760px;margin:16px auto 48px;padding:24px 20px;background:var(--ca
 h1{font:700 28px/32px 'Bricolage Grotesque',system-ui,sans-serif;margin:0 0 16px}h2{font:700 20px/24px 'Bricolage Grotesque',system-ui,sans-serif;margin:32px 0 8px}
 h3{font-size:17px;line-height:24px;font-weight:600;margin:24px 0 8px}a{color:var(--orchid)}.table{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px;line-height:20px}th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+label{display:block;font-size:14px;line-height:20px;font-weight:600;margin:16px 0 6px}
+fieldset{border:0;padding:0;margin:0}fieldset label{font-weight:400;font-size:16px;line-height:24px;display:flex;gap:10px;align-items:center;min-height:48px;margin:0}
+input[type=email],input[inputmode],textarea{width:100%;font:inherit;color:var(--ink);border:1px solid #E9CFE0;background:#fff;padding:0 20px;height:52px;border-radius:999px}
+textarea{height:auto;min-height:96px;border-radius:20px;padding:12px 16px}
+input[type=radio],input[type=checkbox]{width:20px;height:20px;accent-color:var(--orchid)}
+.confirm{display:flex;gap:10px;align-items:flex-start;font-weight:400}
+button{display:block;width:100%;height:52px;margin-top:20px;border:0;border-radius:999px;background:var(--orchid);color:#fff;font:700 16px/20px Figtree,system-ui,sans-serif;cursor:pointer}
+button:disabled{opacity:.6}button.danger{background:#C62828}
+.error{color:#C62828;font-weight:600}.small{color:var(--secondary);font-size:14px}
 hr{border:0;border-top:1px solid var(--line);margin:24px 0}footer{max-width:760px;margin:0 auto 32px;padding:0 20px;color:var(--secondary);font-size:14px}`;
 const shell = (title, slug, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} · MiloJulo</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><header><a class="brand" href="/">Milo<span>Julo</span></a><nav>${pages.map(([s, t]) => `<a href="/${s}"${s === slug ? ' aria-current="page"' : ''}>${t}</a>`).join('')}</nav></header><main>${body}</main><footer>MiloJulo · Find your people. · <a href="mailto:support@milojulo.co.in">support@milojulo.co.in</a></footer></body></html>`;
 const r = new marked.Renderer(); const t = r.table.bind(r); r.table = x => `<div class="table">${t(x)}</div>`;
@@ -22,4 +31,5 @@ for (const [slug, title] of pages) {
   const md = readFileSync(`${legal}${slug}.md`, 'utf8').replace(/\]\(\.\/([a-z-]+)\.md(#[^)]*)?\)/g, (_, s, h = '') => `](/${s}${h})`);
   writeFileSync(`${out}/${slug}.html`, shell(title, slug, marked.parse(md, { renderer: r })));
 }
+writeFileSync(`${out}/delete-account.html`, shell('Delete your account', 'delete-account', readFileSync(new URL('./delete-account.html', import.meta.url), 'utf8')));
 writeFileSync(`${out}/index.html`, shell('Find your people', '', `<h1>Find your people.</h1><p>MiloJulo helps you meet people near you who want the same thing you do: friends, activity partners, a date, or people to work with. The app is in beta.</p><ul>${pages.map(([s, t]) => `<li><a href="/${s}">${t}</a></li>`).join('')}</ul>`));
