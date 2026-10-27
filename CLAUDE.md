@@ -1,6 +1,6 @@
 # MiloJulo
 
-Intent-first social discovery app for Pune. Tagline: "Find your people." Users choose what kind of connection they want (friends, activities, dating, serious, casual, networking), see people whose choices overlap, and are nudged toward meeting in real life. V1 is a beta in Pune with open sign-up (decision 27).
+Intent-first social discovery app. Tagline: "Find your people." Users choose what kind of connection they want (friends, activities, dating, serious, casual, networking), see people whose choices overlap, and are nudged toward meeting in real life. V1 is a beta with open sign-up (decision 27; global since decision 66).
 
 Name: "milo-julo" echoes Hindi *milna-julna* (to meet and mingle). The logo is design/brand/logo.png (decision 32), used as is; no other hearts or cupid imagery in the product.
 
