@@ -40,6 +40,14 @@ function expectedWhen(startsAt: string): StartsWhen {
   return day >= saturday && day <= sunday ? 'this_weekend' : 'later';
 }
 
+const court = {
+  name: 'Baner Sports Complex',
+  address: 'Baner Rd, Baner, Pune, Maharashtra',
+  placeId: 'ChIJbaner',
+  lat: 18.5642,
+  lng: 73.7769,
+};
+
 const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   title: 'Badminton doubles',
   type: 'sports',
@@ -47,7 +55,7 @@ const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   endsAt: indiaInstant(addDays(today(), 14), 21 * 60),
   capacity: 4,
   description: 'All levels welcome.',
-  venueDetail: 'Baner Sports Complex, court 2',
+  place: court,
   circleId: null,
   ...overrides,
 });
@@ -106,12 +114,13 @@ test('a posted Activity is on the board with its details, grouped by the databas
   expect(byId(later)).not.toHaveProperty('venueDetail');
 });
 
-test('the host and another Member both see the venue', async () => {
+test('the host and another Member both see the chosen place', async () => {
   const mine = await postActivity(fields({ title: 'Evening ride' }));
   expect(await fetchActivity(mine)).toMatchObject({
     title: 'Evening ride',
     status: 'open',
-    venueDetail: 'Baner Sports Complex, court 2',
+    venue: court,
+    venueDetail: null,
     isLocked: false,
     isMine: true,
   });
@@ -120,7 +129,9 @@ test('the host and another Member both see the venue', async () => {
     title: 'Board games night',
     type: 'games',
     starts_at: fields().startsAt,
-    venue_detail: 'Ravi’s flat, Wakad',
+    place_name: 'Ravi’s flat',
+    place_lat: 18.5987,
+    place_lng: 73.765,
   });
   expect(error).toBeNull();
   expect(await fetchActivity(theirs!)).toMatchObject({
@@ -128,9 +139,30 @@ test('the host and another Member both see the venue', async () => {
     title: 'Board games night',
     distanceBand: '<2 km',
     isMine: false,
-    venueDetail: 'Ravi’s flat, Wakad',
+    venue: {
+      name: 'Ravi’s flat',
+      address: '',
+      placeId: null,
+      lat: 18.5987,
+      lng: 73.765,
+    },
   });
   expect((await fetchBoard()).some(a => a.id === theirs)).toBe(true);
+});
+
+test('posting without a place is refused under Where', async () => {
+  const { error } = await me.client.rpc('post_activity', {
+    title: 'No place',
+    type: 'games',
+    starts_at: fields().startsAt,
+  });
+  expect(error?.message).toBe('an activity needs a place');
+  await expect(
+    postActivity(fields({ place: { ...court, name: ' ' } })),
+  ).rejects.toMatchObject({
+    message: 'Choose a place from the list.',
+    field: 'place',
+  });
 });
 
 test('refusals come back as friendly copy tied to their field', async () => {
@@ -164,20 +196,28 @@ test('refusals come back as friendly copy tied to their field', async () => {
   });
 });
 
-test('the host edits only what changed; an empty venue clears it', async () => {
+test('the host edits only what changed, and can move the Activity to another place', async () => {
   const id = await postActivity(fields({ title: 'Sinhagad trek' }));
   await updateActivity(id, {
     title: ' Sinhagad sunrise trek ',
     capacity: 6,
-    venueDetail: '',
   });
   expect(await fetchActivity(id)).toMatchObject({
     title: 'Sinhagad sunrise trek',
     capacity: 6,
     description: 'All levels welcome.',
     distanceBand: '<2 km',
-    venueDetail: null,
+    venue: court,
   });
+  const base = {
+    name: 'Sinhagad Fort Parking',
+    address: 'Sinhagad, Maharashtra',
+    placeId: 'ChIJsinhagad',
+    lat: 18.3663,
+    lng: 73.7559,
+  };
+  await updateActivity(id, { place: base });
+  expect((await fetchActivity(id))?.venue).toEqual(base);
   await expect(
     updateActivity(id, { endsAt: minutesFromNow(-60) }),
   ).rejects.toMatchObject({ field: 'endsAt' });

@@ -99,7 +99,7 @@ insert into public.messages (id, connection_id, sender_id, type, body, created_a
 select pg_temp.create_visible_member(pg_temp.m('c3'));
 select pg_temp.as_member('c3');
 select pg_temp.keep('c3act', public.post_activity('Evening badminton', 'sports',
-  now() + interval '2 days', null, 4::smallint, 'Bring a racket', null));
+  now() + interval '2 days', null, 4::smallint, 'Bring a racket', null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 reset role;
 select pg_temp.keep('c1photo1', (select id from public.photos where user_id = pg_temp.m('c1') and position = 1));
 select pg_temp.keep('c1photo3', (select id from public.photos where user_id = pg_temp.m('c1') and position = 3));
@@ -199,7 +199,7 @@ reset role;
 select pg_temp.create_visible_member(pg_temp.m('c4'));
 select pg_temp.as_member('c4');
 select pg_temp.keep('c4act', public.post_activity('Late chai', 'food_chai',
-  now() + interval '2 days', null, 4::smallint, 'Chai and talk', null));
+  now() + interval '2 days', null, 4::smallint, 'Chai and talk', null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 reset role;
 select pg_temp.report_as('a1', 'activity', pg_temp.id('c4act'));
 select pg_temp.report_as('b1', 'activity', pg_temp.id('c4act'));
@@ -220,7 +220,7 @@ values (pg_temp.m('c6'), pg_temp.m('c6') || '/3.jpg', 3, now());
 select pg_temp.keep('c6photo3', (select id from public.photos where user_id = pg_temp.m('c6') and position = 3));
 select pg_temp.as_member('c6');
 select pg_temp.keep('c6act', public.post_activity('Sunday trek', 'outdoors',
-  now() + interval '3 days', null, 6::smallint, 'Sinhagad at dawn', null));
+  now() + interval '3 days', null, 6::smallint, 'Sinhagad at dawn', null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 reset role;
 select pg_temp.report_as(r, k, t)
 from unnest(array['a1', 'b1', 'c2']) r,
@@ -273,12 +273,12 @@ select pg_temp.keep('e1b3', public.send_request(pg_temp.m('b3'), 'friends'));
 reset role;
 select pg_temp.as_member('d1');
 select pg_temp.keep('d1act', public.post_activity('Board games', 'games',
-  now() + interval '2 days', null, 6::smallint, 'Catan night', null));
+  now() + interval '2 days', null, 6::smallint, 'Catan night', null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 reset role;
 select pg_temp.as_member('e1');
 select pg_temp.keep('e1req', public.join_activity_request(pg_temp.id('d1act')));
 select pg_temp.keep('e1act', public.post_activity('Cycling', 'sports',
-  now() + interval '2 days', null, 4::smallint, 'Morning ride', null));
+  now() + interval '2 days', null, 4::smallint, 'Morning ride', null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 reset role;
 -- An Activity e1 hosted that has already run, and one of d1's e1 went to; both still 'open' because
 -- the expiry job hasn't run. Postgres fixtures: posting refuses a start in the past.

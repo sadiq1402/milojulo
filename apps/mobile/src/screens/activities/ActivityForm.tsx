@@ -27,9 +27,9 @@ import {
   maxSpots,
   minSpots,
   titleMaxLength,
-  venueMaxLength,
   type ActivityField,
   type ActivityType,
+  type Venue,
 } from '../../features/activities/model';
 import {
   dayLabel,
@@ -54,6 +54,7 @@ import {
   textStyles,
 } from '../../theme';
 import { DatePickerSheet } from './DatePickerSheet';
+import { PlaceField } from './PlaceField';
 import { TimePickerSheet } from './TimePickerSheet';
 
 // An India calendar day and minutes after its midnight.
@@ -68,7 +69,9 @@ export type FormValues = {
   end: DayTime | null;
   capacity: number;
   description: string;
-  venueDetail: string;
+  // Null until a place is chosen. An Activity posted before #248 may have only typedVenue.
+  place: Venue | null;
+  typedVenue: string | null;
 };
 
 export const defaultLength = 120;
@@ -125,7 +128,8 @@ const errorFieldOf: Record<keyof FormValues, ActivityField> = {
   end: 'endsAt',
   capacity: 'capacity',
   description: 'description',
-  venueDetail: 'venueDetail',
+  place: 'place',
+  typedVenue: 'place',
 };
 
 type Section = 'what' | 'when' | 'where' | 'who';
@@ -135,7 +139,7 @@ const sectionOf: Record<ActivityField, Section> = {
   type: 'what',
   startsAt: 'when',
   endsAt: 'when',
-  venueDetail: 'where',
+  place: 'where',
   capacity: 'who',
   description: 'who',
 };
@@ -255,6 +259,9 @@ export function ActivityForm({
     if (!locked && length !== null && length <= 0) {
       found.endsAt = fieldMessages.endsAt;
     }
+    if (!locked && !values.place && !values.typedVenue) {
+      found.place = fieldMessages.place;
+    }
     return found;
   };
 
@@ -273,7 +280,7 @@ export function ActivityForm({
   const summary = title
     ? [
         formatWhen(startsAtOf(values), endsAtOf(values)),
-        values.venueDetail.trim(),
+        values.place?.name ?? values.typedVenue,
         `${values.capacity} ${values.capacity === 1 ? 'spot' : 'spots'}`,
       ]
         .filter(Boolean)
@@ -503,19 +510,18 @@ export function ActivityForm({
       {locked ? null : (
         <Card style={styles.card} {...section('where')}>
           <SectionHeading icon="pin" label="Where" />
-          <View style={styles.field} {...anchor('venueDetail')}>
-            <Input
-              label="Where exactly (optional)"
-              placeholder="e.g. Baner Sports Complex, court 2"
-              value={values.venueDetail}
-              onChangeText={venueDetail => set({ venueDetail })}
-              maxLength={venueMaxLength}
-              error={errors.venueDetail}
+          <View {...anchor('place')}>
+            <PlaceField
+              value={values.place}
+              typedVenue={values.typedVenue}
+              onChange={place => set({ place, typedVenue: null })}
+              error={errors.place}
             />
-            <Text variant="bodySmall" color={colors.secondary}>
-              Everyone who sees the Activity sees this place.
-            </Text>
           </View>
+          <Text variant="bodySmall" color={colors.secondary}>
+            Everyone who sees the Activity sees this place and can open it in
+            Google Maps.
+          </Text>
         </Card>
       )}
       <Card style={styles.card} {...section('who')}>

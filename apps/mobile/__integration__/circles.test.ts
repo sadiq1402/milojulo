@@ -35,7 +35,13 @@ const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   endsAt: indiaInstant(addDays(today(), 14), 10 * 60),
   capacity: 6,
   description: 'Early start.',
-  venueDetail: 'Sinhagad base',
+  place: {
+    name: 'Sinhagad Fort Parking',
+    address: 'Sinhagad, Maharashtra',
+    placeId: 'ChIJsinhagad',
+    lat: 18.3663,
+    lng: 73.7559,
+  },
   circleId: null,
   ...overrides,
 });

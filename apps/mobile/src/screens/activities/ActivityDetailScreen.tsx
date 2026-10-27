@@ -28,6 +28,7 @@ import { cancelActivity } from '../../features/activities/api';
 import {
   activityTypeLabels,
   directionsUrl,
+  placeUrl,
   hostLine,
   spotsLeftLabel,
   type Activity,
@@ -216,7 +217,15 @@ function ActivityBody({
           icon="clock"
           title={formatWhen(activity.startsAt, activity.endsAt)}
         />
-        {activity.venueDetail ? (
+        {activity.venue ? (
+          <Fact
+            icon="pin"
+            title={activity.venue.name}
+            note={activity.venue.address || band}
+            onPress={() => Linking.openURL(placeUrl(activity.venue!))}
+            action={<Directions url={placeUrl(activity.venue)} />}
+          />
+        ) : activity.venueDetail ? (
           <Fact
             icon="pin"
             title={activity.venueDetail}

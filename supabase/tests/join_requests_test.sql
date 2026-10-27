@@ -339,12 +339,12 @@ select throws_ok($$ select public.update_activity(pg_temp.id('trek'), starts_at 
 select throws_ok($$ select public.update_activity(pg_temp.id('trek'), ends_at => now() + interval '2 days 4 hours') $$,
   'P0001', 'this activity is locked: only its description and a higher number of spots can change',
   'a Locked Activity''s end cannot change');
-select throws_ok($$ select public.update_activity(pg_temp.id('trek'), venue_detail => 'Gate 5') $$,
+select throws_ok($$ select public.update_activity(pg_temp.id('trek'), place_name => 'Gate 5', place_lat => 18.56,
+                                                  place_lng => 73.79) $$,
   'P0001', 'this activity is locked: only its description and a higher number of spots can change',
   'a Locked Activity''s venue cannot change');
-select throws_ok($$ select public.update_activity(pg_temp.id('trek'), venue_detail => '') $$,
-  'P0001', 'this activity is locked: only its description and a higher number of spots can change',
-  'a Locked Activity''s venue cannot be cleared');
+select throws_ok($$ select public.update_activity(pg_temp.id('trek'), place_name => '') $$,
+  'P0001', 'an activity needs a place', 'a Locked Activity''s venue cannot be cleared');
 select throws_ok($$ select public.update_activity(pg_temp.id('trek'), title => 'Night trek') $$,
   'P0001', 'this activity is locked: only its description and a higher number of spots can change',
   'a Locked Activity''s title cannot change');
@@ -355,8 +355,7 @@ select lives_ok($$ select public.update_activity(pg_temp.id('trek'), description
   'a Locked Activity''s description can change');
 select lives_ok($$ select public.update_activity(pg_temp.id('trek'), capacity => 5::smallint) $$,
   'a Locked Activity can take more spots');
-select lives_ok($$ select public.update_activity(pg_temp.id('trek'), title => 'trek',
-                                                 venue_detail => 'Gate 2, Sinhagad base') $$,
+select lives_ok($$ select public.update_activity(pg_temp.id('trek'), title => 'trek') $$,
   'restating a Locked Activity''s details is not a change');
 select results_eq($$ select description, capacity, spots_left from public.get_activity(pg_temp.id('trek')) $$,
   $$ values ('Bring water'::varchar, 5::smallint, 3) $$, 'the Locked Activity keeps the allowed changes');

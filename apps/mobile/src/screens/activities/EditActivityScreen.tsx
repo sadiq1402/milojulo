@@ -37,7 +37,8 @@ function valuesOf(activity: Activity): FormValues {
     end: activity.endsAt ? endOf(activity.endsAt) : null,
     capacity: activity.capacity,
     description: activity.description ?? '',
-    venueDetail: activity.venueDetail ?? '',
+    place: activity.venue,
+    typedVenue: activity.venue ? null : activity.venueDetail,
   };
 }
 
@@ -63,8 +64,8 @@ function changesFrom(before: FormValues, after: FormValues): ActivityChanges {
   if (endsAt !== null && !sameInstant(endsAt, endsAtOf(before))) {
     changes.endsAt = endsAt;
   }
-  if (after.venueDetail.trim() !== before.venueDetail) {
-    changes.venueDetail = after.venueDetail;
+  if (after.place && after.place !== before.place) {
+    changes.place = after.place;
   }
   return changes;
 }

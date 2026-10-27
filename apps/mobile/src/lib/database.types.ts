@@ -77,14 +77,14 @@ isOneToOne: false
                   ]
                 },"activity_venues": {
                   Row: {
-                    "activity_id": string,"created_at": string,"venue_detail": string
+                    "activity_id": string,"address": string | null,"created_at": string,"google_place_id": string | null,"name": string | null,"point": unknown,"venue_detail": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "activity_id": string,"created_at"?: string,"venue_detail": string
+                    "activity_id": string,"address"?: string | null,"created_at"?: string,"google_place_id"?: string | null,"name"?: string | null,"point"?: unknown,"venue_detail"?: string | null
                   }
                   Update: {
-                    "activity_id"?: string,"created_at"?: string,"venue_detail"?: string
+                    "activity_id"?: string,"address"?: string | null,"created_at"?: string,"google_place_id"?: string | null,"name"?: string | null,"point"?: unknown,"venue_detail"?: string | null
                   }
                   Relationships: [
                     {
@@ -954,7 +954,7 @@ isOneToOne: false
                            },
 "get_activity":
 { Args: { "activity_id": string }; Returns: {
-              "capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"distance_band": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
+              "capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"distance_band": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_address": string,"venue_detail": string,"venue_lat": number,"venue_lng": number,"venue_name": string,"venue_place_id": string
             }[]
                            },
 "get_circle":
@@ -1085,8 +1085,13 @@ isOneToOne: false
               "object_key": string,"photo_id": string
             }[]
                            },
+"place_search_bias":
+{ Args: { "member_id": string }; Returns: {
+              "lat": number,"lng": number
+            }[]
+                           },
 "post_activity":
-{ Args: { "capacity"?: number,"circle_id"?: string,"description"?: string,"ends_at"?: string,"starts_at": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail"?: string }; Returns: string
+{ Args: { "capacity"?: number,"circle_id"?: string,"description"?: string,"ends_at"?: string,"place_address"?: string,"place_google_id"?: string,"place_lat"?: number,"place_lng"?: number,"place_name"?: string,"starts_at": string,"title": string,"type": Database["public"]['Enums']["activity_type"] }; Returns: string
                            },
 "profile_minimum_gap":
 { Args: { "member_id": string }; Returns: string
@@ -1186,7 +1191,10 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "update_activity":
-{ Args: { "activity_id": string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at"?: string,"title"?: string,"venue_detail"?: string }; Returns: undefined
+{ Args: { "activity_id": string,"capacity"?: number,"description"?: string,"ends_at"?: string,"place_address"?: string,"place_google_id"?: string,"place_lat"?: number,"place_lng"?: number,"place_name"?: string,"starts_at"?: string,"title"?: string }; Returns: undefined
+                           },
+"venue_point":
+{ Args: { "lat": number,"lng": number,"name": string }; Returns: unknown
                            },
 "withdraw_activity_request":
 { Args: { "request_id": string }; Returns: undefined
