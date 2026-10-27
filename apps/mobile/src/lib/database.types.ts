@@ -25,23 +25,17 @@ export type Database = {
           Tables: {
             "activities": {
                   Row: {
-                    "area_id": string,"capacity": number,"circle_id": string | null,"created_at": string,"description": string | null,"ends_at": string | null,"hidden_at": string | null,"host_id": string,"id": string,"starts_at": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"activity_ends_at": string | null
+                    "capacity": number,"circle_id": string | null,"created_at": string,"description": string | null,"ends_at": string | null,"hidden_at": string | null,"host_id": string,"id": string,"place": unknown,"starts_at": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"activity_ends_at": string | null
                   }
                   ComputedFields: "activity_ends_at"
                   Insert: {
-                    "area_id": string,"capacity": number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id": string,"id"?: string,"starts_at": string,"status"?: Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"]
+                    "capacity": number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id": string,"id"?: string,"place": unknown,"starts_at": string,"status"?: Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"]
                   }
                   Update: {
-                    "area_id"?: string,"capacity"?: number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id"?: string,"id"?: string,"starts_at"?: string,"status"?: Database["public"]['Enums']["activity_status"],"title"?: string,"type"?: Database["public"]['Enums']["activity_type"]
+                    "capacity"?: number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id"?: string,"id"?: string,"place"?: unknown,"starts_at"?: string,"status"?: Database["public"]['Enums']["activity_status"],"title"?: string,"type"?: Database["public"]['Enums']["activity_type"]
                   }
                   Relationships: [
                     {
-      foreignKeyName: "activities_area_id_fkey"
-      columns: ["area_id"]
-isOneToOne: false
-      referencedRelation: "areas"
-      referencedColumns: ["id"]
-    },{
       foreignKeyName: "activities_circle_id_fkey"
       columns: ["circle_id"]
 isOneToOne: false
@@ -820,6 +814,9 @@ isOneToOne: false
                            },
 "audit":
 { Args: { "action": string,"note": string,"target_id": string,"target_type": string }; Returns: undefined
+                           },
+"band_from_me":
+{ Args: { "place": unknown }; Returns: string
                            },
 "block_user":
 { Args: { "member_id": string }; Returns: undefined
