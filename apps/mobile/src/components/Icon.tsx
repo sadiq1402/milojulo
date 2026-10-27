@@ -109,6 +109,33 @@ const glyphs = {
       <Path d="M4.5 20c.8-3.6 3.8-5.6 7.5-5.6s6.7 2 7.5 5.6" />
     </>
   ),
+  star: (
+    <Path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" />
+  ),
+  people: (
+    <>
+      <Circle cx="9" cy="8" r="3.5" />
+      <Path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.8c1.7.8 2.7 2.5 3 5.2" />
+    </>
+  ),
+  // Activity types.
+  sports: (
+    <>
+      <Circle cx="12" cy="12" r="8" />
+      <Path d="M5 9c4 1 10 1 14 0M5 15c4-1 10-1 14 0" />
+    </>
+  ),
+  cup: (
+    <Path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M11 3v3" />
+  ),
+  mountain: <Path d="M3 19l6-10 4 6 2-3 6 7z" />,
+  gamepad: (
+    <>
+      <Rect x="3" y="7" width="18" height="11" rx="5" />
+      <Path d="M8 11v3M6.5 12.5h3M15 12h.01M17 14h.01" />
+    </>
+  ),
+  cap: <Path d="M3 8l9-4 9 4-9 4zM7 10v5c3 2 7 2 10 0v-5" />,
 };
 
 export type IconName = keyof typeof glyphs;

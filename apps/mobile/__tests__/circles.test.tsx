@@ -252,7 +252,7 @@ describe('a Circle I belong to', () => {
       await screen.findByText(/Posting to Baner Badminton/),
     ).toBeOnTheScreen();
     await fireEvent.changeText(
-      screen.getByLabelText("What's the plan?"),
+      screen.getByLabelText('The plan'),
       'Evening doubles',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Sports' }));

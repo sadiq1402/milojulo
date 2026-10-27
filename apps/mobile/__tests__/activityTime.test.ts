@@ -3,6 +3,11 @@ import {
   addDays,
   dayLabel,
   dayOptions,
+  durationLabel,
+  from12h,
+  minutesBetween,
+  shiftTime,
+  to12h,
   defaultStart,
   endedWhen,
   formatTime,
@@ -143,4 +148,52 @@ test('when an Activity happens, in India time', () => {
 test('a date reads as day, month and year in India time', () => {
   expect(dayMonthYear('2026-09-10T20:00:00Z')).toBe('11 Sep 2026');
   expect(dayMonthYear('2026-09-10T10:00:00Z')).toBe('10 Sep 2026');
+});
+
+test.each([
+  [30, '30 min'],
+  [60, '1 h'],
+  [90, '1 h 30 min'],
+  [26 * 60 + 5, '26 h 5 min'],
+])('%i minutes last %s', (minutes, label) => {
+  expect(durationLabel(minutes)).toBe(label);
+});
+
+test.each([
+  [0, { hour: 12, minute: 0, pm: false }],
+  [7 * 60 + 5, { hour: 7, minute: 5, pm: false }],
+  [12 * 60 + 30, { hour: 12, minute: 30, pm: true }],
+  [18 * 60 + 7, { hour: 6, minute: 7, pm: true }],
+])(
+  '%i minutes after midnight read as a 12-hour clock and back',
+  (minutes, parts) => {
+    expect(to12h(minutes)).toEqual(parts);
+    expect(from12h(parts.hour, parts.minute, parts.pm)).toBe(minutes);
+  },
+);
+
+test('a time shifted past midnight moves to the next day, and back', () => {
+  expect(shiftTime({ dateKey: '2026-10-31', minutes: 23 * 60 }, 120)).toEqual({
+    dateKey: '2026-11-01',
+    minutes: 60,
+  });
+  expect(shiftTime({ dateKey: '2026-11-01', minutes: 30 }, -60)).toEqual({
+    dateKey: '2026-10-31',
+    minutes: 23 * 60 + 30,
+  });
+});
+
+test('minutes between two India times count across days', () => {
+  expect(
+    minutesBetween(
+      { dateKey: '2026-10-12', minutes: 22 * 60 },
+      { dateKey: '2026-10-13', minutes: 60 },
+    ),
+  ).toBe(180);
+  expect(
+    minutesBetween(
+      { dateKey: '2026-10-12', minutes: 60 },
+      { dateKey: '2026-10-12', minutes: 30 },
+    ),
+  ).toBe(-30);
 });

@@ -22,6 +22,11 @@ import {
 
 type Props = NativeStackScreenProps<MemberParams, 'EditActivity'>;
 
+function endOf(endsAt: string) {
+  const end = indiaParts(new Date(endsAt));
+  return { day: end.dateKey, minutes: end.minutes };
+}
+
 function valuesOf(activity: Activity): FormValues {
   const start = indiaParts(new Date(activity.startsAt));
   return {
@@ -29,12 +34,7 @@ function valuesOf(activity: Activity): FormValues {
     type: activity.type,
     day: start.dateKey,
     minutes: start.minutes,
-    length: activity.endsAt
-      ? Math.round(
-          (Date.parse(activity.endsAt) - Date.parse(activity.startsAt)) /
-            60_000,
-        )
-      : null,
+    end: activity.endsAt ? endOf(activity.endsAt) : null,
     capacity: activity.capacity,
     description: activity.description ?? '',
     venueDetail: activity.venueDetail ?? '',

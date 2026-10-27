@@ -162,6 +162,45 @@ export function formatTime(minutes: number): string {
   return `${text} ${half}`;
 }
 
+// "1 h 30 min", "45 min", "2 h".
+export function durationLabel(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) {
+    return `${rest} min`;
+  }
+  return rest ? `${hours} h ${rest} min` : `${hours} h`;
+}
+
+export function to12h(minutes: number): {
+  hour: number;
+  minute: number;
+  pm: boolean;
+} {
+  const h = Math.floor(minutes / 60);
+  return { hour: h % 12 || 12, minute: minutes % 60, pm: h >= 12 };
+}
+
+export function from12h(hour: number, minute: number, pm: boolean): number {
+  return ((hour % 12) + (pm ? 12 : 0)) * 60 + minute;
+}
+
+export function shiftTime(time: IndiaTime, delta: number): IndiaTime {
+  return indiaParts(
+    new Date(
+      Date.parse(indiaInstant(time.dateKey, time.minutes)) + delta * 60_000,
+    ),
+  );
+}
+
+export function minutesBetween(from: IndiaTime, to: IndiaTime): number {
+  return Math.round(
+    (Date.parse(indiaInstant(to.dateKey, to.minutes)) -
+      Date.parse(indiaInstant(from.dateKey, from.minutes))) /
+      60_000,
+  );
+}
+
 // The first half hour at least an hour from now, or tomorrow evening if that's past the last slot.
 export function defaultStart(now: Date = new Date()): IndiaTime {
   const { dateKey, minutes } = indiaParts(now);
