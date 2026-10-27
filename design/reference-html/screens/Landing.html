@@ -37,7 +37,8 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 
 
 /* two figures come together into the logo as the page scrolls (--p from 0 to 1) */
-.duo{--p:0;--e:calc(1 - (1 - var(--p)) * (1 - var(--p)));position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:.16}
+.duo{--p:0;--e:calc(1 - (1 - var(--p)) * (1 - var(--p)));position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:calc(.16 + .84 * clamp(0, (var(--p) - .85) * 6.67, 1))}
+.meet{min-height:max(80vh,calc(min(78vmin,620px) + 80px));padding:0}
 .stage{position:relative;width:min(78vmin,620px);aspect-ratio:434/401}
 .stage img{position:absolute;display:block;max-width:none}
 .duo .l,.duo .r{top:0;width:50%}
@@ -311,6 +312,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
     </div>
   </div>
 </section>
+<section class="meet" aria-label="MiloJulo logo"></section>
 </main>
 
 <footer>
@@ -325,13 +327,14 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 
 <script>
 (() => {
-  const duo = document.querySelector('.duo');
+  const duo = document.querySelector('.duo'), meet = document.querySelector('.meet');
   let queued = false;
   const update = () => {
     queued = false;
-    const max = document.documentElement.scrollHeight - innerHeight;
-    // they meet a little before the bottom, at the closing waitlist band
-    const p = max > 0 ? Math.min(scrollY / (max * 0.85), 1) : 1;
+    // they meet when the empty .meet band at the end is centred on screen, so nothing covers the logo
+    const r = meet.getBoundingClientRect();
+    const end = scrollY + r.top + r.height / 2 - innerHeight / 2;
+    const p = end > 0 ? Math.min(Math.max(scrollY / end, 0), 1) : 1;
     duo.style.setProperty('--p', p.toFixed(4));
   };
   const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
