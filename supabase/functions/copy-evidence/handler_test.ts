@@ -29,7 +29,7 @@ function fakes(
       deleted.push(k);
     },
   };
-  const handler = createHandler({ serviceRoleKey: key, db, storage, batch: 2, log: () => {} });
+  const handler = createHandler({ callSecret: key, db, storage, batch: 2, log: () => {} });
   const call = (auth = `Bearer ${key}`) =>
     handler(new Request('http://x', { method: 'POST', headers: { Authorization: auth } }));
   return { call, copied, marked, deleted };
@@ -76,7 +76,7 @@ Deno.test('only the service role, only POST', async () => {
   assertEquals((await f.call('Bearer wrong')).status, 401);
   assertEquals(f.copied, []);
   const handler = createHandler({
-    serviceRoleKey: key,
+    callSecret: key,
     db: { pending: async () => [], markCopied: async () => [] },
     storage: { head: async () => null, copy: async () => {}, delete: async () => {} },
   });

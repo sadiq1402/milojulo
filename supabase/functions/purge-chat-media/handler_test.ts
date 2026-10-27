@@ -20,7 +20,7 @@ function fakes(opts: { expired?: ExpiredMedia[]; failing?: string[]; clock?: () 
       deleted.push(k);
     },
   };
-  const handler = createHandler({ serviceRoleKey: key, db, storage, batch: 2, log: () => {}, now: opts.clock });
+  const handler = createHandler({ callSecret: key, db, storage, batch: 2, log: () => {}, now: opts.clock });
   const call = (auth = `Bearer ${key}`) =>
     handler(new Request('http://x', { method: 'POST', headers: { Authorization: auth } }));
   return { call, deleted, marked };
@@ -68,7 +68,7 @@ Deno.test('files that keep failing do not hold back the ones behind them', async
 Deno.test('answers only POST', async () => {
   const f = fakes();
   const handler = createHandler({
-    serviceRoleKey: key,
+    callSecret: key,
     db: { expired: async () => [], markDeleted: async () => {} },
     storage: { delete: async () => {} },
   });

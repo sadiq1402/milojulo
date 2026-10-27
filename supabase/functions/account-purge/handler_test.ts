@@ -35,7 +35,7 @@ function fakes(opts: { failing?: string[]; failingUser?: string; clock?: () => n
       deleted.push(k);
     },
   };
-  const handler = createHandler({ serviceRoleKey: key, db, storage, log: () => {}, now: opts.clock });
+  const handler = createHandler({ callSecret: key, db, storage, log: () => {}, now: opts.clock });
   const call = (auth = `Bearer ${key}`) =>
     handler(new Request('http://x', { method: 'POST', headers: { Authorization: auth } }));
   return { call, events, deleted, users, records };

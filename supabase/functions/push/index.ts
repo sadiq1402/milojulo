@@ -42,7 +42,7 @@ const db: Db = {
 };
 
 Deno.serve(createHandler({
-  serviceRoleKey,
+  callSecret: env('DISPATCH_SECRET'),
   projectId: account.project_id,
   accessToken: createAccessToken(account, fetch),
   db,
