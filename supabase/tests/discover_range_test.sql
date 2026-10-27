@@ -60,16 +60,16 @@ select pg_temp.member(pg_temp.m('06'), 'Dev', '{friends,casual}', 'man', '{woman
 -- m13 chose only Casual; m14 chose only Dating, fitting m06's Dating Preferences but not m01's (none).
 select pg_temp.member(pg_temp.m('13'), 'Kabir', '{casual}', 'man', '{woman}');
 select pg_temp.member(pg_temp.m('14'), 'Tara', '{dating}', 'woman', '{man}');
--- m07's last location (Baner) is 8 days old, so they have no usable location.
+-- m07's last location (Baner) is 31 days old, so they have no usable location.
 select pg_temp.member(pg_temp.m('07'), 'Sana', '{friends}');
 select pg_temp.locate(pg_temp.m('07'), 18.5590, 73.7868);
-update public.member_locations set updated_at = now() - interval '8 days' where user_id = pg_temp.m('07');
+update public.member_locations set updated_at = now() - interval '31 days' where user_id = pg_temp.m('07');
 
 -- Range: one-way, from the viewer's saved range
 select pg_temp.act_as_member(pg_temp.m('01'));
 select ok(pg_temp.in_feed(pg_temp.m('02')), 'a Member inside the viewer''s range appears');
 select ok(not pg_temp.in_feed(pg_temp.m('03')), 'a Member beyond the viewer''s range does not appear');
-select ok(not pg_temp.in_feed(pg_temp.m('07')), 'a Member whose location is older than 7 days does not appear');
+select ok(not pg_temp.in_feed(pg_temp.m('07')), 'a Member whose location is older than 30 days does not appear');
 select pg_temp.act_as_member(pg_temp.m('03'));
 select ok(not pg_temp.in_feed(pg_temp.m('01')), 'the far Member does not see the viewer either at 10 km');
 update public.profiles set discover_range_km = 25 where id = auth.uid();

@@ -1,6 +1,6 @@
 # Member location: one offset point per Member, readable by no one
 
-_Status: accepted (decisions 40 to 42). Built as described (migrations 20261017090000_member_location.sql, 20261018090000_discover_by_distance.sql); the app sends a point on open at most every 3 hours (`refreshEvery` in apps/mobile/src/features/location/prompt.ts)._
+_Status: accepted (decisions 40 to 42); superseded in part by decision 66 (#203): there is no Area fallback and no Service Region. Any point on Earth is taken, and a Member with no point from the last 7 days is not a Discover candidate and sees nobody. The rest (one offset point, no history, readable by no one, bands only) stands. The text below is the original decision. Built as described (migrations 20261017090000_member_location.sql, 20261018090000_discover_by_distance.sql); the app sends a point on open at most every 3 hours (`refreshEvery` in apps/mobile/src/features/location/prompt.ts)._
 
 Founder decision (2026-10-15, #101): Discover filters by distance from the phone, so MiloJulo stores a real location. This reverses the old hard rule 7 ("coarse location cell only, never exact coordinates").
 

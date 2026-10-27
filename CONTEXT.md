@@ -1,6 +1,6 @@
 # MiloJulo
 
-Intent-first social discovery for Pune: people pick the kinds of connection they want, discover others nearby, and are nudged toward meeting in real life.
+Intent-first social discovery: people pick the kinds of connection they want, discover others nearby, and are nudged toward meeting in real life.
 
 ## Language
 
@@ -126,16 +126,12 @@ A pair of Members who both answered, about the same route (the same Activity, or
 _Avoid_: Match, successful meetup
 
 **Circle**:
-A small admin-created community tied to one Area and one interest, which Members join; Activities posted to it remain visible on the main board. An archived Circle disappears and its label drops off upcoming Activities.
+A small admin-created community tied to one place (a place name and a centre point) and one interest, which Members join. Members see the active Circles within their Discover Range, plus any they joined; Activities posted to it remain visible on the main board. An archived Circle disappears and its label drops off upcoming Activities.
 _Avoid_: Group, community (as a noun for this concept)
 
-**Area**:
-One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South), that a Circle belongs to. Members and Activities have no Area and nothing stands in for a missing Member Location (#203); Circles are next to lose it.
-_Avoid_: cell
-
 **Member Location**:
-The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. Taken anywhere in the world, at most one update an hour, no history, deleted with the account (decision 40). Ignored once older than 7 days: a Member without a fresh one is not discoverable and sees an empty Discover until they share their location again (`has_fresh_location()`, #203).
-_Avoid_: Location history, GPS, exact location (in product copy); Service Region, city box, Pune box (retired: there is no region or city boundary any more, #203)
+The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. Taken anywhere in the world, at most one update an hour, no history, deleted with the account (decision 40). Ignored once older than 30 days: a Member without a fresh one is not discoverable and sees an empty Discover until they share their location again (`has_fresh_location()`, #203).
+_Avoid_: Location history, GPS, exact location (in product copy); Service Region, city box, Pune box (retired: there is no region or city boundary any more, #203); Area, neighbourhood, zone (retired: the 55-neighbourhood catalog is gone and nothing stands in for a missing Member Location, #203)
 
 **Discover Range**:
 How far from their Member Location a Member wants Discover to look: 2, 5, 10, 25, 50 or 100 km; 10 km by default. There is no "anywhere". One-way: it limits what that Member sees and whom they can send a Connection Request to (decision 43); the other Member's range matters only for a Dating Mode, which is an Eligible Mode only when the recipient's range includes the sender (decision 45).

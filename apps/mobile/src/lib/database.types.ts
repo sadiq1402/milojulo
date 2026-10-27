@@ -109,20 +109,6 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
-                },"areas": {
-                  Row: {
-                    "center": unknown,"created_at": string,"id": string,"is_active": boolean,"lat": number | null,"lng": number | null,"name": string,"zone": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "center": unknown,"created_at"?: string,"id": string,"is_active"?: boolean,"lat"?: never,"lng"?: never,"name": string,"zone": string
-                  }
-                  Update: {
-                    "center"?: unknown,"created_at"?: string,"id"?: string,"is_active"?: boolean,"lat"?: never,"lng"?: never,"name"?: string,"zone"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
                 },"banned_terms": {
                   Row: {
                     "term": string
@@ -231,23 +217,17 @@ isOneToOne: false
                   ]
                 },"circles": {
                   Row: {
-                    "area_id": string,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"tag_id": number
+                    "center": unknown,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"place_name": string,"tag_id": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "area_id": string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"tag_id": number
+                    "center": unknown,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"place_name": string,"tag_id": number
                   }
                   Update: {
-                    "area_id"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"tag_id"?: number
+                    "center"?: unknown,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"place_name"?: string,"tag_id"?: number
                   }
                   Relationships: [
                     {
-      foreignKeyName: "circles_area_id_fkey"
-      columns: ["area_id"]
-isOneToOne: false
-      referencedRelation: "areas"
-      referencedColumns: ["id"]
-    },{
       foreignKeyName: "circles_tag_id_fkey"
       columns: ["tag_id"]
 isOneToOne: false
@@ -798,10 +778,10 @@ isOneToOne: false
 { Args: { "member_id": string,"reason": string }; Returns: undefined
                            },
 "admin_create_circle":
-{ Args: { "area_id": string,"description": string,"name": string,"tag_id": number }; Returns: string
+{ Args: { "description": string,"lat": number,"lng": number,"name": string,"place_name": string,"tag_id": number }; Returns: string
                            },
 "admin_edit_circle":
-{ Args: { "area_id": string,"circle_id": string,"description": string,"name": string,"tag_id": number }; Returns: undefined
+{ Args: { "circle_id": string,"description": string,"lat": number,"lng": number,"name": string,"place_name": string,"tag_id": number }; Returns: undefined
                            },
 "admin_restore":
 { Args: { "note": string,"target_id": string,"target_type": Database["public"]['Enums']["report_target"] }; Returns: undefined
@@ -823,7 +803,7 @@ isOneToOne: false
                            },
 "browse_circles":
 { Args: Record<PropertyKey, never>; Returns: {
-              "area_id": string,"circle_id": string,"description": string,"i_am_member": boolean,"member_count": number,"name": string,"tag_id": number
+              "circle_id": string,"description": string,"distance_band": string,"i_am_member": boolean,"member_count": number,"name": string,"place_name": string,"tag_id": number
             }[]
                            },
 "can_give_feedback_about":
@@ -879,6 +859,9 @@ isOneToOne: false
 { Args: { "circle_id": string }; Returns: {
               "cover_photo_id": string,"display_name": string,"member_id": string
             }[]
+                           },
+"circle_point":
+{ Args: { "lat": number,"lng": number }; Returns: unknown
                            },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined
@@ -976,7 +959,7 @@ isOneToOne: false
                            },
 "get_circle":
 { Args: { "circle_id": string }; Returns: {
-              "area_id": string,"circle_id": string,"description": string,"i_am_member": boolean,"member_count": number,"name": string,"tag_id": number
+              "circle_id": string,"description": string,"distance_band": string,"i_am_member": boolean,"member_count": number,"name": string,"place_name": string,"tag_id": number
             }[]
                            },
 "get_profile":

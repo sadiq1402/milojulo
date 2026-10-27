@@ -192,9 +192,9 @@ select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000036d1');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000036d2');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000036d3');
 select pg_temp.act_as_admin('00000000-0000-0000-0000-0000000036ad');
-select public.admin_create_circle('Trekkers', 'baner', (select id from public.tags where slug = 'trekking'),
+select public.admin_create_circle('Trekkers', 'Baner, Pune', 18.559, 73.787, (select id from public.tags where slug = 'trekking'),
   'A local circle.') as circle \gset
-select public.admin_create_circle('Cyclists', 'baner', (select id from public.tags where slug = 'cycling'),
+select public.admin_create_circle('Cyclists', 'Baner, Pune', 18.559, 73.787, (select id from public.tags where slug = 'cycling'),
   'A local circle.') as other_circle \gset
 reset role;
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000036d2');

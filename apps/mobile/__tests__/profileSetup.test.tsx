@@ -411,7 +411,7 @@ describe('prompts', () => {
     await header('Two lines that start a conversation');
     expect(screen.getAllByText('0 / 140')).toHaveLength(2);
     await fireEvent.changeText(
-      await screen.findByLabelText('A perfect Sunday in Pune is…'),
+      await screen.findByLabelText('A perfect Sunday is…'),
       'Chai and a trek',
     );
     expect(screen.getByText('15 / 140')).toBeOnTheScreen();
@@ -620,7 +620,7 @@ describe('leaving a step', () => {
     await open();
     await header('Two lines that start a conversation');
     await fireEvent.changeText(
-      await screen.findByLabelText('A perfect Sunday in Pune is…'),
+      await screen.findByLabelText('A perfect Sunday is…'),
       'Chai and a trek',
     );
     await fireEvent.press(button('Back'));
@@ -629,7 +629,7 @@ describe('leaving a step', () => {
     expect(profileSetup.savePrompts).toHaveBeenCalledWith(userId, [prompts[0]]);
     await fireEvent.press(button('Next'));
     expect(
-      await screen.findByLabelText('A perfect Sunday in Pune is…'),
+      await screen.findByLabelText('A perfect Sunday is…'),
     ).toHaveDisplayValue('Chai and a trek');
   });
 
@@ -713,7 +713,7 @@ describe('edge cases', () => {
     mockProfileSetup(basics, twoPhotos);
     jest
       .mocked(catalog.fetchPromptQuestions)
-      .mockResolvedValue(numbered({ 1: 'A perfect Sunday in Pune is…' }));
+      .mockResolvedValue(numbered({ 1: 'A perfect Sunday is…' }));
     await open();
     await header('Two lines that start a conversation');
     expect(

@@ -3,7 +3,7 @@
 Use this to design the database from the screens. docs/12-db-schema.md is the resulting schema and wins where they differ (notably: no pre-approval, Connections carry a Mode). Mockups are in design/reference-html/screens/ (names after the semicolon in the first column). Content in the mockups (names, areas, times) is sample data, not real data. The per-screen table below reflects what the app calls today.
 
 ## Enumerations seen on the screens
-- area: 55 Pune neighbourhoods in five zones (west, pimpri_chinchwad, central, east, south; decision 50), catalog `areas` with a centre point
+- location: the phone's location only (Member Location, decision 40); the original 55-neighbourhood `areas` catalog was dropped in #203 (decision 66)
 - mode: friends, activities, networking, dating, serious, casual
 - availability slot: weekday_evenings, weekends, early_mornings
 - activity type: sports, food_chai, outdoors, games, learning
@@ -26,7 +26,7 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 | Email, Verify code (gettingIn/EmailScreen, OtpScreen; Email, Otp) | auth | auth.users | Supabase Auth email OTP only |
 | Age and consent (gettingIn/AgeConsentScreen; AgeConsent) | `consent_documents` (newest per kind with effective_at ≤ now) | `accept_consents(birth_date, document_ids)`: creates the profile row with date_of_birth, and the three consents | Reject under 18; a refusal leaves no profile. Never expose DOB to others; expose age only |
 | Reconsent (gettingIn/ReconsentScreen; no mockup) | `needs_reconsent()`, `consent_documents` | `accept_consents()` | Shown when a current document is not accepted or was withdrawn; offers Delete account |
-| Location (location/LocationScreens; Location, LocationOff) | none | `set_location(lat, lng)` | Member Location (decision 40); without a point from the last 7 days the Member is not in Discover either way (#203) |
+| Location (location/LocationScreens; Location, LocationOff) | none | `set_location(lat, lng)` | Member Location (decision 40); without a point from the last 30 days the Member is not in Discover either way (#203) |
 | Profile basics (profileSetup/BasicsStep; Setup1Basics) | none | `profiles.display_name` (direct update) | First name only |
 | Photos (profileSetup/PhotosStep; Setup2Photos) | `photos` (own: id, position; not hidden or removed) | media fn (`photo-upload`, `photo-confirm`, `photo-delete`); `move_photo(photo_id, new_position)` | 2 to 4 photos, 4:5; position 1 is the cover |
 | Prompts (profileSetup/PromptsStep; Setup3Prompts) | `prompt_questions`, own `profile_prompts` | `profile_prompts` insert/update (question, answer up to 140 chars) | Two answers required |
@@ -44,8 +44,8 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 | Activity (activities/ActivityDetailScreen; ActivityDetail) | `get_activity(activity_id)` (venue_detail only for host and accepted joiners); host: `activity_join_requests(activity_id)` | `join_activity_request()`, `withdraw_activity_request()`, host: `respond_activity_request()`, `cancel_activity()` | |
 | New activity (activities/CreateActivityScreen; CreateActivity) | `browse_circles()` (circle picker) | `post_activity(title, type, starts_at, ends_at, capacity, description, venue_detail, circle_id)` | Placed at the host's location; refused without a fresh one. Expires automatically (pg_cron `expire-activities`) |
 | Edit activity (activities/EditActivityScreen; no mockup) | `get_activity()` | `update_activity(...)` | Locked once someone is accepted: only description and more spots |
-| Circles (circles/CirclesScreen; Circles) | `browse_circles()`: name, area, tag, description, member_count, i_am_member | none | The app shows member counts |
-| Circle (circles/CircleDetailScreen; CircleDetail) | `get_circle()`, `circle_members_of()`, `circle_activities()` | `join_circle()`, `leave_circle()` | Posting to a circle uses `post_activity(circle_id)`. Members open the member's profile; a request starts a 1:1 chat. No group chat in V1 |
+| Circles (circles/CirclesScreen; Circles) | `browse_circles()`: name, place_name, tag, description, member_count, i_am_member, distance_band (Circles within the Discover Range plus every joined one; joined only and no band without a fresh location, then `has_fresh_location()` shows the no-location block) | none | The app shows member counts |
+| Circle (circles/CircleDetailScreen; CircleDetail) | `get_circle()` (place_name, distance_band), `circle_members_of()`, `circle_activities()` | `join_circle()`, `leave_circle()` | Posting to a circle uses `post_activity(circle_id)`. Members open the member's profile; a request starts a 1:1 chat. No group chat in V1 |
 | After you meet (meetFeedback/MeetFeedbackScreen; MeetFeedback) | own `meetup_feedback` (already answered?) | `submit_meetup_feedback(other_user, did_meet, keep, activity)` | Private; `kept_connections()` (admin) computes mutual keeps |
 | Report (reports/ReportScreen; Report) | target summary from the screen it came from | `report(target_type, target_id, reason, details)`; optional `block_user()` | `report()` snapshots the content into reports.evidence |
 | Safety Centre (me/SafetyCentreScreen; SafetyCentre) | static copy | none | Contact support opens the email app to support@milojulo.co.in |
@@ -62,7 +62,7 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 ## Additions to the 17-table model (found from the screens)
 Historical: the list the schema was designed from. docs/12-db-schema.md ("Changes from docs/03 and docs/11") says what was built instead (for example no approved_at, coarse_cell, is_primary or notification_settings).
 
-New tables: `areas`, `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails; not built, #71). That brings the schema to about 26 tables (docs/12 has the final count: 33).
+New tables: `areas` (dropped in #203), `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails; not built, #71). That brings the schema to about 26 tables (docs/12 has the final count: 33).
 
 New columns:
 - profiles: submitted_at, approved_at, approved_by, paused_at, banned_reason, preferences (age_min, age_max, interested_in, max_distance_km), profession, industry, area_id, coarse_cell.

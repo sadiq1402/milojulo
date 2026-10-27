@@ -33,8 +33,8 @@ The app is in apps/mobile/src/screens; routes are in apps/mobile/src/navigation 
 | | Joined, JoinedWaiting | `Joined` / activities/JoinedScreen | Going and Waiting segments of Activity cards |
 | | CreateActivity | `CreateActivity` / activities/CreateActivityScreen, ActivityForm | What, type, day chips, start time and Spots steppers, length (or no set end), details, where exactly; a Circle pre-selected when posting from one. No Area: the Activity is placed where the host is when posting (#203), so posting needs a fresh location |
 | | (none) | `EditActivity` / activities/EditActivityScreen | The same form for the host; type can't change, and a Locked Activity only allows the description and more Spots |
-| | Circles | `Circles` tab / circles/CirclesScreen, CircleCard | List of Circles with Area and interest tags and a Joined tag. Joining is on the Circle screen, not the list |
-| | CircleDetail | `CircleDetail` / circles/CircleDetailScreen | Description, coming-up Activities, tappable members, Post an activity to this circle, Join Circle / Leave Circle |
+| | Circles | `Circles` tab / circles/CirclesScreen, CircleCard | Circles within the Discover Range plus every active one I joined, each with its place tag (e.g. "Baner, Pune"), distance band, interest tag and a Joined tag. Without a fresh location, "Circles need your location" with Turn on location above the joined Circles only. Joining is on the Circle screen, not the list |
+| | CircleDetail | `CircleDetail` / circles/CircleDetailScreen | Place tag and distance band, description, coming-up Activities, tappable members, Post an activity to this circle, Join Circle / Leave Circle |
 | | MeetFeedback | `MeetFeedback` / meetFeedback/MeetFeedbackScreen | Did you two meet? Keep the connection? Only you see your answer; kept when both say yes. Opened after an Activity or from "We met" in Chat |
 | Safety and account | Report | `Report` / reports/ReportScreen | Reason list, optional details, optional "also block", 24-hour line |
 | | SafetyCentre | `SafetyCentre` / me/SafetyCentreScreen | Before-you-meet tips, how to report, Block someone, Pause my profile, Call 112, Contact support |

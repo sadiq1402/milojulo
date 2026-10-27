@@ -2,7 +2,7 @@
 
 [![Database tests](https://github.com/sadiq1402/milojulo/actions/workflows/database.yml/badge.svg?branch=main)](https://github.com/sadiq1402/milojulo/actions/workflows/database.yml)
 
-Find your people. Intent-first social discovery for Pune.
+Find your people. Intent-first social discovery for meeting people nearby.
 
 ## Status
 The V1 database (#1) and the V1 mobile app screens (#33) are built: sign-up, profile setup, Discover, requests, chat with media, Activities, Circles, the learning loop, reports, blocks and account controls (docs/07-screens.md lists every screen). Android builds go to testers through Firebase App Distribution. Not built yet: the admin web page (apps/admin), the web account deletion page (#98), Turnstile (#70) and the disposable-email blocklist (#71). Open work is in GitHub Issues.

@@ -8,18 +8,18 @@ language sql immutable as $$ select ('00000000-0000-0000-0000-0000000203' || suf
 create function pg_temp.in_feed(member uuid) returns boolean
 language sql as $$ select exists (select 1 from public.discover_feed(null, 50) where user_id = member) $$;
 
--- v01 and n02 sit near Baner with fresh points; s03's point is 8 days old; x04 has none.
+-- v01 and n02 sit near Baner with fresh points; s03's point is 31 days old; x04 has none.
 select pg_temp.create_visible_member(pg_temp.m('01'));
 select pg_temp.create_visible_member(pg_temp.m('02'));
 select pg_temp.create_visible_member(pg_temp.m('03'));
-select pg_temp.place(pg_temp.m('03'), 18.559, 73.787, interval '8 days');
+select pg_temp.place(pg_temp.m('03'), 18.559, 73.787, interval '31 days');
 select pg_temp.create_visible_member(pg_temp.m('04'));
 delete from public.member_locations where user_id = pg_temp.m('04');
 
 -- A fresh location is what makes a Member discoverable
 select pg_temp.act_as_member(pg_temp.m('01'));
 select ok(pg_temp.in_feed(pg_temp.m('02')), 'a Member with a fresh location appears nearby');
-select ok(not pg_temp.in_feed(pg_temp.m('03')), 'a Member whose location is 8 days old does not appear');
+select ok(not pg_temp.in_feed(pg_temp.m('03')), 'a Member whose location is 31 days old does not appear');
 select ok(not pg_temp.in_feed(pg_temp.m('04')), 'a Member with no location does not appear');
 select ok(not exists (select 1 from public.get_profile(pg_temp.m('04'))),
   'a Member with no location cannot be opened either');
@@ -34,7 +34,7 @@ select throws_ok(format('select public.send_request(%L, %L)', pg_temp.m('02'), '
 select pg_temp.act_as_member(pg_temp.m('01'));
 select is(public.has_fresh_location(), true, 'a Member with a fresh location has one');
 select pg_temp.act_as_member(pg_temp.m('03'));
-select is(public.has_fresh_location(), false, 'a location 8 days old is not fresh');
+select is(public.has_fresh_location(), false, 'a location 31 days old is not fresh');
 select pg_temp.act_as_member(pg_temp.m('04'));
 select is(public.has_fresh_location(), false, 'a Member with no location has no fresh one');
 select pg_temp.act_as_anon();

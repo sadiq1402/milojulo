@@ -25,7 +25,7 @@ $$;
 select pg_temp.create_visible_member(pg_temp.m(s)) from unnest(array['a1', 'a2', 'a3', 'b1', 'c1']) s;
 select pg_temp.place(pg_temp.m('a2'), 18.604, 73.787);
 select pg_temp.place(pg_temp.m('a3'), 19.076, 72.878);
-select pg_temp.place(pg_temp.m('c1'), 18.559, 73.787, interval '8 days');
+select pg_temp.place(pg_temp.m('c1'), 18.559, 73.787, interval '31 days');
 
 -- Posting needs a fresh Member Location.
 select pg_temp.act_as_member(pg_temp.m('c1'));
@@ -81,7 +81,7 @@ select results_eq($$ select distance_band from public.joined_activities() $$,
 
 reset role;
 select pg_temp.act_as_admin(pg_temp.m('ad'));
-select pg_temp.keep('circle', public.admin_create_circle('Runners', 'baner',
+select pg_temp.keep('circle', public.admin_create_circle('Runners', 'Baner, Pune', 18.559, 73.787,
   (select id from public.tags where slug = 'badminton'), 'A local circle.'));
 reset role;
 select pg_temp.act_as_member(pg_temp.m('a2'));
@@ -94,7 +94,7 @@ select results_eq($$ select distance_band from public.circle_activities(pg_temp.
   $$ values ('~5 km'::text) $$, 'circle_activities gives the distance band');
 
 reset role;
-select pg_temp.place(pg_temp.m('b1'), 18.559, 73.787, interval '8 days');
+select pg_temp.place(pg_temp.m('b1'), 18.559, 73.787, interval '31 days');
 select pg_temp.act_as_member(pg_temp.m('b1'));
 select results_eq($$ select distance_band from public.get_activity(pg_temp.id('mid early')) $$,
   $$ values (null::text) $$, 'get_activity gives no band without a fresh location');

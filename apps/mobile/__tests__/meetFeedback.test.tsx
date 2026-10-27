@@ -1,12 +1,10 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
-import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
 import * as meetFeedback from '../src/features/meetFeedback/api';
-import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
@@ -43,7 +41,6 @@ beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   jest.mocked(activities.fetchBoard).mockResolvedValue([]);
-  jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ baner: 'Baner' }));
   jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
     modes: ['friends'],
     paused: false,

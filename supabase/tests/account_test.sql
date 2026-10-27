@@ -75,7 +75,7 @@ $$;
 select pg_temp.create_visible_member(pg_temp.m('a1'));
 select pg_temp.create_visible_member(pg_temp.m('b1'));
 select pg_temp.act_as_admin(pg_temp.m('ad'));
-insert into ids select 'circle', public.admin_create_circle('Trekkers', 'baner',
+insert into ids select 'circle', public.admin_create_circle('Trekkers', 'Baner, Pune', 18.559, 73.787,
   (select id from public.tags order by id limit 1), 'A local circle.');
 reset role;
 select pg_temp.as_member('a1');

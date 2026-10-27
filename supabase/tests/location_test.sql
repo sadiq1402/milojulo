@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(31);
+select plan(32);
 
 create function pg_temp.m(suffix text) returns uuid
 language sql immutable as $$ select ('00000000-0000-0000-0000-0000000102' || suffix)::uuid $$;
@@ -91,12 +91,14 @@ reset role;
 select ok(extensions.st_distance(pg_temp.at(pg_temp.m('02')), pg_temp.at(pg_temp.m('01'))) > 1,
   'another Member at the same point is stored with their own offset');
 
--- No location, or one older than 7 days: no point at all (no Area fallback)
+-- No location, or one older than 30 days: no point at all (no Area fallback)
 delete from public.member_locations where user_id = pg_temp.m('03');
 select ok(pg_temp.at(pg_temp.m('03')) is null, 'a Member who never set a location has no point');
 select pg_temp.place(pg_temp.m('03'), 18.559, 73.787);
-select pg_temp.hours_ago(pg_temp.m('02'), 8 * 24);
-select ok(pg_temp.at(pg_temp.m('02')) is null, 'a location older than 7 days is ignored');
+select pg_temp.hours_ago(pg_temp.m('02'), 20 * 24);
+select ok(pg_temp.at(pg_temp.m('02')) is not null, 'a location 20 days old still counts');
+select pg_temp.hours_ago(pg_temp.m('02'), 31 * 24);
+select ok(pg_temp.at(pg_temp.m('02')) is null, 'a location older than 30 days is ignored');
 
 -- Discover range on the profile
 select is((select discover_range_km from public.profiles where id = pg_temp.m('03')), 10::smallint,

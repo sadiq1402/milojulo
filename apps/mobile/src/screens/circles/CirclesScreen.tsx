@@ -11,11 +11,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
-import { useAreaNames, useTagNames } from '../../features/catalog/queries';
+import { useTagNames } from '../../features/catalog/queries';
 import { circleKeys, useCircles } from '../../features/circles/queries';
 import { useMyDiscoverState } from '../../features/discover/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, sizes, spacing } from '../../theme';
+import { NeedsLocation } from '../shared/NeedsLocation';
 import { PausedNotice } from '../shared/PausedNotice';
 import { CircleCard } from './CircleCard';
 
@@ -23,7 +24,8 @@ export function CirclesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MemberParams>>();
   const circles = useCircles();
   const me = useMyDiscoverState(useSession().session!.user.id);
-  const areas = useAreaNames();
+  // Without a fresh location only joined Circles come back, under a prompt to turn it on.
+  const needsLocation = me.data?.hasLocation === false;
   const tags = useTagNames();
 
   return (
@@ -57,15 +59,22 @@ export function CirclesScreen() {
           keyExtractor={circle => circle.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <Text color={colors.secondary}>
-              Each Circle gathers people around one Area and one shared
-              interest. Our team creates them during the beta.
-            </Text>
+            needsLocation ? (
+              <NeedsLocation
+                inline
+                title="Circles need your location"
+                body="MiloJulo shows Circles within the distance you choose, measured from where you are."
+              />
+            ) : (
+              <Text color={colors.secondary}>
+                Each Circle gathers people near one place around one interest.
+                Our team creates them during the beta.
+              </Text>
+            )
           }
           renderItem={({ item }) => (
             <CircleCard
               circle={item}
-              areaName={areas.data?.[item.areaId] ?? ''}
               interest={tags.data?.[item.tagId] ?? ''}
               onPress={() =>
                 navigation.navigate('CircleDetail', { circleId: item.id })
@@ -83,7 +92,7 @@ export function CirclesScreen() {
             />
           }
           ListEmptyComponent={
-            circles.isSuccess ? (
+            needsLocation ? undefined : circles.isSuccess ? (
               <Card>
                 <Text variant="h2">No Circles yet</Text>
                 <Text color={colors.secondary} style={styles.emptyBody}>

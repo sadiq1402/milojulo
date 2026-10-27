@@ -19,7 +19,7 @@ const changedByBlock = [
   ['meet-feedback', 'pending'],
   ['my-blocks'],
 ];
-const untouched = [['areas'], ['my-photos']];
+const untouched = [['tags'], ['my-photos']];
 
 async function setup() {
   // No garbage-collection timers, so Jest can exit.

@@ -15,7 +15,7 @@ import {
   indiaParts,
 } from '../src/features/activities/time';
 import { admin } from './support/admin';
-import { createMember, type TestMember } from './support/members';
+import { baner, createMember, type TestMember } from './support/members';
 
 // These run against local Supabase and only pass once #15's migration is applied (the circles
 // tables and member functions). They are written against the agreed contract and may fail
@@ -23,6 +23,8 @@ import { createMember, type TestMember } from './support/members';
 
 let kabir: TestMember;
 let circleId: string;
+// Where the Members are put by default, so the Circle is well inside the Discover Range.
+const banerPoint = `SRID=4326;POINT(${baner.lng} ${baner.lat})`;
 
 const today = () => indiaParts(new Date()).dateKey;
 
@@ -49,7 +51,8 @@ beforeAll(async () => {
     .from('circles')
     .insert({
       name: 'Weekend Trekkers',
-      area_id: 'baner',
+      place_name: 'Baner, Pune',
+      center: banerPoint,
       tag_id: tag!.id,
       description: 'Sunday treks around the city.',
     })
@@ -63,12 +66,13 @@ beforeAll(async () => {
 
 afterAll(() => signOut());
 
-test('an active Circle is on the browse list, with Area, interest and count', async () => {
+test('an active Circle is on the browse list, with its place, distance and count', async () => {
   const circles = await fetchCircles();
   const mine = circles.find(c => c.id === circleId);
   expect(mine).toMatchObject({
     name: 'Weekend Trekkers',
-    areaId: 'baner',
+    placeName: 'Baner, Pune',
+    distanceBand: '<2 km',
     memberCount: 0,
     iAmMember: false,
   });
@@ -106,7 +110,12 @@ test('posting to the Circle shows on its list and on the main board with the lab
 test('posting to a Circle I have not joined is refused', async () => {
   const { data: other, error } = await admin
     .from('circles')
-    .insert({ name: 'Other Circle', area_id: 'baner', tag_id: 1 })
+    .insert({
+      name: 'Other Circle',
+      place_name: 'Baner, Pune',
+      center: banerPoint,
+      tag_id: 1,
+    })
     .select('id')
     .single();
   if (error) {
