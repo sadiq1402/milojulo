@@ -32,7 +32,8 @@ export function CreateActivityScreen({ navigation, route }: Props) {
       end: endAfter(startsAt, defaultLength),
       capacity: 4,
       description: '',
-      venueDetail: '',
+      place: null,
+      typedVenue: null,
     };
   });
 
@@ -44,7 +45,8 @@ export function CreateActivityScreen({ navigation, route }: Props) {
       endsAt: endsAtOf(values),
       capacity: values.capacity,
       description: values.description,
-      venueDetail: values.venueDetail,
+      // The form refuses to submit without a place.
+      place: values.place!,
       circleId: circle?.circleId ?? null,
     });
     client.invalidateQueries({ queryKey: activityKeys.all });

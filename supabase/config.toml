@@ -412,6 +412,10 @@ verify_jwt = false
 [functions.copy-evidence]
 verify_jwt = false
 
+# Like media, the places function refuses signed-out callers itself.
+[functions.places]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

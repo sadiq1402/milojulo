@@ -110,6 +110,7 @@ test('the detail carries my request and the Activity Connection, or null when I 
     myRequest: { id: 'r1', status: 'accepted' },
     connectionId: 'conn-1',
     venueDetail: 'Court 2',
+    venue: null,
   });
   rpc.mockResolvedValue({
     data: [
@@ -125,5 +126,34 @@ test('the detail carries my request and the Activity Connection, or null when I 
   expect(await fetchActivity('a1')).toMatchObject({
     myRequest: null,
     connectionId: null,
+  });
+});
+
+test('the detail carries the chosen place', async () => {
+  rpc.mockResolvedValue({
+    data: [
+      {
+        id: 'a1',
+        title: 'Badminton',
+        status: 'open',
+        venue_detail: null,
+        venue_name: 'Baner Sports Complex',
+        venue_address: 'Baner Rd, Pune',
+        venue_place_id: 'ChIJbaner',
+        venue_lat: 18.56,
+        venue_lng: 73.78,
+      },
+    ],
+    error: null,
+  });
+  expect(await fetchActivity('a1')).toMatchObject({
+    venueDetail: null,
+    venue: {
+      name: 'Baner Sports Complex',
+      address: 'Baner Rd, Pune',
+      placeId: 'ChIJbaner',
+      lat: 18.56,
+      lng: 73.78,
+    },
   });
 });

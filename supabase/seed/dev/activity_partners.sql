@@ -57,7 +57,8 @@ select set_config('request.jwt.claims', json_build_object('sub', :'rohan', 'role
 set local role authenticated;
 select public.post_activity('Doubles badminton', 'sports', :'tomorrow_seven',
   :'tomorrow_seven'::timestamptz + interval '90 minutes', 3::smallint, 'Bring your own racquet, shuttles on me.',
-  'Court 2, Baner Sports Club')
+  place_name => 'Baner Sports Club', place_address => 'Baner, Pune, Maharashtra', place_lat => 18.5590,
+  place_lng => 73.7868)
 where :'post_rohan'::boolean;
 reset role;
 
@@ -65,7 +66,8 @@ reset role;
 select set_config('request.jwt.claims', json_build_object('sub', :'me', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.post_activity('Chai and board games', 'games', :'tomorrow_six', null, 4::smallint,
-  'Catan and Codenames, beginners welcome.', 'Table by the window, Chai Point Wakad')
+  'Catan and Codenames, beginners welcome.', place_name => 'Chai Point Wakad',
+  place_address => 'Wakad, Pimpri-Chinchwad, Maharashtra', place_lat => 18.5987, place_lng => 73.7650)
 where :'post_mine'::boolean;
 reset role;
 select id as mine from public.activities where host_id = :'me' and title = 'Chai and board games' and status = 'open' \gset

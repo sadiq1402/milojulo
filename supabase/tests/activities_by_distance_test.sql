@@ -29,17 +29,17 @@ select pg_temp.place(pg_temp.m('c1'), 18.559, 73.787, interval '31 days');
 
 -- Posting needs a fresh Member Location.
 select pg_temp.act_as_member(pg_temp.m('c1'));
-select throws_ok($$ select public.post_activity('Run', 'sports', now() + interval '1 day') $$, 'P0001',
+select throws_ok($$ select public.post_activity('Run', 'sports', now() + interval '1 day', place_name => 'Test place', place_lat => 18.56, place_lng => 73.79) $$, 'P0001',
   'turn on location to post an activity', 'a Member without a fresh location cannot post');
 
 select pg_temp.act_as_member(pg_temp.m('a1'));
-select lives_ok($$ select pg_temp.keep('near late', public.post_activity('Near late', 'sports', pg_temp.india(2, 18))) $$,
+select lives_ok($$ select pg_temp.keep('near late', public.post_activity('Near late', 'sports', pg_temp.india(2, 18), place_name => 'Test place', place_lat => 18.56, place_lng => 73.79)) $$,
   'a Member with a fresh location posts');
-select pg_temp.keep('near next', public.post_activity('Near next day', 'sports', pg_temp.india(3, 10)));
+select pg_temp.keep('near next', public.post_activity('Near next day', 'sports', pg_temp.india(3, 10), place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 select pg_temp.act_as_member(pg_temp.m('a2'));
-select pg_temp.keep('mid early', public.post_activity('Mid early', 'sports', pg_temp.india(2, 12)));
+select pg_temp.keep('mid early', public.post_activity('Mid early', 'sports', pg_temp.india(2, 12), place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 select pg_temp.act_as_member(pg_temp.m('a3'));
-select pg_temp.keep('far', public.post_activity('Far', 'sports', pg_temp.india(2, 12)));
+select pg_temp.keep('far', public.post_activity('Far', 'sports', pg_temp.india(2, 12), place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 
 -- The board: within range only, by day, then nearest, then start.
 select pg_temp.act_as_member(pg_temp.m('b1'));
@@ -87,7 +87,7 @@ reset role;
 select pg_temp.act_as_member(pg_temp.m('a2'));
 select public.join_circle(pg_temp.id('circle'));
 select pg_temp.keep('circle act', public.post_activity('Circle run', 'sports', pg_temp.india(4, 8),
-  circle_id => pg_temp.id('circle')));
+  circle_id => pg_temp.id('circle'), place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 select pg_temp.act_as_member(pg_temp.m('b1'));
 select public.join_circle(pg_temp.id('circle'));
 select results_eq($$ select distance_band from public.circle_activities(pg_temp.id('circle')) $$,
@@ -106,7 +106,7 @@ select results_eq($$ select id, distance_band from public.circle_activities(pg_t
   'circle_activities still lists the Activity, without a band');
 
 select pg_temp.act_as_anon();
-select throws_ok($$ select public.post_activity('Run', 'sports', now() + interval '1 day') $$, '42501', null,
+select throws_ok($$ select public.post_activity('Run', 'sports', now() + interval '1 day', place_name => 'Test place', place_lat => 18.56, place_lng => 73.79) $$, '42501', null,
   'a signed-out visitor cannot post');
 
 select * from finish();

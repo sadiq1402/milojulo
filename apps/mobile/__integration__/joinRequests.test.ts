@@ -35,7 +35,13 @@ const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   endsAt: null,
   capacity: 4,
   description: '',
-  venueDetail: 'Baner Sports Complex, court 2',
+  place: {
+    name: 'Baner Sports Complex',
+    address: 'Baner Rd, Pune',
+    placeId: 'ChIJbaner',
+    lat: 18.5642,
+    lng: 73.7769,
+  },
   circleId: null,
   ...overrides,
 });
@@ -50,7 +56,9 @@ async function postAs(
     type: 'games',
     starts_at: startsAt,
     capacity: overrides.capacity ?? 4,
-    venue_detail: 'Wakad social, upstairs',
+    place_name: 'Wakad Social',
+    place_lat: 18.5987,
+    place_lng: 73.765,
   });
   if (error) {
     throw error;
@@ -99,7 +107,7 @@ test('asking to join shows the request as pending on the Activity and in both re
   expect(await fetchActivity(id)).toMatchObject({
     myRequest: { id: requestId, status: 'requested' },
     connectionId: null,
-    venueDetail: 'Wakad social, upstairs',
+    venue: expect.objectContaining({ name: 'Wakad Social' }),
   });
   expect(
     (await fetchMyJoinRequests()).find(r => r.id === requestId),
@@ -168,14 +176,14 @@ test('an accepted joiner gets the chat; withdrawing ends it for good', async () 
   expect(await fetchActivity(id)).toMatchObject({
     myRequest: { id: requestId, status: 'accepted' },
     connectionId,
-    venueDetail: 'Wakad social, upstairs',
+    venue: expect.objectContaining({ name: 'Wakad Social' }),
   });
 
   await withdrawJoinRequest(requestId);
   expect(await fetchActivity(id)).toMatchObject({
     myRequest: { id: requestId, status: 'withdrawn' },
     connectionId: null,
-    venueDetail: 'Wakad social, upstairs',
+    venue: expect.objectContaining({ name: 'Wakad Social' }),
   });
   // The Activity Connection stays.
   expect(
@@ -218,6 +226,9 @@ test('refusals come back as friendly copy', async () => {
     title: 'Called off',
     type: 'games',
     starts_at: startsAt,
+    place_name: 'Wakad Social',
+    place_lat: 18.5987,
+    place_lng: 73.765,
   });
   await ravi.client.rpc('cancel_activity', { activity_id: cancelled! });
   await expect(askToJoin(cancelled!)).rejects.toThrow(

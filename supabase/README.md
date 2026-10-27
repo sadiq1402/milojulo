@@ -21,7 +21,7 @@ Uploads go to a staging key (`uploads/<member id>/<photo id>.jpg`, or `uploads/c
 
 Secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (template: `functions/.env.example`). `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` come from Supabase.
 
-Tests (no network or database needed). CI runs these in every function folder (`_shared`, `media`, `push`, `account-purge`, `purge-chat-media`) as `function-tests` in `.github/workflows/functions.yml`:
+Tests (no network or database needed). CI runs these in every function folder (`_shared`, `media`, `push`, `account-purge`, `purge-chat-media`, `copy-evidence`, `places`) as `function-tests` in `.github/workflows/functions.yml`:
 
 ```bash
 cd supabase/functions/media    # or _shared (SigV4 against AWS's published examples), push, account-purge, purge-chat-media
@@ -45,6 +45,10 @@ npx supabase functions deploy media --project-ref <ref>
 ```
 
 `config.toml` sets `verify_jwt = false` for all four functions. `media` verifies the caller itself (Auth `getUser`), so a signed-out request gets its own `{ "error": "sign in first" }`; `push`, `account-purge` and `purge-chat-media` accept only `Authorization: Bearer <service role key>` and answer `service role only` to anything else.
+
+### `places` (venue search, #248)
+
+Searches Google Places API (New) for an Activity's venue: `autocomplete` (`input`, `sessionToken`) returns suggestions biased to the caller's fresh Member Location (read through `place_search_bias()`, service role only, never sent back), and `details` (`placeId`, `sessionToken`) returns the place's name, address and point. Signed-out callers get `sign in first` (`verify_jwt = false`, like `media`). Secret: `GOOGLE_PLACES_KEY`, a key restricted to Places API (New); for a local `supabase functions serve`, put it in `functions/.env`, never in git.
 
 ## Scheduled jobs (pg_cron)
 

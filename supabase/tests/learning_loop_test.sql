@@ -23,7 +23,7 @@ declare
   req uuid;
 begin
   perform pg_temp.as_member(host);
-  act := public.post_activity(key, 'sports', now() + interval '1 day', capacity => 10::smallint);
+  act := public.post_activity(key, 'sports', now() + interval '1 day', capacity => 10::smallint, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79);
   insert into ids values (key, act);
   foreach j in array joiners loop
     perform pg_temp.as_member(j);

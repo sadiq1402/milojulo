@@ -458,6 +458,7 @@ describe('Inbox Join Requests', () => {
       circleName: null,
       hostPhotoId: null,
       status: 'open',
+      venue: null,
       venueDetail: null,
       isLocked: false,
       myRequest: null,

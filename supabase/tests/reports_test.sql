@@ -90,10 +90,10 @@ select pg_temp.keep('b1photo', (select id from public.photos where user_id = pg_
 -- c5 hosts an Activity; b1 hosts one too.
 select pg_temp.as_member('c5');
 select pg_temp.keep('c5act', public.post_activity('Evening badminton', 'sports',
-  now() + interval '2 days', null, 4::smallint, 'Bring a racket', null));
+  now() + interval '2 days', null, 4::smallint, 'Bring a racket', null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 select pg_temp.as_member('b1');
 select pg_temp.keep('b1act', public.post_activity('Chai walk', 'food_chai',
-  now() + interval '2 days', null, 4::smallint, null, null));
+  now() + interval '2 days', null, 4::smallint, null, null, place_name => 'Test place', place_lat => 18.56, place_lng => 73.79));
 reset role;
 
 -- b1 and c6 chat; b2 and c6 chat (b1 is outside the second).

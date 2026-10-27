@@ -14,6 +14,7 @@ import {
   type JoinedActivity,
   type MyJoinRequest,
   type StartsWhen,
+  type Venue,
 } from './model';
 
 type Functions = Database['public']['Functions'];
@@ -69,6 +70,7 @@ const refusals: Record<string, { message: string; field?: ActivityField }> = {
   'join the circle to post to it': {
     message: 'Join this Circle before posting an Activity to it.',
   },
+  'an activity needs a place': { message: fieldMessages.place, field: 'place' },
   'turn on location to post an activity': {
     message:
       "Turn on location to post an activity: it's placed where you are, so people nearby can find it.",
@@ -148,6 +150,16 @@ export async function fetchActivity(
   return {
     ...toBoardActivity(row),
     status: row.status,
+    venue:
+      row.venue_name && row.venue_lat != null && row.venue_lng != null
+        ? {
+            name: row.venue_name,
+            address: row.venue_address ?? '',
+            placeId: row.venue_place_id ?? null,
+            lat: row.venue_lat,
+            lng: row.venue_lng,
+          }
+        : null,
     venueDetail: row.venue_detail ?? null,
     isLocked: row.is_locked,
     myRequest: row.my_request_id
@@ -159,6 +171,14 @@ export async function fetchActivity(
 
 const blankToUndefined = (text: string) => text.trim() || undefined;
 
+const placeArgs = (place: Venue) => ({
+  place_name: place.name,
+  place_address: blankToUndefined(place.address),
+  place_google_id: place.placeId ?? undefined,
+  place_lat: place.lat,
+  place_lng: place.lng,
+});
+
 export async function postActivity(fields: ActivityFields): Promise<string> {
   const { data, error } = await supabase.rpc('post_activity', {
     title: fields.title.trim(),
@@ -167,8 +187,8 @@ export async function postActivity(fields: ActivityFields): Promise<string> {
     ends_at: fields.endsAt ?? undefined,
     capacity: fields.capacity,
     description: blankToUndefined(fields.description),
-    venue_detail: blankToUndefined(fields.venueDetail),
     circle_id: fields.circleId ?? undefined,
+    ...placeArgs(fields.place),
   });
   if (error) {
     throw refusal(error);
@@ -176,7 +196,7 @@ export async function postActivity(fields: ActivityFields): Promise<string> {
   return data;
 }
 
-// Fields left out stay as they are; an empty description or venue clears it.
+// Fields left out stay as they are; an empty description clears it.
 export async function updateActivity(
   activityId: string,
   changes: ActivityChanges,
@@ -188,7 +208,7 @@ export async function updateActivity(
     capacity: changes.capacity,
     starts_at: changes.startsAt,
     ends_at: changes.endsAt ?? undefined,
-    venue_detail: changes.venueDetail?.trim(),
+    ...(changes.place ? placeArgs(changes.place) : {}),
   });
   if (error) {
     throw refusal(error);

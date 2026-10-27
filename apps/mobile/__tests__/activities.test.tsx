@@ -9,11 +9,13 @@ import {
 import { Linking, ScrollView } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
+import * as places from '../src/features/activities/places';
 import {
   ActivityError,
   type Activity,
   type BoardListing,
   type JoinRequest,
+  type Venue,
 } from '../src/features/activities/model';
 import {
   addDays,
@@ -35,6 +37,12 @@ import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/activities/api');
+// Keep the real highlighting; only the calls to the places function are stood in.
+jest.mock('../src/features/activities/places', () => ({
+  ...jest.requireActual('../src/features/activities/places'),
+  searchPlaces: jest.fn(),
+  placeDetails: jest.fn(),
+}));
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
@@ -123,9 +131,18 @@ const trek = boardActivity({
   isMine: true,
 });
 
+const sportsComplex: Venue = {
+  name: 'Baner Sports Complex',
+  address: 'Baner Rd, Baner, Pune, Maharashtra',
+  placeId: 'ChIJbaner',
+  lat: 18.5642,
+  lng: 73.7769,
+};
+
 const detail = (overrides: Partial<Activity> = {}): Activity => ({
   ...badminton,
   status: 'open',
+  venue: null,
   venueDetail: null,
   isLocked: false,
   myRequest: null,
@@ -162,6 +179,21 @@ beforeEach(() => {
       activityId === trek.id ? myActivity : detail(),
     );
   jest.mocked(activities.postActivity).mockResolvedValue('new-activity');
+  jest.mocked(places.searchPlaces).mockResolvedValue([
+    {
+      placeId: 'ChIJbaner',
+      mainText: 'Baner Sports Complex',
+      secondaryText: 'Baner Rd, Baner, Pune',
+      matches: [{ start: 0, end: 5 }],
+    },
+    {
+      placeId: 'ChIJsus',
+      mainText: 'Sus Road Nets',
+      secondaryText: 'Sus Rd, Pashan, Pune',
+      matches: [],
+    },
+  ]);
+  jest.mocked(places.placeDetails).mockResolvedValue(sportsComplex);
   jest.mocked(activities.updateActivity).mockResolvedValue();
   jest.mocked(activities.cancelActivity).mockResolvedValue();
   jest.mocked(activities.fetchJoinRequests).mockResolvedValue([]);
@@ -181,6 +213,22 @@ async function openDetail(title: string) {
   await openBoard();
   await fireEvent.press(await cardFor(title));
   await screen.findByRole('header', { name: title });
+}
+
+// Searches the Where card and picks the first suggestion, Baner Sports Complex.
+async function choosePlace() {
+  await fireEvent.changeText(
+    screen.getByLabelText('Search for the place'),
+    'baner',
+  );
+  await fireEvent.press(
+    await screen.findByRole('button', {
+      name: 'Baner Sports Complex, Baner Rd, Baner, Pune',
+    }),
+  );
+  await screen.findByRole('button', {
+    name: 'Change the place: Baner Sports Complex',
+  });
 }
 
 async function openCreate() {
@@ -490,10 +538,7 @@ describe('posting an Activity', () => {
       screen.getByLabelText('Details (optional)'),
       'Bring lights.',
     );
-    await fireEvent.changeText(
-      screen.getByLabelText('Where exactly (optional)'),
-      'Wakad bridge',
-    );
+    await choosePlace();
     await fireEvent.press(
       screen.getByRole('button', { name: 'Post Activity' }),
     );
@@ -507,10 +552,114 @@ describe('posting an Activity', () => {
       endsAt: indiaInstant(tomorrow, minutes + 120),
       capacity: 5,
       description: 'Bring lights.',
-      venueDetail: 'Wakad bridge',
+      place: sportsComplex,
       circleId: null,
     });
     expect(activities.fetchActivity).toHaveBeenCalledWith('new-activity');
+  });
+
+  test('the Where card searches Google through the places function and shows the matches', async () => {
+    await openCreate();
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'b',
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'baner',
+    );
+    expect(await screen.findByText('Results from Google')).toBeOnTheScreen();
+    // Debounced: only the settled text is searched, and once.
+    expect(places.searchPlaces).toHaveBeenCalledTimes(1);
+    const [input, token] = jest.mocked(places.searchPlaces).mock.calls[0];
+    expect(input).toBe('baner');
+    const row = within(
+      screen.getByRole('button', {
+        name: 'Baner Sports Complex, Baner Rd, Baner, Pune',
+      }),
+    );
+    expect(row.getByText('Baner')).toBeOnTheScreen();
+    expect(row.getByText('Baner Rd, Baner, Pune')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', {
+        name: 'Sus Road Nets, Sus Rd, Pashan, Pune',
+      }),
+    ).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole('button', {
+        name: 'Baner Sports Complex, Baner Rd, Baner, Pune',
+      }),
+    );
+    // The pick uses the same session token as the typing.
+    expect(places.placeDetails).toHaveBeenCalledWith('ChIJbaner', token);
+    expect(
+      await screen.findByText('Baner Rd, Baner, Pune, Maharashtra'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Results from Google')).toBeNull();
+  });
+
+  test('Change searches again with a new session', async () => {
+    await openCreate();
+    await choosePlace();
+    const first = jest.mocked(places.searchPlaces).mock.calls[0][1];
+    await fireEvent.press(
+      screen.getByRole('button', {
+        name: 'Change the place: Baner Sports Complex',
+      }),
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'sus road',
+    );
+    await screen.findByText('Results from Google');
+    const [input, second] = jest.mocked(places.searchPlaces).mock.calls[1];
+    expect(input).toBe('sus road');
+    expect(second).not.toBe(first);
+  });
+
+  test('a search that fails says so under Where', async () => {
+    jest
+      .mocked(places.searchPlaces)
+      .mockRejectedValue(new Error(places.placeSearchFailed));
+    await openCreate();
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'baner',
+    );
+    expect(await screen.findByText(places.placeSearchFailed)).toBeOnTheScreen();
+  });
+
+  test('typed text alone is not a place', async () => {
+    await openCreate();
+    await nameAndType(false);
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'my place',
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(
+      await screen.findByText('Choose a place from the list.'),
+    ).toBeOnTheScreen();
+    expect(activities.postActivity).not.toHaveBeenCalled();
+  });
+
+  test('a refusal for a missing place shows under Where', async () => {
+    jest
+      .mocked(activities.postActivity)
+      .mockRejectedValue(
+        new ActivityError('Choose a place from the list.', 'place'),
+      );
+    await openCreate();
+    await nameAndType();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(
+      await screen.findByText('Choose a place from the list.'),
+    ).toBeOnTheScreen();
   });
 
   test('a date beyond the next week is picked from a calendar', async () => {
@@ -520,6 +669,7 @@ describe('posting an Activity', () => {
       'Sinhagad trek',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Outdoors' }));
+    await choosePlace();
     await fireEvent.press(screen.getByRole('button', { name: 'Pick a date' }));
     expect(screen.getByText('October 2026')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Next month' }));
@@ -568,9 +718,12 @@ describe('posting an Activity', () => {
     );
   }
 
-  async function nameAndType() {
+  async function nameAndType(withPlace = true) {
     await fireEvent.changeText(screen.getByLabelText('The plan'), 'Chai walk');
     await fireEvent.press(screen.getByRole('button', { name: 'Games' }));
+    if (withPlace) {
+      await choosePlace();
+    }
   }
 
   test('a new Activity ends two hours after it starts', async () => {
@@ -676,14 +829,10 @@ describe('posting an Activity', () => {
     await openCreate();
     expect(screen.getByText('Add the plan to post')).toBeOnTheScreen();
     await nameAndType();
-    await fireEvent.changeText(
-      screen.getByLabelText('Where exactly (optional)'),
-      'Vetal hill',
-    );
     await fireEvent.press(screen.getByRole('button', { name: 'More spots' }));
     expect(
       screen.getByText(
-        'Chai walk · Today, 11:00 am to 1:00 pm · Vetal hill · 5 spots',
+        'Chai walk · Today, 11:00 am to 1:00 pm · Baner Sports Complex · 5 spots',
       ),
     ).toBeOnTheScreen();
   });
@@ -708,6 +857,7 @@ describe('posting an Activity', () => {
       await screen.findByText('Give your Activity a title.'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Pick a type.')).toBeOnTheScreen();
+    expect(screen.getByText('Choose a place from the list.')).toBeOnTheScreen();
     expect(activities.postActivity).not.toHaveBeenCalled();
   });
 
@@ -731,6 +881,7 @@ describe('posting an Activity', () => {
     await fireEvent.changeText(screen.getByLabelText('The plan'), 'Chai walk');
     await fireEvent.press(screen.getByRole('button', { name: 'Games' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
+    await choosePlace();
     await fireEvent.press(
       screen.getByRole('button', { name: 'Post Activity' }),
     );
@@ -1036,6 +1187,39 @@ describe('joining an Activity', () => {
     );
   });
 
+  test('a chosen place shows its name and address, and opens that place in Google Maps', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    jest
+      .mocked(activities.fetchActivity)
+      .mockResolvedValue(detail({ venue: sportsComplex }));
+    await openDetail('Badminton doubles');
+    expect(
+      screen.getByText('Baner Rd, Baner, Pune, Maharashtra'),
+    ).toBeOnTheScreen();
+    const url =
+      'https://www.google.com/maps/search/?api=1&query=Baner%20Sports%20Complex&query_place_id=ChIJbaner';
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Baner Sports Complex' }),
+    );
+    expect(openURL).toHaveBeenLastCalledWith(url);
+    await fireEvent.press(screen.getByRole('button', { name: 'Directions' }));
+    expect(openURL).toHaveBeenLastCalledWith(url);
+  });
+
+  test('a place with no Google place id opens by its point', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    jest.mocked(activities.fetchActivity).mockResolvedValue(
+      detail({
+        venue: { ...sportsComplex, name: 'By the lake', placeId: null },
+      }),
+    );
+    await openDetail('Badminton doubles');
+    await fireEvent.press(screen.getByRole('button', { name: 'Directions' }));
+    expect(openURL).toHaveBeenCalledWith(
+      'https://www.google.com/maps/search/?api=1&query=18.5642,73.7769',
+    );
+  });
+
   test('an accepted joiner can withdraw before the start, after confirming', async () => {
     jest.mocked(activities.fetchActivity).mockResolvedValue(accepted);
     jest.mocked(activities.withdrawJoinRequest).mockImplementation(async () => {
@@ -1315,27 +1499,62 @@ describe('editing an Activity', () => {
     expect(screen.getByText('Lasts 4 h.')).toBeOnTheScreen();
     // The database keeps a set end, so an edit can't remove it.
     expect(screen.queryByRole('button', { name: 'No set end' })).toBeNull();
-    expect(screen.getByLabelText('Where exactly (optional)').props.value).toBe(
-      'Sinhagad base, near the parking',
-    );
+    // An older Activity's typed venue shows as its place until another is chosen.
+    expect(
+      screen.getByText('Sinhagad base, near the parking'),
+    ).toBeOnTheScreen();
     await fireEvent.changeText(
       screen.getByLabelText('The plan'),
       'Sinhagad sunrise trek',
-    );
-    await fireEvent.changeText(
-      screen.getByLabelText('Where exactly (optional)'),
-      '',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'More spots' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
     expect(activities.updateActivity).toHaveBeenCalledWith('trek', {
       title: 'Sinhagad sunrise trek',
       capacity: 5,
-      venueDetail: '',
     });
     expect(
       await screen.findByRole('header', { name: 'Sinhagad trek' }),
     ).toBeOnTheScreen();
+  });
+
+  test('the host changes the place', async () => {
+    jest.mocked(activities.fetchActivity).mockResolvedValue({
+      ...myActivity,
+      venue: sportsComplex,
+      venueDetail: null,
+    });
+    await openEdit();
+    expect(
+      screen.getByText('Baner Rd, Baner, Pune, Maharashtra'),
+    ).toBeOnTheScreen();
+    const pashan: Venue = {
+      name: 'Pashan Lake',
+      address: 'Pashan, Pune',
+      placeId: 'ChIJpashan',
+      lat: 18.53,
+      lng: 73.78,
+    };
+    jest.mocked(places.placeDetails).mockResolvedValue(pashan);
+    await fireEvent.press(
+      screen.getByRole('button', {
+        name: 'Change the place: Baner Sports Complex',
+      }),
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'pashan',
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: 'Sus Road Nets, Sus Rd, Pashan, Pune',
+      }),
+    );
+    await screen.findByText('Pashan, Pune');
+    await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
+    expect(activities.updateActivity).toHaveBeenCalledWith('trek', {
+      place: pashan,
+    });
   });
 
   test('a Locked Activity keeps its title, time and venue, and spots only go up', async () => {
@@ -1350,7 +1569,10 @@ describe('editing an Activity', () => {
     ).toBeOnTheScreen();
     expect(screen.queryByLabelText('The plan')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Tomorrow' })).toBeNull();
-    expect(screen.queryByLabelText('Where exactly (optional)')).toBeNull();
+    expect(screen.queryByLabelText('Search for the place')).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /^Change the place/ }),
+    ).toBeNull();
     expect(screen.getByRole('button', { name: 'Fewer spots' })).toBeDisabled();
     await fireEvent.changeText(
       screen.getByLabelText('Details (optional)'),

@@ -31,7 +31,6 @@ export const startsWhenLabels: Record<StartsWhen, string> = {
 
 export const titleMaxLength = 60;
 export const descriptionMaxLength = 300;
-export const venueMaxLength = 200;
 export const minSpots = 1;
 export const maxSpots = 20;
 
@@ -68,9 +67,20 @@ export type JoinedActivity = BoardActivity & {
 // On the board until `visibleUntil`, the end the database hides it at.
 export type BoardListing = BoardActivity & { visibleUntil: string };
 
+// A place chosen from Google's search (placeId set) or, later, a pin on a map (#249, no placeId).
+export type Venue = {
+  name: string;
+  address: string;
+  placeId: string | null;
+  lat: number;
+  lng: number;
+};
+
 export type Activity = BoardActivity & {
   status: ActivityStatus;
-  // Only the host and accepted joiners get it.
+  // Everyone who can see the Activity reads it (decision 69). Activities posted before #248 may have
+  // only the venue text the host typed.
+  venue: Venue | null;
   venueDetail: string | null;
   // Someone has joined: only the description and a higher number of Spots can change.
   isLocked: boolean;
@@ -112,12 +122,12 @@ export type ActivityFields = {
   endsAt: string | null;
   capacity: number;
   description: string;
-  venueDetail: string;
+  place: Venue;
   // Set when posting from a Circle; the host must be a member of it.
   circleId: string | null;
 };
 
-// Leave a field out to keep it; an empty description or venue clears it.
+// Leave a field out to keep it; an empty description clears it. The place can change, never go.
 export type ActivityChanges = Partial<Omit<ActivityFields, 'type'>>;
 
 export type ActivityField =
@@ -127,7 +137,7 @@ export type ActivityField =
   | 'endsAt'
   | 'capacity'
   | 'description'
-  | 'venueDetail';
+  | 'place';
 
 // A refusal the form can show under the field it's about; with no field, above the button.
 export class ActivityError extends Error {
@@ -165,6 +175,7 @@ export const fieldMessages = {
   tooFarAhead: 'Pick a day up to 90 days from today.',
   endsAt: 'The end has to be after the start.',
   capacity: `Spots must be between ${minSpots} and ${maxSpots}.`,
+  place: 'Choose a place from the list.',
 } as const;
 
 // Google Maps searches the venue text the host typed, as is.
@@ -172,6 +183,16 @@ export function directionsUrl(venue: string): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
     venue,
   )}`;
+}
+
+// That exact place in Google Maps: by its place id when Google gave one, else by its point.
+export function placeUrl(venue: Venue): string {
+  const query = venue.placeId
+    ? `${encodeURIComponent(venue.name)}&query_place_id=${encodeURIComponent(
+        venue.placeId,
+      )}`
+    : `${venue.lat},${venue.lng}`;
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
 export function hostLine(activity: Pick<BoardActivity, 'isMine' | 'hostName'>) {

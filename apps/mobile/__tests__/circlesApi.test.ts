@@ -130,6 +130,45 @@ test.each([
   expect(rpc).toHaveBeenCalledWith('leave_circle', { circle_id: 'c1' });
 });
 
+const court = {
+  name: 'Baner Sports Complex',
+  address: 'Baner Rd, Pune',
+  placeId: 'ChIJbaner',
+  lat: 18.56,
+  lng: 73.78,
+};
+
+test('posting sends the chosen place, and a missing place is flagged under Where', async () => {
+  rpc.mockResolvedValue({ data: 'a1', error: null });
+  const fields = {
+    title: 'Badminton',
+    type: 'sports' as const,
+    startsAt: '2027-01-15T00:00:00Z',
+    endsAt: null,
+    capacity: 4,
+    description: '',
+    place: { ...court, address: '', placeId: null },
+    circleId: null,
+  };
+  await postActivity(fields);
+  expect(rpc).toHaveBeenCalledWith(
+    'post_activity',
+    expect.objectContaining({
+      place_name: 'Baner Sports Complex',
+      place_address: undefined,
+      place_google_id: undefined,
+      place_lat: 18.56,
+      place_lng: 73.78,
+    }),
+  );
+
+  refuse('an activity needs a place');
+  await expect(postActivity(fields)).rejects.toMatchObject({
+    message: 'Choose a place from the list.',
+    field: 'place',
+  });
+});
+
 test('posting to a Circle sends its id and words the not-a-member refusal', async () => {
   rpc.mockResolvedValue({ data: 'a1', error: null });
   await postActivity({
@@ -139,7 +178,7 @@ test('posting to a Circle sends its id and words the not-a-member refusal', asyn
     endsAt: null,
     capacity: 6,
     description: '',
-    venueDetail: '',
+    place: court,
     circleId: 'c1',
   });
   expect(rpc).toHaveBeenCalledWith(
@@ -156,7 +195,7 @@ test('posting to a Circle sends its id and words the not-a-member refusal', asyn
       endsAt: null,
       capacity: 6,
       description: '',
-      venueDetail: '',
+      place: court,
       circleId: 'c1',
     }),
   ).rejects.toThrow('Join this Circle before posting an Activity to it.');
@@ -172,7 +211,7 @@ test('a title or description the word filter refuses reads as friendly copy', as
       endsAt: null,
       capacity: 6,
       description: '',
-      venueDetail: '',
+      place: court,
       circleId: null,
     }),
   ).rejects.toThrow(
@@ -189,7 +228,7 @@ test('posting without a fresh location reads as friendly copy and sends no Area'
     endsAt: null,
     capacity: 4,
     description: '',
-    venueDetail: '',
+    place: court,
     circleId: null,
   };
   await expect(postActivity(fields)).rejects.toThrow(

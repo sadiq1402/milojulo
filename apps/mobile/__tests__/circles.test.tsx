@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
+import * as places from '../src/features/activities/places';
 import type { BoardActivity } from '../src/features/activities/model';
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
@@ -20,6 +21,11 @@ import { renderApp, sessionFor } from '../test/render';
 
 jest.mock('../src/features/account/api');
 jest.mock('../src/features/activities/api');
+jest.mock('../src/features/activities/places', () => ({
+  ...jest.requireActual('../src/features/activities/places'),
+  searchPlaces: jest.fn(),
+  placeDetails: jest.fn(),
+}));
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
@@ -94,6 +100,21 @@ beforeEach(() => {
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
   // Posting navigates to the new Activity; a null keeps that screen quiet in the test.
   jest.mocked(activities.postActivity).mockResolvedValue('new-activity');
+  jest.mocked(places.searchPlaces).mockResolvedValue([
+    {
+      placeId: 'ChIJcourt',
+      mainText: 'Baner Badminton Court',
+      secondaryText: 'Baner, Pune',
+      matches: [],
+    },
+  ]);
+  jest.mocked(places.placeDetails).mockResolvedValue({
+    name: 'Baner Badminton Court',
+    address: 'Baner, Pune',
+    placeId: 'ChIJcourt',
+    lat: 18.56,
+    lng: 73.78,
+  });
   jest.mocked(activities.fetchActivity).mockResolvedValue(null);
   jest.mocked(circles.fetchCircles).mockResolvedValue([badminton, circle()]);
   jest
@@ -257,6 +278,18 @@ describe('a Circle I belong to', () => {
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Sports' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'baner',
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: 'Baner Badminton Court, Baner, Pune',
+      }),
+    );
+    await screen.findByRole('button', {
+      name: 'Change the place: Baner Badminton Court',
+    });
     // The detail stays mounted under the form; its Activities should reload after posting.
     jest.mocked(circles.fetchCircleActivities).mockClear();
     await fireEvent.press(
