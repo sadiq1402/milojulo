@@ -396,7 +396,12 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
       const button = form.querySelector('button');
       button.disabled = true; button.textContent = 'Sending…';
       try {
-        await fetch(WAITLIST_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams(new FormData(form)) });
+        // The script takes a few seconds to save, and a no-cors reply can't be read anyway, so confirm
+        // once the request is on its way; keepalive lets it finish if the tab closes. Only a network
+        // failure in that first moment shows an error.
+        const sent = fetch(WAITLIST_URL, { method: 'POST', mode: 'no-cors', keepalive: true, body: new URLSearchParams(new FormData(form)) });
+        await Promise.race([sent, new Promise(r => setTimeout(r, 1500))]);
+        sent.catch(() => {});
         form.hidden = true;
         document.getElementById(okFor(form)).style.display = 'block';
       } catch {
