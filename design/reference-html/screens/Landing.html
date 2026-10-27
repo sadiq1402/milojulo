@@ -103,7 +103,13 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .ico{width:48px;height:48px;border-radius:24px;background:var(--tint);color:var(--orchid-dark);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
 
 /* faq */
-.faq{max-width:760px;margin-top:24px;display:flex;flex-direction:column;gap:8px}
+.faqgrid{display:grid;gap:16px;margin-top:24px;align-items:start}
+.ask{background:var(--lilac-soft);border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}
+.ask h3{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;font-weight:700;font-size:20px;line-height:24px}
+.ask .sub{color:var(--tagNeutralInk,#4A2F55)}
+.ask .btn{align-self:flex-start}
+.ask .mail{font-weight:600;color:var(--ink);user-select:all}
+.faq{display:flex;flex-direction:column;gap:8px}
 details{background:#fff;border-radius:20px;box-shadow:0 8px 24px rgba(142,31,96,.06)}
 summary{list-style:none;cursor:pointer;min-height:56px;padding:16px 56px 16px 20px;font-weight:600;font-size:17px;line-height:24px;position:relative}
 summary::-webkit-details-marker{display:none}
@@ -131,6 +137,8 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   .step{flex-direction:column}
   .band{padding:64px 56px}
   .acts{grid-template-columns:repeat(3,1fr)}
+  .faqgrid{grid-template-columns:1.7fr 1fr}
+  .ask{position:sticky;top:88px}
 }
 </style>
 </head>
@@ -249,6 +257,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   <div class="wrap">
     <span class="eyebrow">Questions</span>
     <h2 class="disp">Good to know.</h2>
+    <div class="faqgrid">
     <div class="faq">
       <details><summary>What is MiloJulo?</summary><p>An app for meeting new people near you who want the same kind of connection you do: friends, activity partners, dates or professional contacts. The name comes from the Hindi <i>milna-julna</i>, to meet and mingle.</p></details>
       <details><summary>Is it a dating app?</summary><p>It can be, but it doesn't have to be. Dating is one Mode out of six. Most people come for friends and activities.</p></details>
@@ -257,6 +266,15 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
       <details><summary>Is it free?</summary><p>Yes. Everything is free during the beta.</p></details>
       <details><summary>Is there an iPhone app?</summary><p>Android comes first. iPhone follows. Join the waitlist and we'll tell you when it's ready.</p></details>
       <details><summary>How do I delete my account?</summary><p>In the app under Settings, or on the web at <a href="https://milojulo.co.in/delete-account">milojulo.co.in/delete-account</a>. Your photos, chats and profile are erased.</p></details>
+    </div>
+    <aside class="ask">
+      <div aria-hidden="true" class="blob" style="width:120px;height:120px;right:-40px;top:-40px;background:var(--lilac)"></div>
+      <span class="tag" style="background:#fff;color:var(--ink);align-self:flex-start;position:relative">Still curious?</span>
+      <h3 style="position:relative">Ask us anything.</h3>
+      <p class="sub" style="position:relative">A real person on the MiloJulo team reads every email, usually within a day.</p>
+      <span class="mail" style="position:relative">support@milojulo.co.in</span>
+      <a class="btn pri" href="mailto:support@milojulo.co.in" style="position:relative">Email us</a>
+    </aside>
     </div>
   </div>
 </section>
