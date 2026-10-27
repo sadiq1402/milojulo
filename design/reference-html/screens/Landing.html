@@ -16,6 +16,8 @@
 :root{--ground:#FFF7FB;--card:#fff;--ink:#2B1233;--sub:#6D5876;--line:#F3DDEA;--orchid:#CC2E86;--orchid-dark:#8E1F60;--tint:#FFE3F1;--tint-strong:#FFC6E0;--butter:#FFE27A;--butter-soft:#FFF1B8;--lilac:#C8B6FF;--lilac-soft:#E3D4FF;--violet:#7B4DFF;--field:#E9CFE0;--selected:#FFF1F8}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+/* anchors stop clear of the sticky header instead of sliding under it */
+[id]{scroll-margin-top:96px}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;font-size:16px;line-height:24px;overflow-x:hidden}
 .disp{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;font-weight:700;letter-spacing:-0.02em}
 a{color:var(--orchid)}
@@ -369,6 +371,17 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   update();
 })();
 </script>
-<script>document.addEventListener('touchstart', () => {}, { passive: true });</script>
+<script>
+document.addEventListener('touchstart', () => {}, { passive: true });
+// The header button scrolls to the form only if it isn't on screen, then puts the cursor in the email field.
+document.querySelector('.top .btn').addEventListener('click', e => {
+  const form = document.getElementById('join');
+  if (!form || form.hidden) return;
+  e.preventDefault();
+  const r = form.getBoundingClientRect();
+  if (r.top < 80 || r.bottom > innerHeight) form.scrollIntoView({ block: 'center' });
+  form.querySelector('input[type=email]').focus({ preventScroll: true });
+});
+</script>
 </body>
 </html>
