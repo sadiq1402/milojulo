@@ -81,8 +81,8 @@ The calls:
 | Take down a photo, message or Activity | `select public.admin_takedown('photo' \| 'message' \| 'activity', '<id>', '<note>');` | Hidden for good (a message disappears from both sides' chat at once); the open Reports on it are marked actioned |
 | Clear an Auto-hide | `select public.admin_restore('profile' \| 'photo' \| 'activity', '<id>', '<note>');` | Visible again; its open Reports are dismissed and no longer count toward Auto-hide |
 | Ban a Member | `select public.admin_ban('<member id>', '<reason>');` | Status banned; their Connections close, Join Requests are withdrawn, upcoming Activities cancelled, Circle memberships removed; every open Report about them is actioned. A reason is required. There is no unban yet |
-| Create a Circle | `select public.admin_create_circle('<name>', '<area id>', (select id from public.tags where slug = '<tag slug>'), '<description>');` | Returns the new Circle's id |
-| Edit a Circle | `select public.admin_edit_circle('<circle id>', '<name>', '<area id>', <tag id>, '<description>');` | |
+| Create a Circle | `select public.admin_create_circle('<name>', '<place name, e.g. Baner, Pune>', <lat>, <lng>, (select id from public.tags where slug = '<tag slug>'), '<description>');` | Returns the new Circle's id. The centre point decides who sees it (Members within their Discover Range) |
+| Edit a Circle | `select public.admin_edit_circle('<circle id>', '<name>', '<place name>', <lat>, <lng>, <tag id>, '<description>');` | Pass `null, null` for lat and lng to keep the centre |
 | Archive a Circle | `select public.admin_archive_circle('<circle id>');` | It leaves browsing and can't be joined; its members can still open it |
 
 A profile is never taken down: ban the Member instead. Refusals come back as errors: `admins only` (the session block is missing, or the email is not an admin account), `nothing to take down`, `nothing to restore`, `nothing to ban`, `give a reason for the ban`, `ban the member instead`.

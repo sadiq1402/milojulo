@@ -126,11 +126,11 @@ A pair of Members who both answered, about the same route (the same Activity, or
 _Avoid_: Match, successful meetup
 
 **Circle**:
-A small admin-created community tied to one Area and one interest, which Members join; Activities posted to it remain visible on the main board. An archived Circle disappears and its label drops off upcoming Activities.
+A small admin-created community tied to one place (a place name and a centre point) and one interest, which Members join. Members see the active Circles within their Discover Range, plus any they joined; Activities posted to it remain visible on the main board. An archived Circle disappears and its label drops off upcoming Activities.
 _Avoid_: Group, community (as a noun for this concept)
 
 **Area**:
-One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South), that a Circle belongs to. Members and Activities have no Area and nothing stands in for a missing Member Location (#203); Circles are next to lose it.
+One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South). No longer used: Members, Activities and Circles have no Area (#203), and nothing stands in for a missing Member Location; the table goes later.
 _Avoid_: cell
 
 **Member Location**:

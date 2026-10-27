@@ -81,7 +81,7 @@ select results_eq($$ select distance_band from public.joined_activities() $$,
 
 reset role;
 select pg_temp.act_as_admin(pg_temp.m('ad'));
-select pg_temp.keep('circle', public.admin_create_circle('Runners', 'baner',
+select pg_temp.keep('circle', public.admin_create_circle('Runners', 'Baner, Pune', 18.559, 73.787,
   (select id from public.tags where slug = 'badminton'), 'A local circle.'));
 reset role;
 select pg_temp.act_as_member(pg_temp.m('a2'));

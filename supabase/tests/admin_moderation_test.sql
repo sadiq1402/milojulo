@@ -290,7 +290,7 @@ values (pg_temp.keep('e1past', gen_random_uuid()), pg_temp.m('e1'), 'Past ride',
 insert into public.activity_requests (id, activity_id, requester_id, status, responded_at)
 values (pg_temp.keep('e1pastreq', gen_random_uuid()), pg_temp.id('d1past'), pg_temp.m('e1'), 'accepted', now() - interval '1 day');
 select pg_temp.act_as_admin(pg_temp.m('ad'));
-select pg_temp.keep('circle', public.admin_create_circle('Baner gamers', 'baner',
+select pg_temp.keep('circle', public.admin_create_circle('Baner gamers', 'Baner, Pune', 18.559, 73.787,
   (select min(id) from public.tags), 'A local circle.'));
 reset role;
 select pg_temp.as_member('e1');

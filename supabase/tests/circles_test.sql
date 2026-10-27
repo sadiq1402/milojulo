@@ -19,13 +19,13 @@ create function pg_temp.keep(key text, value uuid) returns uuid
 language sql as $$ insert into ids values ($1, $2) returning v $$;
 
 -- Create an active Circle through the admin path and remember its id.
-create function pg_temp.make_circle(key text, cname varchar, area text default 'baner', tag text default 'badminton')
+create function pg_temp.make_circle(key text, cname varchar, place text default 'Baner, Pune', tag text default 'badminton')
 returns uuid
 language plpgsql as $$
 declare new_id uuid;
 begin
   perform pg_temp.act_as_admin(pg_temp.m('ad'));
-  new_id := public.admin_create_circle(cname, area, (select id from public.tags where slug = tag), 'A local circle.');
+  new_id := public.admin_create_circle(cname, place, 18.559, 73.787, (select id from public.tags where slug = tag), 'A local circle.');
   reset role;
   return pg_temp.keep(key, new_id);
 end;
@@ -50,21 +50,21 @@ select isnt(pg_temp.id('cup'), null, 'admin creates a circle');
 -- Deny: a Member cannot create a Circle.
 select pg_temp.as_member('c1');
 select throws_ok(
-  $$ select public.admin_create_circle('Sneaky', 'baner', (select id from public.tags where slug = 'badminton'), 'x') $$,
+  $$ select public.admin_create_circle('Sneaky', 'Baner, Pune', 18.559, 73.787, (select id from public.tags where slug = 'badminton'), 'x') $$,
   'admins only', 'a member cannot create a circle');
 reset role;
 
 -- Deny: anon cannot create a Circle (execute revoked).
 select pg_temp.act_as_anon();
 select throws_ok(
-  $$ select public.admin_create_circle('Sneaky', 'baner', 1::smallint, 'x') $$,
+  $$ select public.admin_create_circle('Sneaky', 'Baner, Pune', 18.559, 73.787, 1::smallint, 'x') $$,
   null::text, null::text, 'anon cannot create a circle');
 reset role;
 
 -- Allow: an admin edits a Circle; the new name shows through get_circle.
 select pg_temp.act_as_admin(pg_temp.m('ad'));
 select lives_ok(
-  $$ select public.admin_edit_circle(pg_temp.id('cup'), 'Baner Badminton Cup', 'wakad',
+  $$ select public.admin_edit_circle(pg_temp.id('cup'), 'Baner Badminton Cup', 'Wakad, Pune', 18.599, 73.765,
        (select id from public.tags where slug = 'cafes'), 'Updated.') $$,
   'admin edits a circle');
 reset role;
@@ -76,14 +76,14 @@ reset role;
 -- Deny: a Member cannot edit a Circle.
 select pg_temp.as_member('c1');
 select throws_ok(
-  $$ select public.admin_edit_circle(pg_temp.id('cup'), 'Hacked', 'baner', 1::smallint, 'x') $$,
+  $$ select public.admin_edit_circle(pg_temp.id('cup'), 'Hacked', 'Baner, Pune', null, null, 1::smallint, 'x') $$,
   'admins only', 'a member cannot edit a circle');
 reset role;
 
 -- Deny: editing an unknown Circle is refused.
 select pg_temp.act_as_admin(pg_temp.m('ad'));
 select throws_ok(
-  $$ select public.admin_edit_circle(gen_random_uuid(), 'Ghost', 'baner', 1::smallint, 'x') $$,
+  $$ select public.admin_edit_circle(gen_random_uuid(), 'Ghost', 'Baner, Pune', null, null, 1::smallint, 'x') $$,
   'no circle to edit', 'editing an unknown circle is refused');
 reset role;
 
@@ -104,7 +104,7 @@ select is((select is_active from public.circles where id = pg_temp.id('arch0')),
 
 -- Deny: anon cannot edit or archive a Circle (execute revoked).
 select pg_temp.act_as_anon();
-select throws_ok($$ select public.admin_edit_circle(pg_temp.id('cup'), 'x', 'baner', 1::smallint, 'y') $$,
+select throws_ok($$ select public.admin_edit_circle(pg_temp.id('cup'), 'x', 'Baner, Pune', null, null, 1::smallint, 'y') $$,
   null::text, null::text, 'anon cannot edit a circle');
 select throws_ok($$ select public.admin_archive_circle(pg_temp.id('cup')) $$,
   null::text, null::text, 'anon cannot archive a circle');
@@ -130,7 +130,7 @@ reset role;
 -- ============ browse_circles ============
 
 -- A second active Circle and an archived one.
-select pg_temp.make_circle('trek', 'Trekking Trail', 'kharadi', 'trekking');
+select pg_temp.make_circle('trek', 'Trekking Trail', 'Kharadi, Pune', 'trekking');
 select pg_temp.make_circle('old', 'Old Circle');
 select pg_temp.act_as_admin(pg_temp.m('ad'));
 select public.admin_archive_circle(pg_temp.id('old'));
