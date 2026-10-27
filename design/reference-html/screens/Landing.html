@@ -35,6 +35,13 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .tag{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:14px;font-size:12px;line-height:16px;font-weight:600;white-space:nowrap}
 .fr{background:#CFF1E5;color:#0B4A3E}.ac{background:#FFF1B8;color:#2B1233}.nw{background:#D6ECFF;color:#1F4E79}.dt{background:#FFE3F1;color:#8E1F60}.cs{background:#E3D4FF;color:#4B2BB8}.ci{background:#FBEAF3;color:#4A2F55}
 
+/* roaming bubbles */
+.bubbles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bub{position:absolute;left:0;top:0;border-radius:50%;will-change:transform}
+.bub .bub{opacity:.9}
+.top,main,footer{position:relative;z-index:1}
+.top{z-index:10}
+
 /* header */
 .top{position:sticky;top:0;z-index:10;background:rgba(255,247,251,.9);backdrop-filter:blur(10px)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
@@ -143,6 +150,10 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 </style>
 </head>
 <body>
+<div class="bubbles" aria-hidden="true">
+  <div class="bub" data-r="210" style="background:var(--tint)"><div class="bub" data-r="36" style="background:var(--butter)"></div></div>
+  <div class="bub" data-r="110" style="background:var(--lilac-soft)"><div class="bub" data-r="22" style="background:var(--lilac)"></div></div>
+</div>
 
 <header class="top">
   <div class="wrap">
@@ -153,9 +164,6 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 
 <main>
 <section class="hero">
-  <div aria-hidden="true" class="blob" style="width:420px;height:420px;right:-140px;top:-120px;background:var(--tint)"></div>
-  <div aria-hidden="true" class="blob" style="width:72px;height:72px;right:8%;top:24px;background:var(--butter);opacity:.85"></div>
-  <div aria-hidden="true" class="blob" style="width:180px;height:180px;left:-90px;bottom:-40px;background:var(--lilac-soft)"></div>
   <div class="wrap grid">
     <div>
       <span class="eyebrow">Beta opening soon</span>
@@ -306,5 +314,56 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   </div>
 </footer>
 
+<script>
+(() => {
+  const outers = [...document.querySelectorAll('.bubbles > .bub')];
+  const small = () => innerWidth < 600 ? 0.6 : 1;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const dir = () => { const a = rand(0, Math.PI * 2); return [Math.cos(a), Math.sin(a)]; };
+  const items = outers.map((el, i) => {
+    const inEl = el.querySelector('.bub');
+    const [dx, dy] = dir(), [ix, iy] = dir();
+    return { el, inEl, R0: +el.dataset.r, r0: +inEl.dataset.r,
+      x: i ? innerWidth * 0.15 : innerWidth * 0.7, y: i ? innerHeight * 0.75 : innerHeight * 0.2,
+      vx: dx * rand(28, 42), vy: dy * rand(28, 42), ix: 0, iy: 0, ivx: ix * rand(30, 50), ivy: iy * rand(30, 50) };
+  });
+  const size = () => items.forEach(b => {
+    b.R = b.R0 * small(); b.r = b.r0 * small();
+    b.el.style.width = b.el.style.height = 2 * b.R + 'px';
+    b.inEl.style.width = b.inEl.style.height = 2 * b.r + 'px';
+  });
+  const draw = () => items.forEach(b => {
+    b.el.style.transform = `translate(${b.x - b.R}px,${b.y - b.R}px)`;
+    b.inEl.style.transform = `translate(${b.R + b.ix - b.r}px,${b.R + b.iy - b.r}px)`;
+  });
+  size(); draw();
+  addEventListener('resize', size);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let last = performance.now();
+  const step = now => {
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    const W = innerWidth, H = innerHeight;
+    for (const b of items) {
+      // outer bubble bounces off the window edges, half of it allowed past them
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      const m = b.R * 0.5;
+      if (b.x < m) { b.x = m; b.vx = Math.abs(b.vx); }
+      if (b.x > W - m) { b.x = W - m; b.vx = -Math.abs(b.vx); }
+      if (b.y < m) { b.y = m; b.vy = Math.abs(b.vy); }
+      if (b.y > H - m) { b.y = H - m; b.vy = -Math.abs(b.vy); }
+      // inner bubble reflects off the outer bubble's rim
+      b.ix += b.ivx * dt; b.iy += b.ivy * dt;
+      const lim = b.R - b.r, d = Math.hypot(b.ix, b.iy);
+      if (d > lim) {
+        const nx = b.ix / d, ny = b.iy / d, dot = b.ivx * nx + b.ivy * ny;
+        if (dot > 0) { b.ivx -= 2 * dot * nx; b.ivy -= 2 * dot * ny; }
+        b.ix = nx * lim; b.iy = ny * lim;
+      }
+    }
+    draw(); requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+})();
+</script>
 </body>
 </html>
