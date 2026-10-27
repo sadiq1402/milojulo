@@ -135,9 +135,9 @@ Under the Information Technology Act, 2000 and the Information Technology (Inter
 and Digital Media Ethics Code) Rules, 2021, you can complain about content on MiloJulo, about how
 we handled a report, or about these terms, to our Grievance Officer:
 
-- Name: [Grievance Officer name]
+- Name: Md Sadiq Hasan Ansari
 - Email: grievance@milojulo.co.in
-- Address: [Postal address]
+- Address: Sterling PG and Accommodation, Mukai Nagar, Phase 1, Pune, Maharashtra 411057, India
 
 We acknowledge a complaint within **24 hours** and resolve it within **15 days** of receiving it.
 A complaint that content shows your private body, nudity or sexual acts, or impersonates you
@@ -168,5 +168,5 @@ to anyone else.
 
 ## 17. Contact
 
-MiloJulo, [Legal entity name], [Postal address]
+MiloJulo, Md Sadiq Hasan Ansari, an individual, Sterling PG and Accommodation, Mukai Nagar, Phase 1, Pune, Maharashtra 411057, India
 support@milojulo.co.in

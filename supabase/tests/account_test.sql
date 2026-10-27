@@ -110,7 +110,7 @@ select is(pg_temp.seen_by('a1', 'b1'), '{}',
 
 -- A document nobody has accepted: a later version, not yet in effect (no public path adds documents).
 with d as (insert into public.consent_documents (kind, version, effective_at)
-           values ('terms', 'v2', now() + interval '1 year') returning id)
+           values ('terms', 'v9', now() + interval '1 year') returning id)
 insert into ids select 'v2', id from d;
 select pg_temp.as_member('a1');
 select throws_ok(format($$ select public.withdraw_consent(%L) $$, pg_temp.id('v2')),

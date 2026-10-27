@@ -6,7 +6,7 @@ This is MiloJulo's privacy policy: what we collect, why, who else handles it, ho
 and how to get it corrected or deleted. We wrote it in plain language because a notice nobody reads
 protects nobody.
 
-MiloJulo ([Legal entity name], [Postal address]) decides how your data is used. In the words of
+MiloJulo (Md Sadiq Hasan Ansari, an individual, Sterling PG and Accommodation, Mukai Nagar, Phase 1, Pune, Maharashtra 411057, India) decides how your data is used. In the words of
 India's Digital Personal Data Protection Act, 2023, we are the Data Fiduciary and you are the Data
 Principal.
 
@@ -114,9 +114,9 @@ We answer requests and grievances within 30 days, and never later than 90 days.
 
 ## Grievance Officer
 
-- Name: [Grievance Officer name]
+- Name: Md Sadiq Hasan Ansari
 - Email: grievance@milojulo.co.in
-- Address: [Postal address]
+- Address: Sterling PG and Accommodation, Mukai Nagar, Phase 1, Pune, Maharashtra 411057, India
 
 ## Children
 

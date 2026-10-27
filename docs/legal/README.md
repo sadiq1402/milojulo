@@ -10,8 +10,8 @@ requirements of India's DPDP Act 2023 and DPDP Rules 2025, the IT (Intermediary 
 2021, GDPR basics, and Google Play's and Apple's user-generated-content rules. They are not legal
 advice. No lawyer has seen them.
 
-Placeholders the founder fills before publishing: `[Grievance Officer name]`, `[Legal entity name]`
-and `[Postal address]`; the `grievance@milojulo.co.in` mailbox must exist.
+Published as Terms v2, Community Guidelines v2 and Data Notice v3 (migration
+`20261126090000_final_legal_documents.sql`); every Member accepts them once on Reconsent.
 
 ## How they reach the app
 

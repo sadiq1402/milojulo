@@ -132,9 +132,9 @@ select isnt_empty(format('select 1 from public.member_locations where user_id = 
 select pg_temp.act_as_member(pg_temp.m('01'));
 select is(public.needs_reconsent(), false, 'a Member who accepted every current document needs no reconsent');
 reset role;
-update public.consents set document_id = (select id from public.consent_documents where kind = 'data_notice' and version = 'v1')
+update public.consents set document_id = (select id from public.consent_documents where kind = 'data_notice' and version = 'v2')
 where user_id = pg_temp.m('03')
-  and document_id = (select id from public.consent_documents where kind = 'data_notice' and version = 'v2');
+  and document_id = (select id from public.consent_documents where kind = 'data_notice' and version = 'v3');
 select pg_temp.act_as_member(pg_temp.m('03'));
 select is(public.needs_reconsent(), true, 'a Member who accepted only the old data notice needs to reconsent');
 select pg_temp.act_as_member(pg_temp.m('01'));
