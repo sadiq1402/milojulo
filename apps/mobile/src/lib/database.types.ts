@@ -231,14 +231,14 @@ isOneToOne: false
                   ]
                 },"circles": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"place": unknown,"place_name": string,"tag_id": number
+                    "center": unknown,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"place_name": string,"tag_id": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"place": unknown,"place_name": string,"tag_id": number
+                    "center": unknown,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name": string,"place_name": string,"tag_id": number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"place"?: unknown,"place_name"?: string,"tag_id"?: number
+                    "center"?: unknown,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"is_active"?: boolean,"name"?: string,"place_name"?: string,"tag_id"?: number
                   }
                   Relationships: [
                     {
@@ -873,6 +873,9 @@ isOneToOne: false
 { Args: { "circle_id": string }; Returns: {
               "cover_photo_id": string,"display_name": string,"member_id": string
             }[]
+                           },
+"circle_point":
+{ Args: { "lat": number,"lng": number }; Returns: unknown
                            },
 "close_connection":
 { Args: { "connection_id": string }; Returns: undefined

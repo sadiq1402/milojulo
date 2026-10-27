@@ -52,7 +52,7 @@ beforeAll(async () => {
     .insert({
       name: 'Weekend Trekkers',
       place_name: 'Baner, Pune',
-      place: banerPoint,
+      center: banerPoint,
       tag_id: tag!.id,
       description: 'Sunday treks around the city.',
     })
@@ -113,7 +113,7 @@ test('posting to a Circle I have not joined is refused', async () => {
     .insert({
       name: 'Other Circle',
       place_name: 'Baner, Pune',
-      place: banerPoint,
+      center: banerPoint,
       tag_id: 1,
     })
     .select('id')
