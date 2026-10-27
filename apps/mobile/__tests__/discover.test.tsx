@@ -123,7 +123,7 @@ beforeEach(() => {
     .mockResolvedValue(numbered({ 1: 'Badminton', 2: 'Cafes', 3: 'Trekking' }));
   jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(
     numbered({
-      10: 'A perfect Sunday in Pune is…',
+      10: 'A perfect Sunday is…',
       20: "I'm looking for people to…",
     }),
   );
@@ -152,7 +152,7 @@ async function openProfile(name = 'Isha') {
   await fireEvent.press(await cardFor(name));
   await screen.findByRole('header', { name: `${name}, 27` });
   // Let the catalog and Connection loads land before the test goes on.
-  await screen.findByText('A perfect Sunday in Pune is…');
+  await screen.findByText('A perfect Sunday is…');
 }
 
 describe('the Discover feed', () => {

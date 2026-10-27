@@ -34,7 +34,7 @@ export function mockProfileSetup(
   jest.mocked(photos.fetchPhotoUrls).mockResolvedValue({});
   jest.mocked(catalog.fetchPromptQuestions).mockResolvedValue(
     numbered({
-      1: 'A perfect Sunday in Pune is…',
+      1: 'A perfect Sunday is…',
       2: "I'm looking for people to…",
     }),
   );

@@ -159,7 +159,7 @@ test('tag and prompt names come from the catalog', async () => {
   // createMember answers the first two questions in whatever order the catalog returns.
   expect(
     profile!.prompts.map(prompt => questions[prompt.questionId]).sort(),
-  ).toEqual(['A perfect Sunday in Pune is…', "I'm looking for people to…"]);
+  ).toEqual(['A perfect Sunday is…', "I'm looking for people to…"]);
 });
 
 test('a profile without a shared Mode still opens, naming their Mode', async () => {
