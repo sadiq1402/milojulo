@@ -480,7 +480,7 @@ describe('posting an Activity', () => {
   test('sends every field and opens the new Activity', async () => {
     await openCreate();
     await fireEvent.changeText(
-      screen.getByLabelText("What's the plan?"),
+      screen.getByLabelText('The plan'),
       '  Evening cycle ride ',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Outdoors' }));
@@ -516,7 +516,7 @@ describe('posting an Activity', () => {
   test('a date beyond the next week is picked from a calendar', async () => {
     await openCreate();
     await fireEvent.changeText(
-      screen.getByLabelText("What's the plan?"),
+      screen.getByLabelText('The plan'),
       'Sinhagad trek',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Outdoors' }));
@@ -555,23 +555,141 @@ describe('posting an Activity', () => {
     expect(screen.getByRole('button', { name: 'Wed 13 Jan' })).toBeDisabled();
   });
 
-  test('the time and length move in 30-minute steps, and spots stay between 1 and 20', async () => {
-    await openCreate();
-    const start = defaultStart();
-    const startLabel = screen.getByLabelText(/^Start time: /);
-    const before = startLabel.props.children;
-    if (start.minutes < 23 * 60) {
-      await fireEvent.press(
-        screen.getByRole('button', { name: 'Later start' }),
-      );
-      expect(screen.getByLabelText(/^Start time: /).props.children).not.toBe(
-        before,
-      );
-    }
-    expect(screen.getByLabelText('Length: 2 h')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Shorter' }));
-    expect(screen.getByLabelText('Length: 1 h 30 min')).toBeOnTheScreen();
+  async function setClock(hour: number, minute: string, half: 'am' | 'pm') {
+    await fireEvent.press(
+      screen.getByRole('button', { name: `${hour} o'clock` }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: `${minute} minutes` }),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: half }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: `Set ${hour}:${minute} ${half}` }),
+    );
+  }
 
+  async function nameAndType() {
+    await fireEvent.changeText(screen.getByLabelText('The plan'), 'Chai walk');
+    await fireEvent.press(screen.getByRole('button', { name: 'Games' }));
+  }
+
+  test('a new Activity ends two hours after it starts', async () => {
+    await openCreate();
+    // The clock says 10:00 am in India, so the first start is 11:00 am.
+    expect(
+      screen.getByRole('button', { name: 'Starts at: 11:00 am' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'End date: Today' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'End time: 1:00 pm' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Lasts 2 h.')).toBeOnTheScreen();
+  });
+
+  test('the start is set on a clock, and the end moves with it', async () => {
+    await openCreate();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Starts at: 11:00 am' }),
+    );
+    expect(
+      screen.getByRole('header', { name: 'Start time' }),
+    ).toBeOnTheScreen();
+    await setClock(6, '30', 'pm');
+    expect(
+      screen.getByRole('button', { name: 'Starts at: 6:30 pm' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'End time: 8:30 pm' }),
+    ).toBeOnTheScreen();
+    await nameAndType();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    const today = indiaParts(new Date()).dateKey;
+    expect(activities.postActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startsAt: indiaInstant(today, 18 * 60 + 30),
+        endsAt: indiaInstant(today, 20 * 60 + 30),
+      }),
+    );
+  });
+
+  test('the end takes its own date and time, so it can run past midnight', async () => {
+    await openCreate();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'End date: Today' }),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Thu 15 Oct' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Use Thu 15 Oct' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'End time: 1:00 pm' }),
+    );
+    expect(screen.getByRole('header', { name: 'End time' })).toBeOnTheScreen();
+    await setClock(9, '00', 'am');
+    expect(screen.getByText('Lasts 22 h.')).toBeOnTheScreen();
+    await nameAndType();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(activities.postActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ endsAt: indiaInstant('2026-10-15', 9 * 60) }),
+    );
+  });
+
+  test('an end before the start is refused', async () => {
+    await openCreate();
+    await nameAndType();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'End time: 1:00 pm' }),
+    );
+    await setClock(10, '00', 'am');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(
+      await screen.findByText('The end has to be after the start.'),
+    ).toBeOnTheScreen();
+    expect(activities.postActivity).not.toHaveBeenCalled();
+  });
+
+  test('No set end posts without an end, and Add an end brings one back', async () => {
+    await openCreate();
+    await nameAndType();
+    await fireEvent.press(screen.getByRole('button', { name: 'No set end' }));
+    expect(screen.getByText('No set end.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Add an end' }));
+    expect(screen.getByText('Lasts 2 h.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'No set end' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(activities.postActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ endsAt: null }),
+    );
+  });
+
+  test('the summary above Post reads back the Activity', async () => {
+    await openCreate();
+    expect(screen.getByText('Add the plan to post')).toBeOnTheScreen();
+    await nameAndType();
+    await fireEvent.changeText(
+      screen.getByLabelText('Where exactly (optional)'),
+      'Vetal hill',
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'More spots' }));
+    expect(
+      screen.getByText(
+        'Chai walk · Today, 11:00 am to 1:00 pm · Vetal hill · 5 spots',
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test('spots stay between 1 and 20', async () => {
+    await openCreate();
     for (let i = 0; i < 4; i++) {
       await fireEvent.press(
         screen.getByRole('button', { name: 'Fewer spots' }),
@@ -610,10 +728,7 @@ describe('posting an Activity', () => {
   });
 
   async function fillAndPost() {
-    await fireEvent.changeText(
-      screen.getByLabelText("What's the plan?"),
-      'Chai walk',
-    );
+    await fireEvent.changeText(screen.getByLabelText('The plan'), 'Chai walk');
     await fireEvent.press(screen.getByRole('button', { name: 'Games' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
     await fireEvent.press(
@@ -664,7 +779,7 @@ describe('posting an Activity', () => {
       'That title has a word we do not allow.',
     );
     // Shown with the title field, not above the button.
-    expect(screen.getByLabelText("What's the plan?").parent?.parent).toBe(
+    expect(screen.getByLabelText('The plan').parent?.parent).toBe(
       title.parent?.parent,
     );
   });
@@ -1192,16 +1307,19 @@ describe('editing an Activity', () => {
 
   test('the form starts filled in and sends only what changed', async () => {
     await openEdit();
-    expect(screen.getByLabelText("What's the plan?").props.value).toBe(
-      'Sinhagad trek',
-    );
+    expect(screen.getByLabelText('The plan').props.value).toBe('Sinhagad trek');
     expect(screen.getByLabelText('Spots: 4')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Length: 4 h')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'End time: 10:00 am' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Lasts 4 h.')).toBeOnTheScreen();
+    // The database keeps a set end, so an edit can't remove it.
+    expect(screen.queryByRole('button', { name: 'No set end' })).toBeNull();
     expect(screen.getByLabelText('Where exactly (optional)').props.value).toBe(
       'Sinhagad base, near the parking',
     );
     await fireEvent.changeText(
-      screen.getByLabelText("What's the plan?"),
+      screen.getByLabelText('The plan'),
       'Sinhagad sunrise trek',
     );
     await fireEvent.changeText(
@@ -1230,7 +1348,7 @@ describe('editing an Activity', () => {
         'Someone has joined, so the title, time and venue stay as they are. You can still change the details or add Spots.',
       ),
     ).toBeOnTheScreen();
-    expect(screen.queryByLabelText("What's the plan?")).toBeNull();
+    expect(screen.queryByLabelText('The plan')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Tomorrow' })).toBeNull();
     expect(screen.queryByLabelText('Where exactly (optional)')).toBeNull();
     expect(screen.getByRole('button', { name: 'Fewer spots' })).toBeDisabled();

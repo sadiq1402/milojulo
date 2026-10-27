@@ -9,6 +9,7 @@ import type { MemberParams } from '../../navigation/types';
 import {
   ActivityForm,
   defaultLength,
+  endAfter,
   endsAtOf,
   startsAtOf,
   type FormValues,
@@ -22,12 +23,13 @@ export function CreateActivityScreen({ navigation, route }: Props) {
   const circle = route.params ?? null;
   const [initial] = useState<FormValues>(() => {
     const start = defaultStart();
+    const startsAt = { day: start.dateKey, minutes: start.minutes };
     return {
       title: '',
       type: null,
       day: start.dateKey,
       minutes: start.minutes,
-      length: defaultLength,
+      end: endAfter(startsAt, defaultLength),
       capacity: 4,
       description: '',
       venueDetail: '',
