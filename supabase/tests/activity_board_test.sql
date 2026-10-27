@@ -202,8 +202,8 @@ select results_eq($$ select venue_detail, status, is_locked, is_mine, spots_left
   'the host reads their Activity with its venue');
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d2');
 select results_eq($$ select title, venue_detail, is_mine, starts_when from public.get_activity(pg_temp.mine()) $$,
-  $$ values ('Trek'::varchar, null::varchar, false, 'later') $$,
-  'another Member reads the Activity without its venue');
+  $$ values ('Trek'::varchar, 'Gate 2, Sinhagad base'::varchar, false, 'later') $$,
+  'another Member reads the Activity with its venue');
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d9');
 select is_empty('select * from public.get_activity(pg_temp.mine())',
   'a Member who is not visible cannot read an Activity');

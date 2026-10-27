@@ -671,7 +671,7 @@ describe('posting an Activity', () => {
 });
 
 describe('Activity detail', () => {
-  test('shows everything but the venue to someone else', async () => {
+  test('shows everything to someone else, and says when no venue is added', async () => {
     jest.mocked(activities.fetchActivity).mockResolvedValue(
       detail({
         endsAt: inDays(0, 23.5),
@@ -684,7 +684,7 @@ describe('Activity detail', () => {
     expect(screen.getByText('Today, 11:00 to 11:30 pm')).toBeOnTheScreen();
     expect(screen.getByText('<2 km')).toBeOnTheScreen();
     expect(
-      screen.getByText('The exact spot is shared once the host accepts you.'),
+      screen.getByText("The host hasn't added the exact spot yet."),
     ).toBeOnTheScreen();
     expect(screen.getByText('2 of 4 spots taken')).toBeOnTheScreen();
     expect(screen.getByText('Hosted by Isha')).toBeOnTheScreen();
@@ -903,15 +903,22 @@ describe('joining an Activity', () => {
     expect(screen.queryByText('<2 km')).toBeNull();
   });
 
-  test('someone not yet accepted gets no directions', async () => {
-    jest.mocked(activities.fetchActivity).mockResolvedValue(detail());
+  test('someone who has not asked to join sees the venue and opens it in Google Maps by tapping it', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    jest
+      .mocked(activities.fetchActivity)
+      .mockResolvedValue(
+        detail({ venueDetail: 'Baner Sports Complex, court 2' }),
+      );
     await openDetail('Badminton doubles');
-    expect(
-      await screen.findByText(
-        'The exact spot is shared once the host accepts you.',
-      ),
-    ).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Directions' })).toBeNull();
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: 'Baner Sports Complex, court 2',
+      }),
+    );
+    expect(openURL).toHaveBeenCalledWith(
+      'https://www.google.com/maps/dir/?api=1&destination=Baner%20Sports%20Complex%2C%20court%202',
+    );
   });
 
   test('an accepted joiner can withdraw before the start, after confirming', async () => {
@@ -932,9 +939,6 @@ describe('joining an Activity', () => {
     expect(activities.withdrawJoinRequest).toHaveBeenCalledWith('req-1');
     expect(
       await screen.findByText('You withdrew from this Activity.'),
-    ).toBeOnTheScreen();
-    expect(
-      screen.getByText('The exact spot is shared once the host accepts you.'),
     ).toBeOnTheScreen();
   });
 

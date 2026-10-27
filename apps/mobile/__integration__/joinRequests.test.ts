@@ -99,7 +99,7 @@ test('asking to join shows the request as pending on the Activity and in both re
   expect(await fetchActivity(id)).toMatchObject({
     myRequest: { id: requestId, status: 'requested' },
     connectionId: null,
-    venueDetail: null,
+    venueDetail: 'Wakad social, upstairs',
   });
   expect(
     (await fetchMyJoinRequests()).find(r => r.id === requestId),
@@ -160,7 +160,7 @@ test('the host lists requests, accepts one into an Activity Connection and decli
   );
 });
 
-test('an accepted joiner sees the venue and the chat; withdrawing ends it for good', async () => {
+test('an accepted joiner gets the chat; withdrawing ends it for good', async () => {
   const id = await postAs(isha);
   const requestId = await askToJoin(id);
   const connectionId = await answerAs(isha, requestId, true);
@@ -175,7 +175,7 @@ test('an accepted joiner sees the venue and the chat; withdrawing ends it for go
   expect(await fetchActivity(id)).toMatchObject({
     myRequest: { id: requestId, status: 'withdrawn' },
     connectionId: null,
-    venueDetail: null,
+    venueDetail: 'Wakad social, upstairs',
   });
   // The Activity Connection stays.
   expect(

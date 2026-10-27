@@ -78,8 +78,8 @@ select results_eq(
   'the requester reads their Join Request, waiting for the host');
 select results_eq(
   $$ select my_request_id, my_request_status, connection_id, venue_detail from public.get_activity(pg_temp.id('trek')) $$,
-  $$ values (pg_temp.id('e2 trek'), 'requested'::public.request_status, null::uuid, null::varchar) $$,
-  'a waiting requester sees their request on the Activity, but not the venue');
+  $$ values (pg_temp.id('e2 trek'), 'requested'::public.request_status, null::uuid, 'Gate 2, Sinhagad base'::varchar) $$,
+  'a waiting requester sees their request on the Activity and the venue');
 select results_eq($$ select spots_left from public.get_activity(pg_temp.id('trek')) $$,
   $$ values (3) $$, 'a waiting request takes no spot');
 
@@ -94,8 +94,8 @@ select pg_temp.as_member('e4');
 select is_empty('select * from public.activity_requests', 'another Member reads no Join Request');
 select results_eq(
   $$ select my_request_id, my_request_status, connection_id, venue_detail from public.get_activity(pg_temp.id('trek')) $$,
-  $$ values (null::uuid, null::public.request_status, null::uuid, null::varchar) $$,
-  'a Member who has not asked sees no request and no venue');
+  $$ values (null::uuid, null::public.request_status, null::uuid, 'Gate 2, Sinhagad base'::varchar) $$,
+  'a Member who has not asked sees no request, but sees the venue');
 select pg_temp.act_as_anon();
 select throws_ok('select * from public.activity_requests', '42501', null,
   'a signed-out visitor cannot read Join Requests');
@@ -289,7 +289,7 @@ select results_eq($$ select id, mode, note, status from public.connections $$,
 select results_eq($$ select count(*)::integer from public.connection_members where user_id = pg_temp.m('e6') $$,
   $$ values (1) $$, 'the accepted Connection Request opens a chat');
 
--- The venue goes to the host and accepted joiners only.
+-- Anyone who can see the Activity reads its venue (decision 69).
 select pg_temp.as_member('e5');
 select results_eq(
   $$ select venue_detail, my_request_status, connection_id from public.get_activity(pg_temp.id('trek')) $$,
@@ -297,10 +297,10 @@ select results_eq(
   'an accepted joiner reads the venue and their Connection with the host');
 select pg_temp.as_member('e2');
 select results_eq($$ select venue_detail from public.get_activity(pg_temp.id('trek')) $$,
-  $$ values (null::varchar) $$, 'a waiting requester still cannot read the venue');
+  $$ values ('Gate 2, Sinhagad base'::varchar) $$, 'a waiting requester reads the venue');
 select pg_temp.as_member('e3');
 select results_eq($$ select venue_detail from public.get_activity(pg_temp.id('trek')) $$,
-  $$ values (null::varchar) $$, 'a declined requester cannot read the venue');
+  $$ values ('Gate 2, Sinhagad base'::varchar) $$, 'a declined requester reads the venue');
 
 -- An accepted joiner keeps the Activity while Paused or after an Auto-hide, until it ends.
 select pg_temp.as_member('e5');
@@ -397,7 +397,7 @@ select throws_ok($$ select public.join_activity_request(pg_temp.id('solo')) $$, 
 select pg_temp.as_member('e5');
 select public.withdraw_activity_request(pg_temp.id('e5 trek'));
 select results_eq($$ select venue_detail from public.get_activity(pg_temp.id('trek')) $$,
-  $$ values (null::varchar) $$, 'a joiner who withdrew no longer reads the venue');
+  $$ values ('Gate 2, Sinhagad base'::varchar) $$, 'a joiner who withdrew still reads the venue');
 select pg_temp.as_member('e6');
 select public.withdraw_activity_request(pg_temp.id('e6 trek'));
 select pg_temp.as_member('e1');

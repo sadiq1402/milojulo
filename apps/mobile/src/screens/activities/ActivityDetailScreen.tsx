@@ -183,9 +183,7 @@ function venueNote(activity: Activity): string {
   if (activity.isMine) {
     return 'No exact spot added yet.';
   }
-  return activity.myRequest?.status === 'accepted'
-    ? "The host hasn't added the exact spot yet."
-    : 'The exact spot is shared once the host accepts you.';
+  return "The host hasn't added the exact spot yet.";
 }
 
 function ActivityBody({
@@ -223,6 +221,9 @@ function ActivityBody({
             icon="pin"
             title={activity.venueDetail}
             note={band}
+            onPress={() =>
+              Linking.openURL(directionsUrl(activity.venueDetail ?? ''))
+            }
             action={<Directions url={directionsUrl(activity.venueDetail)} />}
           />
         ) : band ? (
@@ -277,23 +278,41 @@ function Fact({
   title,
   note,
   action,
+  onPress,
 }: {
   icon: IconName;
   title: string;
   note?: string;
   action?: React.ReactNode;
+  // Makes the text tappable, such as a venue that opens in Google Maps.
+  onPress?: () => void;
 }) {
+  const text = (
+    <>
+      <Text variant="title">{title}</Text>
+      {note ? (
+        <Text variant="bodySmall" color={colors.secondary}>
+          {note}
+        </Text>
+      ) : null}
+    </>
+  );
   return (
     <View style={styles.fact}>
       <Icon name={icon} color={colors.orchid} />
-      <View style={styles.grow}>
-        <Text variant="title">{title}</Text>
-        {note ? (
-          <Text variant="bodySmall" color={colors.secondary}>
-            {note}
-          </Text>
-        ) : null}
-      </View>
+      {onPress ? (
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={title}
+          accessibilityHint="Opens Google Maps"
+          style={({ pressed }) => [styles.grow, pressed && styles.pressed]}
+        >
+          {text}
+        </Pressable>
+      ) : (
+        <View style={styles.grow}>{text}</View>
+      )}
       {action}
     </View>
   );
