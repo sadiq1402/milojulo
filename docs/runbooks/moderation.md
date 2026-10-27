@@ -51,7 +51,7 @@ order by hidden_at;
 Recently joined Members (spot checks; profiles go live on submission, decision 15):
 
 ```sql
-select id, display_name, area_id, modes, submitted_at
+select id, display_name, modes, submitted_at
 from public.profiles
 where submitted_at > now() - interval '7 days' and status = 'active' and deleted_at is null
 order by submitted_at desc;

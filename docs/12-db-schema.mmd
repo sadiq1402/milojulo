@@ -1,17 +1,8 @@
 erDiagram
-    %% V1 schema (33 tables), see docs/12-db-schema.md. auth.users 1:1 profiles; user FKs point at profiles,
+    %% V1 schema (32 tables), see docs/12-db-schema.md. auth.users 1:1 profiles; user FKs point at profiles,
     %% except photos.removed_by and reports.handled_by (auth.users). admin_actions.admin_id,
     %% circles.created_by and completed_erasures.member_id have no FK.
 
-    areas {
-        text id PK
-        text name
-        geography center
-        bool is_active
-        text zone
-        float8 lat "generated"
-        float8 lng "generated"
-    }
     tags {
         smallint id PK
         text slug UK
@@ -193,7 +184,7 @@ erDiagram
         uuid circle_id FK "nullable"
         varchar title
         activity_type type
-        text area_id FK
+        geography place "host's offset point"
         timestamptz starts_at
         timestamptz ends_at "nullable"
         smallint capacity "joiners only"
@@ -216,7 +207,8 @@ erDiagram
     circles {
         uuid id PK
         text name
-        text area_id FK
+        varchar place_name
+        geography center
         smallint tag_id FK
         text description
         bool is_active
@@ -278,8 +270,6 @@ erDiagram
         int objects_deleted
     }
 
-    areas ||--o{ activities : "located in"
-    areas ||--o{ circles : "based in"
     tags ||--o{ profile_tags : ""
     tags ||--o{ circles : "interest"
     prompt_questions ||--o{ profile_prompts : ""

@@ -36,8 +36,8 @@ This is the part most apps are vague about, so: when you allow location, we take
 your phone, **move it 200 to 500 metres in a fixed random direction**, and store only that moved
 point. We keep no history — each new reading replaces the last. No Member, and no part of the app,
 can read that point. It is used inside the database to work out distances, and what anyone sees is
-a rounded band: "under 2 km", "about 5 km". If you do not allow location, we use the centre of the
-area you chose instead.
+a rounded band: "under 2 km", "about 5 km". If you do not allow location, we store no point: you
+do not appear in Discover and see nobody there, but your chats keep working.
 
 The point is deleted the moment you delete your account.
 

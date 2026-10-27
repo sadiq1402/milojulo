@@ -40,7 +40,7 @@ Balance: tinted whites about 70% of a screen, orchid about 16%, butter and lilac
 Floating cards with soft orchid shadows instead of borders, pill buttons and inputs, full-colour welcome screen with tilted sticker chips, photo-forward feed cards, colour-coded filter chips, tab bar with a pill-highlighted active icon, soft pink and butter shapes behind plain screens.
 
 ## Why this direction (research summary)
-Surveys (mostly Western, informal) show women lean toward purple and softer tints and dislike orange, brown and gray; pink alone is not the favourite. Gen Z trend reports favour digital lavender, butter yellow and pastel-plus-bright combinations. Competitors: Tinder pink-orange, Bumble yellow, Hinge black-and-white with plum. Validate with 5 to 8 women in Pune before locking it.
+Surveys (mostly Western, informal) show women lean toward purple and softer tints and dislike orange, brown and gray; pink alone is not the favourite. Gen Z trend reports favour digital lavender, butter yellow and pastel-plus-bright combinations. Competitors: Tinder pink-orange, Bumble yellow, Hinge black-and-white with plum. Validate with 5 to 8 women from the beta audience before locking it.
 
 ## Logo (decided, decision 32)
 - The logo is design/brand/logo.png (1316 x 1195, transparent PNG): two figures forming an M under a heart, gradient orange to pink to violet to blue, with the "MiloJulo" wordmark ("Milo" white, "Julo" gradient) and the line "Connect Beyond Swipes." Founder's choice (2026-10-15): use it as is, heart included.

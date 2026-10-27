@@ -24,7 +24,7 @@ Modern, playful, inclusive, safe, social, non-judgmental, Indian but not traditi
 Avoid: hearts and cupid imagery beyond the logo's heart (decision 32), matrimony-style visuals, childish characters.
 
 ## Audience and place
-Pune first, with open sign-up (decision 27). Young adults (18+) in the IT corridors and student areas, from Hinjewadi, Wakad, Baner, Balewadi and Kharadi out to 55 Pune neighbourhoods (decision 50). Beta starts in two neighbourhood clusters (still to pick, docs/09) with a few hundred Members; there is no approval step (decision 15), and offline outreach, not the app, keeps it to those clusters (decision 27).
+Young adults (18+) in Indian cities, with open sign-up (decision 27). The app has no city or neighbourhood list: it works wherever a Member is and shows people within their Discover Range of the phone's location (decision 66). The beta starts with a few hundred Members in one place (still to pick, docs/09); there is no approval step (decision 15), and offline outreach, not the app, decides where they come from.
 
 ## Modes
 Friends, Activities, Dating, Serious, Casual, Networking, plus Circles (small local communities). Discover shows every Visible Member within your Discover Range with all their Modes (decision 45); a Connection Request goes under one of the other Member's Modes, Casual only when both chose it (decision 39). Casual carries an explicit adult-intent label and Media Consent: images and video only once both people allow media in that chat (decision 33).

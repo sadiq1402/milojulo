@@ -43,7 +43,6 @@ Concrete V1 schema built from docs/03-data-model-rls.md and docs/11-screen-data-
 ### Catalogs (seeded by migration; signed-in people read them; changed by migration or from the dashboard, except `banned_terms`)
 | Table | Columns |
 |---|---|
-| `areas` | `id text pk` (slug: baner, wakad, ...), `name`, `center geography(Point)` (area centroid), `is_active`, `zone` (west, pimpri_chinchwad, central, east, south; groups the picker), `lat` and `lng` (generated from `center`, so the app can suggest the nearest Area on the phone). 55 Pune Areas (decision 50). Nothing references it any more (#203): Members, Activities and Circles have no Area; it goes in a later migration. Signed-in people read it; signed-out visitors see nothing |
 | `tags` | `id smallint identity pk`, `slug unique`, `label`, `kind tag_kind`, `sort_order`, `is_active` |
 | `industries` | `id smallint identity pk`, `slug unique`, `label`, `sort_order`, `is_active` |
 | `prompt_questions` | `id smallint identity pk`, `text`, `sort_order`, `is_active` |
@@ -221,7 +220,7 @@ Edge Functions (supabase/functions, thin): `media` (photo and chat upload, confi
 - `availability` table → `profiles.availability` array (three fixed slots).
 - `notification_settings` table → two booleans on `profiles`.
 - `photos.is_primary` dropped: position 1 is the cover.
-- `profiles.coarse_cell` dropped; distance uses `member_locations` (decision 40) only. `profiles.area_id` and `service_regions` dropped (#203); `activities.area_id` replaced by `activities.place` (#203).
+- `profiles.coarse_cell` dropped; distance uses `member_locations` (decision 40) only. `profiles.area_id` and `service_regions` dropped (#203); `activities.area_id` replaced by `activities.place`, `circles.area_id` by `circles.place_name` and `center`, and the `areas` catalog dropped (#203, decision 66).
 - `profiles.intents` → `profiles.modes` (glossary: Mode).
 - No pre-approval: `profile_status` → `account_status` (active, banned) plus `paused_at`; `photo_status`, `approved_at`, `approved_by`, `reviewed_*` dropped; `hidden_at` / `removed_at` added for after-the-fact moderation.
 - Added `connection_members`, `connection_mode_changes`, `activity_venues`, `industries`.

@@ -3,7 +3,7 @@
 Use this to design the database from the screens. docs/12-db-schema.md is the resulting schema and wins where they differ (notably: no pre-approval, Connections carry a Mode). Mockups are in design/reference-html/screens/ (names after the semicolon in the first column). Content in the mockups (names, areas, times) is sample data, not real data. The per-screen table below reflects what the app calls today.
 
 ## Enumerations seen on the screens
-- area: 55 Pune neighbourhoods in five zones (west, pimpri_chinchwad, central, east, south; decision 50), catalog `areas` with a centre point
+- location: the phone's location only (Member Location, decision 40); the original 55-neighbourhood `areas` catalog was dropped in #203 (decision 66)
 - mode: friends, activities, networking, dating, serious, casual
 - availability slot: weekday_evenings, weekends, early_mornings
 - activity type: sports, food_chai, outdoors, games, learning
@@ -62,7 +62,7 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 ## Additions to the 17-table model (found from the screens)
 Historical: the list the schema was designed from. docs/12-db-schema.md ("Changes from docs/03 and docs/11") says what was built instead (for example no approved_at, coarse_cell, is_primary or notification_settings).
 
-New tables: `areas`, `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails; not built, #71). That brings the schema to about 26 tables (docs/12 has the final count: 33).
+New tables: `areas` (dropped in #203), `prompt_questions`, `profile_prompts`, `device_tokens` (user, token, platform, last_seen), `notification_settings`, `data_requests` (access/erasure requests, status), `consent_documents` (document, version, text, effective date), `banned_terms` (word filter), `blocked_email_domains` (disposable emails; not built, #71). That brings the schema to about 26 tables (docs/12 has the final count: 33).
 
 New columns:
 - profiles: submitted_at, approved_at, approved_by, paused_at, banned_reason, preferences (age_min, age_max, interested_in, max_distance_km), profession, industry, area_id, coarse_cell.
