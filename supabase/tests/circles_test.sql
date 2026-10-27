@@ -254,7 +254,7 @@ reset role;
 -- Allow: leaving keeps the Member's Activities posted to the Circle.
 select pg_temp.as_member('c5');
 select public.join_circle(pg_temp.id('trek'));
-select pg_temp.keep('c5act', public.post_activity('Trek meetup', 'outdoors', 'kharadi',
+select pg_temp.keep('c5act', public.post_activity('Trek meetup', 'outdoors',
   now() + interval '2 days', null, 4::smallint, null, null, pg_temp.id('trek')));
 select public.leave_circle(pg_temp.id('trek'));
 reset role;
@@ -315,7 +315,7 @@ update public.profiles set paused_at = null where id = pg_temp.m('c3');
 
 -- c1 (a member of club) posts an Activity to it.
 select pg_temp.as_member('c1');
-select pg_temp.keep('clubact', public.post_activity('Club run', 'sports', 'baner',
+select pg_temp.keep('clubact', public.post_activity('Club run', 'sports',
   now() + interval '3 days', null, 5::smallint, null, null, pg_temp.id('club')));
 reset role;
 
@@ -355,7 +355,7 @@ reset role;
 -- Allow: a member posts to the Circle (trek, c5 rejoins).
 select pg_temp.as_member('c5');
 select public.join_circle(pg_temp.id('trek'));
-select pg_temp.keep('trekact', public.post_activity('Sunday trek', 'outdoors', 'kharadi',
+select pg_temp.keep('trekact', public.post_activity('Sunday trek', 'outdoors',
   now() + interval '4 days', null, 6::smallint, null, null, pg_temp.id('trek')));
 reset role;
 select is((select circle_id from public.activities where id = pg_temp.id('trekact')), pg_temp.id('trek'),
@@ -364,7 +364,7 @@ select is((select circle_id from public.activities where id = pg_temp.id('trekac
 -- Deny: a non-member cannot post to the Circle.
 select pg_temp.as_member('c6');
 select throws_ok(
-  $$ select public.post_activity('Crash', 'outdoors', 'kharadi', now() + interval '2 days',
+  $$ select public.post_activity('Crash', 'outdoors', now() + interval '2 days',
        null, 4::smallint, null, null, pg_temp.id('trek')) $$,
   'join the circle to post to it', 'a non-member cannot post to a circle');
 reset role;
@@ -375,14 +375,14 @@ select pg_temp.as_member('c5'); select public.join_circle(pg_temp.id('arch')); r
 select pg_temp.act_as_admin(pg_temp.m('ad')); select public.admin_archive_circle(pg_temp.id('arch')); reset role;
 select pg_temp.as_member('c5');
 select throws_ok(
-  $$ select public.post_activity('Too late', 'outdoors', 'kharadi', now() + interval '2 days',
+  $$ select public.post_activity('Too late', 'outdoors', now() + interval '2 days',
        null, 4::smallint, null, null, pg_temp.id('arch')) $$,
   'join the circle to post to it', 'posting to an archived circle is refused');
 reset role;
 
 -- Allow: posting without a Circle still works.
 select pg_temp.as_member('c6');
-select isnt(public.post_activity('Solo plan', 'games', 'baner', now() + interval '2 days'), null,
+select isnt(public.post_activity('Solo plan', 'games', now() + interval '2 days'), null,
   'posting without a circle still works');
 reset role;
 

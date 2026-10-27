@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   act,
   fireEvent,
@@ -23,6 +24,8 @@ import {
 import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import * as discover from '../src/features/discover/api';
+import * as location from '../src/features/location/api';
+import * as device from '../src/features/location/device';
 import * as photos from '../src/features/photos/api';
 import * as profileSetup from '../src/features/profileSetup/api';
 import { emptyDraft } from '../test/profileSetup';
@@ -36,6 +39,7 @@ jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
 jest.mock('../src/features/chat/api');
 jest.mock('../src/features/discover/api');
+jest.mock('../src/features/location/api');
 jest.mock('../src/features/photos/api');
 jest.mock('../src/features/profileSetup/api');
 // Keep the real reason list; only the call to the database is stood in.
@@ -79,7 +83,7 @@ const boardActivity = (overrides: Partial<BoardListing>): BoardListing => ({
   hostName: 'Isha',
   title: 'Badminton doubles',
   type: 'sports',
-  areaId: 'baner',
+  distanceBand: '<2 km',
   startsAt: inDays(0, 23),
   endsAt: null,
   capacity: 4,
@@ -101,7 +105,7 @@ const chai = boardActivity({
   hostName: 'Rohan',
   title: 'Chai and board games',
   type: 'food_chai',
-  areaId: 'wakad',
+  distanceBand: '~3 km',
   startsAt: inDays(3, 17),
   spotsLeft: 1,
   startsWhen: 'this_weekend',
@@ -112,7 +116,7 @@ const trek = boardActivity({
   hostName: 'Asha',
   title: 'Sinhagad trek',
   type: 'outdoors',
-  areaId: 'baner',
+  distanceBand: '~5 km',
   startsAt: inDays(6, 6),
   spotsLeft: 0,
   startsWhen: 'later',
@@ -185,43 +189,12 @@ async function openDetail(title: string) {
   await screen.findByRole('header', { name: title });
 }
 
-// Baner and the five Areas nearest to it, with Wakad and Kharadi further out.
-function mockPuneAreas() {
-  const at = (lat: number) => ({ lat, lng: 73.8 });
-  jest.mocked(catalog.fetchAreas).mockResolvedValue(
-    areas(
-      {
-        baner: 'Baner',
-        aundh: 'Aundh',
-        balewadi: 'Balewadi',
-        pashan: 'Pashan',
-        sus: 'Sus',
-        bavdhan: 'Bavdhan',
-        wakad: 'Wakad',
-        kharadi: 'Kharadi',
-      },
-      {
-        baner: at(18.56),
-        aundh: at(18.561),
-        balewadi: at(18.562),
-        pashan: at(18.563),
-        sus: at(18.564),
-        bavdhan: at(18.565),
-        wakad: at(18.6),
-        kharadi: at(18.9),
-      },
-    ),
-  );
-}
-
 async function openCreate() {
   await openBoard();
   await fireEvent.press(
     await screen.findByRole('button', { name: 'Post an Activity' }),
   );
   await screen.findByRole('header', { name: 'Post an Activity' });
-  // The Area chips come from the catalog.
-  await screen.findByRole('button', { name: 'Baner' });
 }
 
 describe('the Activity Board', () => {
@@ -243,12 +216,34 @@ describe('the Activity Board', () => {
     ]);
   });
 
-  test('each card shows the type, title, Area, time, host first name and spots left', async () => {
+  test('within a day, keeps the nearest-first order the server sends', async () => {
+    const later = boardActivity({
+      id: 'near',
+      title: 'Nearby chess',
+      distanceBand: '<2 km',
+      startsAt: inDays(0, 23.5),
+    });
+    const sooner = boardActivity({
+      id: 'far',
+      title: 'Far football',
+      distanceBand: '~8 km',
+      startsAt: inDays(0, 22),
+    });
+    jest.mocked(activities.fetchBoard).mockResolvedValue([later, sooner]);
+    await openBoard();
+    await cardFor('Nearby chess');
+    const order = screen
+      .getAllByRole('button', { name: /, hosted by / })
+      .map(card => card.props.accessibilityLabel.split(',')[0]);
+    expect(order).toEqual(['Nearby chess', 'Far football']);
+  });
+
+  test('each card shows the type, title, distance, time, host first name and spots left', async () => {
     await openBoard();
     const card = within(await cardFor('Badminton doubles'));
     expect(card.getByText('Sports')).toBeOnTheScreen();
     expect(card.getByText('Badminton doubles')).toBeOnTheScreen();
-    expect(await card.findByText('Baner')).toBeOnTheScreen();
+    expect(card.getByText('<2 km')).toBeOnTheScreen();
     expect(card.getByText('Today, 11:00 pm')).toBeOnTheScreen();
     expect(card.getByText('Hosted by Isha')).toBeOnTheScreen();
     expect(card.getByText('2 spots left')).toBeOnTheScreen();
@@ -354,6 +349,73 @@ describe('the Activity Board', () => {
     expect(await cardFor('Kabaddi practice')).toBeOnTheScreen();
     expect(screen.queryByText('Badminton doubles')).not.toBeOnTheScreen();
   });
+
+  describe('without a fresh location', () => {
+    beforeEach(async () => {
+      await AsyncStorage.clear();
+      // Location was put off in the prompt, so the gate lets the Member through.
+      await AsyncStorage.setItem(
+        `location_prompt:${me.user.id}`,
+        JSON.stringify({ answer: 'notNow', notNowCount: 2, offShown: true }),
+      );
+      let permission = false;
+      jest
+        .spyOn(device, 'hasPermission')
+        .mockImplementation(async () => permission);
+      jest.spyOn(device, 'requestPermission').mockImplementation(async () => {
+        permission = true;
+        return true;
+      });
+      jest
+        .spyOn(device, 'currentPosition')
+        .mockResolvedValue({ lat: 18.56, lng: 73.78 });
+      jest.mocked(location.setLocation).mockResolvedValue();
+      jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+        modes: ['friends'],
+        paused: false,
+        rangeKm: 10,
+        hasLocation: false,
+      });
+      jest.mocked(activities.fetchBoard).mockResolvedValue([]);
+    });
+
+    afterEach(async () => {
+      jest.restoreAllMocks();
+      await AsyncStorage.clear();
+    });
+
+    test('the board says it needs my location', async () => {
+      await openBoard();
+      expect(
+        await screen.findByRole('header', {
+          name: 'Activities need your location',
+        }),
+      ).toBeOnTheScreen();
+      expect(
+        screen.getByText(
+          'MiloJulo shows Activities within the distance you choose, measured from where you are.',
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    test('Turn on location sends my location and shows the board', async () => {
+      await openBoard();
+      const turnOn = await screen.findByRole('button', {
+        name: 'Turn on location',
+      });
+      jest.mocked(discover.fetchMyDiscoverState).mockResolvedValue({
+        modes: ['friends'],
+        paused: false,
+        rangeKm: 10,
+        hasLocation: true,
+      });
+      jest.mocked(activities.fetchBoard).mockResolvedValue([badminton]);
+      await fireEvent.press(turnOn);
+      expect(location.setLocation).toHaveBeenCalledWith(18.56, 73.78);
+      expect(await cardFor('Badminton doubles')).toBeOnTheScreen();
+      expect(screen.queryByText('Activities need your location')).toBeNull();
+    });
+  });
 });
 
 describe('the Joined screen', () => {
@@ -415,25 +477,10 @@ describe('the Joined screen', () => {
 });
 
 describe('posting an Activity', () => {
-  test('Area offers 6 Areas near each other, and All areas for the rest', async () => {
-    mockPuneAreas();
+  test('has no Area field: an Activity is placed where the host is', async () => {
     await openCreate();
-    const nearby = ['Baner', 'Aundh', 'Balewadi', 'Pashan', 'Sus', 'Bavdhan'];
-    expect(
-      screen
-        .getAllByText(new RegExp(`^(${nearby.join('|')}|Kharadi)$`))
-        .map(chip => chip.props.children),
-    ).toEqual(nearby);
-
-    await fireEvent.press(screen.getByRole('button', { name: 'All areas' }));
-    expect(
-      await screen.findByRole('header', { name: 'Where is it?' }),
-    ).toBeOnTheScreen();
-    expect(screen.queryByText('Nearest to you')).not.toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('radio', { name: /Kharadi/ }));
-    expect(
-      screen.getByRole('button', { name: 'Kharadi', selected: true }),
-    ).toBeOnTheScreen();
+    expect(screen.queryByText('Area')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'All areas' })).toBeNull();
   });
 
   test('sends every field and opens the new Activity', async () => {
@@ -443,7 +490,6 @@ describe('posting an Activity', () => {
       '  Evening cycle ride ',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Outdoors' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Wakad' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
     await fireEvent.press(screen.getByRole('button', { name: 'More spots' }));
     await fireEvent.changeText(
@@ -463,7 +509,6 @@ describe('posting an Activity', () => {
     expect(activities.postActivity).toHaveBeenCalledWith({
       title: '  Evening cycle ride ',
       type: 'outdoors',
-      areaId: 'wakad',
       startsAt: indiaInstant(tomorrow, minutes),
       endsAt: indiaInstant(tomorrow, minutes + 120),
       capacity: 5,
@@ -509,14 +554,12 @@ describe('posting an Activity', () => {
       await screen.findByText('Give your Activity a title.'),
     ).toBeOnTheScreen();
     expect(screen.getByText('Pick a type.')).toBeOnTheScreen();
-    expect(screen.getByText('Pick an Area.')).toBeOnTheScreen();
     expect(activities.postActivity).not.toHaveBeenCalled();
   });
 
   test('a refused Post scrolls back to the first flagged field', async () => {
     await openCreate();
     const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo');
-    await fireEvent.press(screen.getByRole('button', { name: 'Baner' }));
     // The title sits higher on the page than the Type chips.
     await fireEvent(screen.getByTestId('field-title'), 'layout', {
       nativeEvent: { layout: { x: 0, y: 120, width: 0, height: 0 } },
@@ -536,7 +579,6 @@ describe('posting an Activity', () => {
       'Chai walk',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Games' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Baner' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
     await fireEvent.press(
       screen.getByRole('button', { name: 'Post Activity' }),
@@ -561,6 +603,17 @@ describe('posting an Activity', () => {
     expect(
       screen.getByRole('header', { name: 'Post an Activity' }),
     ).toBeOnTheScreen();
+  });
+
+  test('without a fresh location, says why the Activity cannot be posted', async () => {
+    const copy =
+      "Turn on location to post an activity: it's placed where you are, so people nearby can find it.";
+    jest
+      .mocked(activities.postActivity)
+      .mockRejectedValue(new ActivityError(copy));
+    await openCreate();
+    await fillAndPost();
+    expect(await screen.findByText(copy)).toBeOnTheScreen();
   });
 
   test('a refusal about one field shows under that field', async () => {
@@ -593,7 +646,7 @@ describe('Activity detail', () => {
     expect(screen.getByText('Sports')).toBeOnTheScreen();
     expect(screen.getByText('2 spots left')).toBeOnTheScreen();
     expect(screen.getByText('Today, 11:00 to 11:30 pm')).toBeOnTheScreen();
-    expect(await screen.findByText('Baner')).toBeOnTheScreen();
+    expect(screen.getByText('<2 km')).toBeOnTheScreen();
     expect(
       screen.getByText('The exact spot is shared once the host accepts you.'),
     ).toBeOnTheScreen();
@@ -801,8 +854,17 @@ describe('joining an Activity', () => {
     await openDetail('Badminton doubles');
     await fireEvent.press(screen.getByRole('button', { name: 'Directions' }));
     expect(openURL).toHaveBeenCalledWith(
-      'https://www.google.com/maps/dir/?api=1&destination=Baner%20Sports%20Complex%2C%20court%202%2C%20Baner%2C%20Pune',
+      'https://www.google.com/maps/dir/?api=1&destination=Baner%20Sports%20Complex%2C%20court%202',
     );
+  });
+
+  test('with no fresh location of mine, the detail shows no distance', async () => {
+    jest
+      .mocked(activities.fetchActivity)
+      .mockResolvedValue(detail({ distanceBand: null }));
+    await openDetail('Badminton doubles');
+    expect(screen.getByText('2 of 4 spots taken')).toBeOnTheScreen();
+    expect(screen.queryByText('<2 km')).toBeNull();
   });
 
   test('someone not yet accepted gets no directions', async () => {
@@ -1088,17 +1150,6 @@ describe('editing an Activity', () => {
     await screen.findByRole('header', { name: 'Edit Activity' });
   }
 
-  test('an Activity in a far Area keeps it among the Area chips', async () => {
-    mockPuneAreas();
-    jest
-      .mocked(activities.fetchActivity)
-      .mockResolvedValue({ ...myActivity, areaId: 'kharadi' });
-    await openEdit();
-    expect(
-      await screen.findByRole('button', { name: 'Kharadi', selected: true }),
-    ).toBeOnTheScreen();
-  });
-
   test('the form starts filled in and sends only what changed', async () => {
     await openEdit();
     expect(screen.getByLabelText("What's the plan?").props.value).toBe(
@@ -1129,19 +1180,18 @@ describe('editing an Activity', () => {
     ).toBeOnTheScreen();
   });
 
-  test('a Locked Activity keeps its title, time, Area and venue, and spots only go up', async () => {
+  test('a Locked Activity keeps its title, time and venue, and spots only go up', async () => {
     jest
       .mocked(activities.fetchActivity)
       .mockResolvedValue({ ...myActivity, isLocked: true, spotsLeft: 3 });
     await openEdit();
     expect(
       screen.getByText(
-        'Someone has joined, so the title, time, Area and venue stay as they are. You can still change the details or add Spots.',
+        'Someone has joined, so the title, time and venue stay as they are. You can still change the details or add Spots.',
       ),
     ).toBeOnTheScreen();
     expect(screen.queryByLabelText("What's the plan?")).toBeNull();
     expect(screen.queryByRole('button', { name: 'Tomorrow' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Baner' })).toBeNull();
     expect(screen.queryByLabelText('Where exactly (optional)')).toBeNull();
     expect(screen.getByRole('button', { name: 'Fewer spots' })).toBeDisabled();
     await fireEvent.changeText(

@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(115);
+select plan(114);
 
 -- e1 hosts; the others join. All hold only Friends.
 create function pg_temp.m(suffix text) returns uuid
@@ -26,8 +26,8 @@ language plpgsql as $$
 declare
   new_id uuid;
 begin
-  insert into public.activities (host_id, title, type, area_id, starts_at, capacity)
-  values (pg_temp.m(host), key, 'sports', 'baner', now() + starts, spots)
+  insert into public.activities (host_id, title, type, place, starts_at, capacity)
+  values (pg_temp.m(host), key, 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + starts, spots)
   returning id into new_id;
   if venue is not null then
     insert into public.activity_venues (activity_id, venue_detail) values (new_id, venue);
@@ -329,7 +329,7 @@ select is_empty($$ select * from public.get_activity(pg_temp.id('trek')) $$,
 reset role;
 update public.activities set status = 'open' where id = pg_temp.id('trek');
 
--- A Locked Activity: time, end, Area, venue and title stay; description and more spots may change.
+-- A Locked Activity: time, end, venue and title stay; description and more spots may change.
 select pg_temp.as_member('e1');
 select results_eq($$ select is_locked from public.get_activity(pg_temp.id('trek')) $$, $$ values (true) $$,
   'an Activity with an accepted joiner is locked');
@@ -339,9 +339,6 @@ select throws_ok($$ select public.update_activity(pg_temp.id('trek'), starts_at 
 select throws_ok($$ select public.update_activity(pg_temp.id('trek'), ends_at => now() + interval '2 days 4 hours') $$,
   'P0001', 'this activity is locked: only its description and a higher number of spots can change',
   'a Locked Activity''s end cannot change');
-select throws_ok($$ select public.update_activity(pg_temp.id('trek'), area_id => 'wakad') $$,
-  'P0001', 'this activity is locked: only its description and a higher number of spots can change',
-  'a Locked Activity''s Area cannot change');
 select throws_ok($$ select public.update_activity(pg_temp.id('trek'), venue_detail => 'Gate 5') $$,
   'P0001', 'this activity is locked: only its description and a higher number of spots can change',
   'a Locked Activity''s venue cannot change');
@@ -358,7 +355,7 @@ select lives_ok($$ select public.update_activity(pg_temp.id('trek'), description
   'a Locked Activity''s description can change');
 select lives_ok($$ select public.update_activity(pg_temp.id('trek'), capacity => 5::smallint) $$,
   'a Locked Activity can take more spots');
-select lives_ok($$ select public.update_activity(pg_temp.id('trek'), area_id => 'baner', title => 'trek',
+select lives_ok($$ select public.update_activity(pg_temp.id('trek'), title => 'trek',
                                                  venue_detail => 'Gate 2, Sinhagad base') $$,
   'restating a Locked Activity''s details is not a change');
 select results_eq($$ select description, capacity, spots_left from public.get_activity(pg_temp.id('trek')) $$,

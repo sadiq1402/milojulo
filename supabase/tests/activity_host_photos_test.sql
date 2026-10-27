@@ -16,12 +16,13 @@ begin
 end;
 $$;
 
--- 01 hosts in Baner; 02 lives in Kharadi, beyond 01's Discover range, so only the board links them.
+-- 01 lives in Baner and hosts in Kharadi, where 02 lives: beyond each other's Discover Range, so only the
+-- board links them.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004101');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004102');
 select pg_temp.place('00000000-0000-0000-0000-000000004102', 18.5515, 73.9348);
-insert into public.activities (host_id, title, type, area_id, starts_at, capacity)
-values ('00000000-0000-0000-0000-000000004101', 'Badminton', 'sports', 'baner', now() + interval '2 days', 3);
+insert into public.activities (host_id, title, type, place, starts_at, capacity)
+values ('00000000-0000-0000-0000-000000004101', 'Badminton', 'sports', 'SRID=4326;POINT(73.9348 18.5515)', now() + interval '2 days', 3);
 
 select is(pg_temp.seen('00000000-0000-0000-0000-000000004102', '00000000-0000-0000-0000-000000004101'), 2,
   'a Member who sees an Activity on the board gets its host''s live photos');

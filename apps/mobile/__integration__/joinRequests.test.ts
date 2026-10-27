@@ -31,7 +31,6 @@ const startsAt = indiaInstant(
 const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   title: 'Badminton doubles',
   type: 'sports',
-  areaId: 'baner',
   startsAt,
   endsAt: null,
   capacity: 4,
@@ -49,7 +48,6 @@ async function postAs(
   const { data, error } = await host.client.rpc('post_activity', {
     title: overrides.title ?? 'Chai and board games',
     type: 'games',
-    area_id: 'wakad',
     starts_at: startsAt,
     capacity: overrides.capacity ?? 4,
     venue_detail: 'Wakad social, upstairs',
@@ -219,7 +217,6 @@ test('refusals come back as friendly copy', async () => {
   const { data: cancelled } = await ravi.client.rpc('post_activity', {
     title: 'Called off',
     type: 'games',
-    area_id: 'wakad',
     starts_at: startsAt,
   });
   await ravi.client.rpc('cancel_activity', { activity_id: cancelled! });

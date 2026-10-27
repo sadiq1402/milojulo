@@ -25,23 +25,17 @@ export type Database = {
           Tables: {
             "activities": {
                   Row: {
-                    "area_id": string,"capacity": number,"circle_id": string | null,"created_at": string,"description": string | null,"ends_at": string | null,"hidden_at": string | null,"host_id": string,"id": string,"starts_at": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"activity_ends_at": string | null
+                    "capacity": number,"circle_id": string | null,"created_at": string,"description": string | null,"ends_at": string | null,"hidden_at": string | null,"host_id": string,"id": string,"place": unknown,"starts_at": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"activity_ends_at": string | null
                   }
                   ComputedFields: "activity_ends_at"
                   Insert: {
-                    "area_id": string,"capacity": number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id": string,"id"?: string,"starts_at": string,"status"?: Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"]
+                    "capacity": number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id": string,"id"?: string,"place": unknown,"starts_at": string,"status"?: Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"]
                   }
                   Update: {
-                    "area_id"?: string,"capacity"?: number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id"?: string,"id"?: string,"starts_at"?: string,"status"?: Database["public"]['Enums']["activity_status"],"title"?: string,"type"?: Database["public"]['Enums']["activity_type"]
+                    "capacity"?: number,"circle_id"?: string | null,"created_at"?: string,"description"?: string | null,"ends_at"?: string | null,"hidden_at"?: string | null,"host_id"?: string,"id"?: string,"place"?: unknown,"starts_at"?: string,"status"?: Database["public"]['Enums']["activity_status"],"title"?: string,"type"?: Database["public"]['Enums']["activity_type"]
                   }
                   Relationships: [
                     {
-      foreignKeyName: "activities_area_id_fkey"
-      columns: ["area_id"]
-isOneToOne: false
-      referencedRelation: "areas"
-      referencedColumns: ["id"]
-    },{
       foreignKeyName: "activities_circle_id_fkey"
       columns: ["circle_id"]
 isOneToOne: false
@@ -772,7 +766,7 @@ isOneToOne: false
                            },
 "activity_board":
 { Args: Record<PropertyKey, never>; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"visible_until": string
+              "capacity": number,"circle_id": string,"circle_name": string,"description": string,"distance_band": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"visible_until": string
             }[]
                            },
 "activity_ends_at":
@@ -820,6 +814,9 @@ isOneToOne: false
                            },
 "audit":
 { Args: { "action": string,"note": string,"target_id": string,"target_type": string }; Returns: undefined
+                           },
+"band_from_me":
+{ Args: { "place": unknown }; Returns: string
                            },
 "block_user":
 { Args: { "member_id": string }; Returns: undefined
@@ -875,7 +872,7 @@ isOneToOne: false
                            },
 "circle_activities":
 { Args: { "circle_id": string }; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+              "capacity": number,"circle_id": string,"circle_name": string,"description": string,"distance_band": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
             }[]
                            },
 "circle_members_of":
@@ -974,7 +971,7 @@ isOneToOne: false
                            },
 "get_activity":
 { Args: { "activity_id": string }; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
+              "capacity": number,"circle_id": string,"circle_name": string,"connection_id": string,"description": string,"distance_band": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_locked": boolean,"is_mine": boolean,"my_request_id": string,"my_request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"status": Database["public"]['Enums']["activity_status"],"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail": string
             }[]
                            },
 "get_circle":
@@ -1016,7 +1013,7 @@ isOneToOne: false
                            },
 "joined_activities":
 { Args: Record<PropertyKey, never>; Returns: {
-              "area_id": string,"capacity": number,"circle_id": string,"circle_name": string,"description": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
+              "capacity": number,"circle_id": string,"circle_name": string,"description": string,"distance_band": string,"ends_at": string,"host_id": string,"host_name": string,"host_photo_id": string,"id": string,"is_mine": boolean,"request_status": Database["public"]['Enums']["request_status"],"spots_left": number,"starts_at": string,"starts_when": string,"title": string,"type": Database["public"]['Enums']["activity_type"]
             }[]
                            },
 "kept_connections":
@@ -1106,7 +1103,7 @@ isOneToOne: false
             }[]
                            },
 "post_activity":
-{ Args: { "area_id": string,"capacity"?: number,"circle_id"?: string,"description"?: string,"ends_at"?: string,"starts_at": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail"?: string }; Returns: string
+{ Args: { "capacity"?: number,"circle_id"?: string,"description"?: string,"ends_at"?: string,"starts_at": string,"title": string,"type": Database["public"]['Enums']["activity_type"],"venue_detail"?: string }; Returns: string
                            },
 "profile_minimum_gap":
 { Args: { "member_id": string }; Returns: string
@@ -1206,7 +1203,7 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "update_activity":
-{ Args: { "activity_id": string,"area_id"?: string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at"?: string,"title"?: string,"venue_detail"?: string }; Returns: undefined
+{ Args: { "activity_id": string,"capacity"?: number,"description"?: string,"ends_at"?: string,"starts_at"?: string,"title"?: string,"venue_detail"?: string }; Returns: undefined
                            },
 "withdraw_activity_request":
 { Args: { "request_id": string }; Returns: undefined

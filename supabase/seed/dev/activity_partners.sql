@@ -55,7 +55,7 @@ select not exists (select 1 from public.activities where host_id = :'rohan' and 
               and status = 'open') as post_mine \gset
 select set_config('request.jwt.claims', json_build_object('sub', :'rohan', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select public.post_activity('Doubles badminton', 'sports', 'baner', :'tomorrow_seven',
+select public.post_activity('Doubles badminton', 'sports', :'tomorrow_seven',
   :'tomorrow_seven'::timestamptz + interval '90 minutes', 3::smallint, 'Bring your own racquet, shuttles on me.',
   'Court 2, Baner Sports Club')
 where :'post_rohan'::boolean;
@@ -64,7 +64,7 @@ reset role;
 -- The phone's Member hosts chai and board games; Isha (already connected) and Kabir ask to join.
 select set_config('request.jwt.claims', json_build_object('sub', :'me', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select public.post_activity('Chai and board games', 'games', 'wakad', :'tomorrow_six', null, 4::smallint,
+select public.post_activity('Chai and board games', 'games', :'tomorrow_six', null, 4::smallint,
   'Catan and Codenames, beginners welcome.', 'Table by the window, Chai Point Wakad')
 where :'post_mine'::boolean;
 reset role;

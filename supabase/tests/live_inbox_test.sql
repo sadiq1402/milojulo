@@ -39,8 +39,8 @@ select results_eq(format($$ select count(*)::int from pg_temp.events_for(%L) $$,
 
 -- Join Requests.
 reset role;
-insert into public.activities (host_id, title, type, area_id, starts_at, capacity)
-values (:'host', 'Badminton', 'sports', 'baner', now() + interval '2 days', 3)
+insert into public.activities (host_id, title, type, place, starts_at, capacity)
+values (:'host', 'Badminton', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 3)
 returning id as activity \gset
 select pg_temp.act_as_member(:'kabir');
 select public.join_activity_request(:'activity') as join_request \gset

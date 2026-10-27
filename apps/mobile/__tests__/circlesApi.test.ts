@@ -77,7 +77,7 @@ test('Circle Activities carry the Circle label from the board shape', async () =
         host_name: 'Kabir',
         title: 'Sinhagad trek',
         type: 'outdoors',
-        area_id: 'baner',
+        distance_band: '~4 km',
         starts_at: '2027-01-15T00:00:00Z',
         ends_at: null,
         capacity: 6,
@@ -97,6 +97,7 @@ test('Circle Activities carry the Circle label from the board shape', async () =
     id: 'a1',
     circleId: 'c1',
     circleName: 'Weekend Trekkers',
+    distanceBand: '~4 km',
   });
 });
 
@@ -132,7 +133,6 @@ test('posting to a Circle sends its id and words the not-a-member refusal', asyn
   await postActivity({
     title: 'Sinhagad trek',
     type: 'outdoors',
-    areaId: 'baner',
     startsAt: '2027-01-15T00:00:00Z',
     endsAt: null,
     capacity: 6,
@@ -150,7 +150,6 @@ test('posting to a Circle sends its id and words the not-a-member refusal', asyn
     postActivity({
       title: 'Sinhagad trek',
       type: 'outdoors',
-      areaId: 'baner',
       startsAt: '2027-01-15T00:00:00Z',
       endsAt: null,
       capacity: 6,
@@ -167,7 +166,6 @@ test('a title or description the word filter refuses reads as friendly copy', as
     postActivity({
       title: 'x',
       type: 'outdoors',
-      areaId: 'baner',
       startsAt: '2027-01-15T00:00:00Z',
       endsAt: null,
       capacity: 6,
@@ -177,5 +175,26 @@ test('a title or description the word filter refuses reads as friendly copy', as
     }),
   ).rejects.toThrow(
     "Some of that wording isn't allowed on MiloJulo. Please change it.",
+  );
+});
+
+test('posting without a fresh location reads as friendly copy and sends no Area', async () => {
+  refuse('turn on location to post an activity');
+  const fields = {
+    title: 'Chai walk',
+    type: 'food_chai' as const,
+    startsAt: '2027-01-15T00:00:00Z',
+    endsAt: null,
+    capacity: 4,
+    description: '',
+    venueDetail: '',
+    circleId: null,
+  };
+  await expect(postActivity(fields)).rejects.toThrow(
+    "Turn on location to post an activity: it's placed where you are, so people nearby can find it.",
+  );
+  expect(rpc).toHaveBeenCalledWith(
+    'post_activity',
+    expect.not.objectContaining({ area_id: expect.anything() }),
   );
 });

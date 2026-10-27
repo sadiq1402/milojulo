@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { brandMark, markAspectRatio } from '../../assets/brand';
-import { Button, Chip, Icon, Text } from '../../components';
+import { Button, Chip, Text } from '../../components';
 import { useSession } from '../../features/auth/SessionProvider';
 import type { FeedCard as FeedCardData } from '../../features/discover/api';
 import type { RangeKm } from '../../features/discover/range';
@@ -22,14 +22,14 @@ import {
   useMyDiscoverState,
   useSaveRange,
 } from '../../features/discover/queries';
-import { useTurnOnLocation } from '../../features/location/LocationGate';
 import { modeLabels, type Mode } from '../../features/modes';
 import type { MemberParams } from '../../navigation/types';
-import { colors, layout, radius, sizes, spacing } from '../../theme';
+import { colors, layout, sizes, spacing } from '../../theme';
 import {
   needsLocationBody,
   needsLocationTitle,
 } from '../location/LocationScreens';
+import { EmptyState, NeedsLocation } from '../shared/NeedsLocation';
 import { PausedNotice } from '../shared/PausedNotice';
 import { DistanceSheet, ModesSheet, rangeLabel } from './DiscoverSheets';
 import { FeedCard } from './FeedCard';
@@ -74,7 +74,7 @@ export function DiscoverScreen() {
           <PausedNotice explanation="While you're Paused, nobody new sees you and Discover stays empty. Your Connections and chats carry on as usual." />
         </View>
       ) : me.data?.hasLocation === false ? (
-        <NoLocation />
+        <NeedsLocation title={needsLocationTitle} body={needsLocationBody} />
       ) : paused === false ? (
         <>
           <ScrollView
@@ -243,42 +243,6 @@ function Feed({
   );
 }
 
-function NoLocation() {
-  const { turnOn, busy } = useTurnOnLocation();
-  return (
-    <View style={[styles.padded, styles.grow]}>
-      <EmptyState title={needsLocationTitle} body={needsLocationBody}>
-        <Button label="Turn on location" onPress={turnOn} loading={busy} />
-      </EmptyState>
-    </View>
-  );
-}
-
-function EmptyState({
-  title,
-  body,
-  children,
-}: {
-  title: string;
-  body: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <View style={styles.empty}>
-      <View style={styles.emptyIcon}>
-        <Icon name="pin" size={44} color={colors.orchid} />
-      </View>
-      <Text variant="h1" accessibilityRole="header" style={styles.center}>
-        {title}
-      </Text>
-      <Text color={colors.secondary} style={styles.center}>
-        {body}
-      </Text>
-      {children ? <View style={styles.emptyActions}>{children}</View> : null}
-    </View>
-  );
-}
-
 function LoadError({
   message,
   onRetry,
@@ -293,8 +257,6 @@ function LoadError({
     </View>
   );
 }
-
-const emptyIcon = 96;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.ground },
@@ -318,26 +280,5 @@ const styles = StyleSheet.create({
     gap: layout.blockGap,
   },
   grow: { flexGrow: 1 },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: layout.blockGap,
-    paddingHorizontal: spacing.xs,
-  },
-  emptyIcon: {
-    width: emptyIcon,
-    height: emptyIcon,
-    borderRadius: radius.full,
-    backgroundColor: colors.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  center: { textAlign: 'center' },
-  emptyActions: {
-    alignSelf: 'stretch',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
   padded: { paddingHorizontal: layout.pageMargin, gap: spacing.xs },
 });

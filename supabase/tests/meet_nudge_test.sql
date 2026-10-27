@@ -106,8 +106,8 @@ select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'t
 
 -- An Activity Connection is asked about by its Activity's prompt instead.
 select pg_temp.chat(:'dev', :'asha', 8, array[:'dev', :'asha']::uuid[]) as activity_chat \gset
-insert into public.activities (id, host_id, title, type, area_id, starts_at, capacity)
-values ('00000000-0000-0000-0000-00000000a5a1', :'dev', 'Trek', 'outdoors', 'baner', now() - interval '9 days', 3);
+insert into public.activities (id, host_id, title, type, place, starts_at, capacity)
+values ('00000000-0000-0000-0000-00000000a5a1', :'dev', 'Trek', 'outdoors', 'SRID=4326;POINT(73.787 18.559)', now() - interval '9 days', 3);
 update public.connections set activity_id = '00000000-0000-0000-0000-00000000a5a1' where id = :'activity_chat';
 select public.send_meet_nudges();
 select results_eq(format($$ select count(*)::int from pg_temp.nudges(%L) $$, :'asha'), array[1],

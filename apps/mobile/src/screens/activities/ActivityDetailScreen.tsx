@@ -42,7 +42,6 @@ import {
   useWithdrawJoinRequest,
 } from '../../features/activities/queries';
 import { formatWhen } from '../../features/activities/time';
-import { useAreaNames } from '../../features/catalog/queries';
 import { chatKeys } from '../../features/chat/queries';
 import type { MemberParams } from '../../navigation/types';
 import {
@@ -198,9 +197,8 @@ function ActivityBody({
   onSafetyTips: () => void;
   onOpenChat: (connectionId: string) => void;
 }) {
-  const areas = useAreaNames();
   const taken = activity.capacity - activity.spotsLeft;
-  const areaName = areas.data?.[activity.areaId] ?? '';
+  const band = activity.distanceBand ?? undefined;
   return (
     <ScrollView contentContainerStyle={styles.body}>
       {activity.status !== 'open' ? (
@@ -224,13 +222,13 @@ function ActivityBody({
           <Fact
             icon="pin"
             title={activity.venueDetail}
-            note={areaName}
-            action={
-              <Directions url={directionsUrl(activity.venueDetail, areaName)} />
-            }
+            note={band}
+            action={<Directions url={directionsUrl(activity.venueDetail)} />}
           />
+        ) : band ? (
+          <Fact icon="pin" title={band} note={venueNote(activity)} />
         ) : (
-          <Fact icon="pin" title={areaName} note={venueNote(activity)} />
+          <Fact icon="pin" title={venueNote(activity)} />
         )}
         <Fact
           icon="circles"

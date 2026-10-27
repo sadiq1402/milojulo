@@ -11,13 +11,13 @@ import { formatWhen } from '../../features/activities/time';
 import { activityTones, photoTones, sizes, spacing } from '../../theme';
 import { MemberAvatar } from '../shared/MemberAvatar';
 
-type Props = { activity: BoardActivity; areaName: string; onPress: () => void };
+type Props = { activity: BoardActivity; onPress: () => void };
 
 // The avatar's tone must differ from the card's, or a pink Games card hides a pink avatar.
 const hostTone = (activity: BoardActivity) =>
   photoTones[0] === activityTones[activity.type] ? 1 : 0;
 
-export function ActivityCard({ activity, areaName, onPress }: Props) {
+export function ActivityCard({ activity, onPress }: Props) {
   const when = formatWhen(activity.startsAt, null);
   const spots = spotsLeftLabel(activity.spotsLeft);
   const type = activityTypeLabels[activity.type];
@@ -25,11 +25,9 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${
-        activity.title
-      }, ${type}, ${areaName}, ${when}, ${hostLine(
-        activity,
-      ).toLowerCase()}, ${spots}${
+      accessibilityLabel={`${activity.title}, ${type}, ${
+        activity.distanceBand ? `${activity.distanceBand}, ` : ''
+      }${when}, ${hostLine(activity).toLowerCase()}, ${spots}${
         activity.circleName ? `, in ${activity.circleName}` : ''
       }`}
       accessibilityHint="Opens the Activity"
@@ -44,7 +42,9 @@ export function ActivityCard({ activity, areaName, onPress }: Props) {
           <Tag label={spots} tone="onPhoto" />
         </View>
         <View style={styles.facts}>
-          <Fact icon="pin" text={areaName} />
+          {activity.distanceBand ? (
+            <Fact icon="pin" text={activity.distanceBand} />
+          ) : null}
           <Fact icon="clock" text={when} />
           {activity.circleName ? (
             <Fact icon="circles" text={activity.circleName} />

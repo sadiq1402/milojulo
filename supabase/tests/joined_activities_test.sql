@@ -8,14 +8,14 @@ select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004202');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004203');
 
 -- Open Activities by 01 (and one by 02), named by what 02's request to them is.
-insert into public.activities (id, host_id, title, type, area_id, starts_at, capacity) values
-  ('00000000-0000-0000-0000-0000000042a1', '00000000-0000-0000-0000-000000004201', 'going soon', 'sports', 'baner', now() + interval '1 day', 4),
-  ('00000000-0000-0000-0000-0000000042a2', '00000000-0000-0000-0000-000000004201', 'going later', 'sports', 'baner', now() + interval '3 days', 4),
-  ('00000000-0000-0000-0000-0000000042a3', '00000000-0000-0000-0000-000000004201', 'waiting', 'sports', 'baner', now() + interval '2 days', 4),
-  ('00000000-0000-0000-0000-0000000042a4', '00000000-0000-0000-0000-000000004201', 'declined', 'sports', 'baner', now() + interval '2 days', 4),
-  ('00000000-0000-0000-0000-0000000042a5', '00000000-0000-0000-0000-000000004201', 'cancelled', 'sports', 'baner', now() + interval '2 days', 4),
-  ('00000000-0000-0000-0000-0000000042a6', '00000000-0000-0000-0000-000000004202', 'hosted by 02', 'sports', 'baner', now() + interval '2 days', 4),
-  ('00000000-0000-0000-0000-0000000042a7', '00000000-0000-0000-0000-000000004201', 'only 03 asked', 'sports', 'baner', now() + interval '2 days', 4);
+insert into public.activities (id, host_id, title, type, place, starts_at, capacity) values
+  ('00000000-0000-0000-0000-0000000042a1', '00000000-0000-0000-0000-000000004201', 'going soon', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 4),
+  ('00000000-0000-0000-0000-0000000042a2', '00000000-0000-0000-0000-000000004201', 'going later', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '3 days', 4),
+  ('00000000-0000-0000-0000-0000000042a3', '00000000-0000-0000-0000-000000004201', 'waiting', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 4),
+  ('00000000-0000-0000-0000-0000000042a4', '00000000-0000-0000-0000-000000004201', 'declined', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 4),
+  ('00000000-0000-0000-0000-0000000042a5', '00000000-0000-0000-0000-000000004201', 'cancelled', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 4),
+  ('00000000-0000-0000-0000-0000000042a6', '00000000-0000-0000-0000-000000004202', 'hosted by 02', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 4),
+  ('00000000-0000-0000-0000-0000000042a7', '00000000-0000-0000-0000-000000004201', 'only 03 asked', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 4);
 insert into public.activity_requests (activity_id, requester_id, status) values
   ('00000000-0000-0000-0000-0000000042a1', '00000000-0000-0000-0000-000000004202', 'accepted'),
   ('00000000-0000-0000-0000-0000000042a2', '00000000-0000-0000-0000-000000004202', 'accepted'),

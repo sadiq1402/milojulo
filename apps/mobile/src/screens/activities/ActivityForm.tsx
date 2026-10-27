@@ -38,8 +38,6 @@ import {
   lastStartMinutes,
   minutesStep,
 } from '../../features/activities/time';
-import { areaShortlist } from '../../features/catalog/nearest';
-import { useAllAreas } from '../../features/catalog/queries';
 import {
   colors,
   sizes,
@@ -48,15 +46,10 @@ import {
   fontFamily,
   fonts,
 } from '../../theme';
-import { AreaSheet } from '../profileSetup/AreaPicker';
-
-// The chosen Area and the nearest to it; the rest are under All areas.
-const shortlistSize = 6;
 
 export type FormValues = {
   title: string;
   type: ActivityType | null;
-  areaId: string | null;
   // India calendar day and minutes after its midnight.
   day: string;
   minutes: number;
@@ -122,7 +115,6 @@ type Errors = Partial<Record<ActivityField, string>>;
 const errorFieldOf: Record<keyof FormValues, ActivityField> = {
   title: 'title',
   type: 'type',
-  areaId: 'areaId',
   day: 'startsAt',
   minutes: 'startsAt',
   length: 'endsAt',
@@ -141,8 +133,6 @@ export function ActivityForm({
   locked = false,
   circleName,
 }: Props) {
-  const areas = useAllAreas();
-  const [pickingArea, setPickingArea] = useState(false);
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
   const scroll = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -206,9 +196,6 @@ export function ActivityForm({
     if (!editing && !values.type) {
       found.type = fieldMessages.type;
     }
-    if (!values.areaId) {
-      found.areaId = fieldMessages.areaId;
-    }
     const startChanged =
       values.day !== initial.day || values.minutes !== initial.minutes;
     if (
@@ -266,8 +253,8 @@ export function ActivityForm({
       {locked ? (
         <Card style={styles.locked}>
           <Text variant="bodySmall" color={colors.orchidDark}>
-            Someone has joined, so the title, time, Area and venue stay as they
-            are. You can still change the details or add Spots.
+            Someone has joined, so the title, time and venue stay as they are.
+            You can still change the details or add Spots.
           </Text>
         </Card>
       ) : (
@@ -298,40 +285,6 @@ export function ActivityForm({
       )}
       {locked ? null : (
         <>
-          <View {...anchor('areaId')}>
-            <ChipField label="Area" error={errors.areaId}>
-              {areaShortlist(
-                areas.data ?? [],
-                null,
-                values.areaId,
-                shortlistSize,
-              ).map(area => (
-                <Chip
-                  key={area.id}
-                  label={area.label}
-                  selected={values.areaId === area.id}
-                  onPress={() => set({ areaId: area.id })}
-                />
-              ))}
-              <Chip
-                label="All areas"
-                accessibilityHint="Opens the full list of Areas"
-                action
-                onPress={() => setPickingArea(true)}
-              />
-            </ChipField>
-            <AreaSheet
-              visible={pickingArea}
-              title="Where is it?"
-              areas={(areas.data ?? []).filter(area => area.active)}
-              selected={values.areaId}
-              onClose={() => setPickingArea(false)}
-              onChoose={areaId => {
-                set({ areaId });
-                setPickingArea(false);
-              }}
-            />
-          </View>
           <ChipField label="Day" error={undefined}>
             {days.map(day => (
               <Chip

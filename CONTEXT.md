@@ -87,7 +87,7 @@ The limit of 10 Connection Requests a Member may send in any rolling 24 hours, a
 ### Activities and Circles
 
 **Activity**:
-A posted plan to do something at a time in an Area, with a fixed number of spots, that other Members ask to join; optionally posted to a Circle. It is over at its end time, or 3 hours after its start when it has none, and leaves the board then. Status: Open, Cancelled (by the host, or by a ban), Expired (set every 15 minutes once it is over) or Removed (taken down by an admin). Only accepted joiners and the host see its venue.
+A posted plan to do something at a time, placed at the host's Member Location when posted, with a fixed number of spots, that other Members ask to join; optionally posted to a Circle. It is over at its end time, or 3 hours after its start when it has none, and leaves the board then. Status: Open, Cancelled (by the host, or by a ban), Expired (set every 15 minutes once it is over) or Removed (taken down by an admin). Only accepted joiners and the host see its venue.
 _Avoid_: Event, meetup (for the post itself)
 
 **Join Request**:
@@ -101,7 +101,7 @@ An Activity's capacity, counted in joiners only (never the host); spots left is 
 An accepted joiner giving up their spot before the Activity starts; their Activity Connection stays.
 
 **Locked Activity**:
-An Activity with at least one accepted joiner; its time, Area and venue can no longer change, only its description and a higher capacity, or it is cancelled.
+An Activity with at least one accepted joiner; its time and venue can no longer change, only its description and a higher capacity, or it is cancelled.
 
 **Join Cap**:
 The limit of 10 Join Requests a Member may send in any rolling 24 hours.
@@ -110,7 +110,7 @@ The limit of 10 Join Requests a Member may send in any rolling 24 hours.
 The Connection between an Activity's host and a Member whose Join Request is accepted; created under the Activities Mode and linked to the Activity, or else the pair's existing Connection: an accepted one reused with its Mode, or a waiting Connection Request accepted as it stands (decision 25). Doesn't count toward the Request Cap.
 
 **Activity Board**:
-The list of open Activities not yet over, shown to every Visible Member regardless of the Modes they hold, grouped under Tonight, This weekend and Later (India time). Leaves out Activities whose host is blocked, banned, deleted, Auto-hidden or has withdrawn consent (a Paused host's stay), Auto-hidden Activities, and ones the viewer has asked to join.
+The list of open Activities not yet over within the viewer's Discover Range of their Member Location (empty without a fresh one), nearest first within each day with a distance band, shown to every Visible Member regardless of the Modes they hold, grouped under Tonight, This weekend and Later (India time). Leaves out Activities whose host is blocked, banned, deleted, Auto-hidden or has withdrawn consent (a Paused host's stay), Auto-hidden Activities, and ones the viewer has asked to join.
 
 **Joined**:
 The Activities screen listing a Member's Going (Activities they were accepted into, not yet over) and Waiting (Join Requests not yet answered); hosted Activities are left out.
@@ -130,7 +130,7 @@ A small admin-created community tied to one Area and one interest, which Members
 _Avoid_: Group, community (as a noun for this concept)
 
 **Area**:
-One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South), that an Activity or Circle belongs to. Members have no Area and nothing stands in for a missing Member Location (#203); Activities and Circles are next to lose it.
+One of the 55 fixed Pune neighbourhoods, each in one of five zones (West, Pimpri-Chinchwad, Central, East, South), that a Circle belongs to. Members and Activities have no Area and nothing stands in for a missing Member Location (#203); Circles are next to lose it.
 _Avoid_: cell
 
 **Member Location**:

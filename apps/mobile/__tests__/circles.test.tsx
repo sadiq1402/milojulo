@@ -51,7 +51,7 @@ const circleActivity: BoardActivity = {
   hostName: 'Kabir',
   title: 'Sinhagad sunrise trek',
   type: 'outdoors',
-  areaId: 'baner',
+  distanceBand: '~4 km',
   startsAt: '2027-01-15T00:00:00Z',
   endsAt: null,
   capacity: 6,
@@ -236,7 +236,6 @@ describe('a Circle I belong to', () => {
       'Evening doubles',
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Sports' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Baner' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Tomorrow' }));
     // The detail stays mounted under the form; its Activities should reload after posting.
     jest.mocked(circles.fetchCircleActivities).mockClear();

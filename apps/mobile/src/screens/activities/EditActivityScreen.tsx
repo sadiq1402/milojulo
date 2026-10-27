@@ -27,7 +27,6 @@ function valuesOf(activity: Activity): FormValues {
   return {
     title: activity.title,
     type: activity.type,
-    areaId: activity.areaId,
     day: start.dateKey,
     minutes: start.minutes,
     length: activity.endsAt
@@ -63,9 +62,6 @@ function changesFrom(before: FormValues, after: FormValues): ActivityChanges {
   const endsAt = endsAtOf(after);
   if (endsAt !== null && !sameInstant(endsAt, endsAtOf(before))) {
     changes.endsAt = endsAt;
-  }
-  if (after.areaId !== before.areaId && after.areaId) {
-    changes.areaId = after.areaId;
   }
   if (after.venueDetail.trim() !== before.venueDetail) {
     changes.venueDetail = after.venueDetail;
