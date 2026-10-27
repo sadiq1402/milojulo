@@ -374,8 +374,8 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 </script>
 <script>
 (() => {
-  // The Apps Script web app URL (#233). Until it is set, the form says sign-ups open soon.
-  const WAITLIST_URL = '';
+  // The Apps Script web app (web/waitlist). If it is ever emptied, the form says sign-ups open soon.
+  const WAITLIST_URL = 'https://script.google.com/macros/s/AKfycbztiNmMgUVI6me0A3EJqwp6ybnINQR4edV3KT2cqBRIAyDhn2SOTh8ca6yOOEEw2jCKJw/exec';
   const okFor = form => form.id === 'join' ? 'ok1' : 'ok2';
   for (const form of document.querySelectorAll('form[data-waitlist]')) {
     const err = document.createElement('p');
