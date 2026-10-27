@@ -25,7 +25,6 @@ export function CreateActivityScreen({ navigation, route }: Props) {
     return {
       title: '',
       type: null,
-      areaId: null,
       day: start.dateKey,
       minutes: start.minutes,
       length: defaultLength,
@@ -39,7 +38,6 @@ export function CreateActivityScreen({ navigation, route }: Props) {
     const activityId = await postActivity({
       title: values.title,
       type: values.type!,
-      areaId: values.areaId!,
       startsAt: startsAtOf(values),
       endsAt: endsAtOf(values),
       capacity: values.capacity,

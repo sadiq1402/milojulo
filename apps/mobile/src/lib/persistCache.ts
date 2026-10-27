@@ -11,7 +11,8 @@ import { discoverKeys } from '../features/discover/queries';
 // Bump when a saved query's data changes shape, so old copies are dropped instead of hydrated.
 // 2: Discover cards have photoIds, not photoId (#199); a hydrated old card crashed the slider.
 // 3: Discover state has hasLocation and a range that is never Anywhere (#203).
-const cacheVersion = '3';
+// 4: the Activity Board carries distanceBand, not areaId (#203).
+const cacheVersion = '4';
 const savedFor = 24 * 60 * 60_000;
 
 // Chat text never goes to the phone's (unencrypted) storage: the Inbox preview fills in on refresh.

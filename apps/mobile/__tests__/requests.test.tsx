@@ -449,7 +449,7 @@ describe('Inbox Join Requests', () => {
       hostName: 'Asha',
       title: 'Badminton doubles',
       type: 'sports',
-      areaId: 'wakad',
+      distanceBand: '~3 km',
       startsAt: kabirJoins.activityStartsAt,
       endsAt: null,
       capacity: 4,

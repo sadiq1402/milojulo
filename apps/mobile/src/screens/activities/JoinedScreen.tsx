@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, SegmentedControl, Text, TopBar } from '../../components';
 import { useJoined } from '../../features/activities/queries';
-import { useAreaNames } from '../../features/catalog/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, spacing } from '../../theme';
 import { ActivityCard } from './ActivityCard';
@@ -27,7 +26,6 @@ export function JoinedScreen({
 }: NativeStackScreenProps<MemberParams, 'Joined'>) {
   const [tab, setTab] = useState<Tab>('going');
   const joined = useJoined();
-  const areas = useAreaNames();
   const shown = (joined.data ?? []).filter(activity =>
     tab === 'going'
       ? activity.requestStatus === 'accepted'
@@ -72,7 +70,6 @@ export function JoinedScreen({
           renderItem={({ item }) => (
             <ActivityCard
               activity={item}
-              areaName={areas.data?.[item.areaId] ?? ''}
               onPress={() =>
                 navigation.navigate('ActivityDetail', { activityId: item.id })
               }

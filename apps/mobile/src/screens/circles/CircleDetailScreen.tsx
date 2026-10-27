@@ -121,7 +121,6 @@ function CircleActivities({
   onOpenActivity: (activityId: string) => void;
 }) {
   const activities = useCircleActivities(circleId);
-  const areas = useAreaNames();
   if (!activities.data || activities.data.length === 0) {
     return null;
   }
@@ -134,7 +133,6 @@ function CircleActivities({
         <ActivityCard
           key={activity.id}
           activity={activity}
-          areaName={areas.data?.[activity.areaId] ?? ''}
           onPress={() => onOpenActivity(activity.id)}
         />
       ))}
