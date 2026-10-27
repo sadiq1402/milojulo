@@ -142,3 +142,12 @@ update public.chat_media_settings set daily_media_allowance = null;
 ```
 
 A value above the fixed maximum is refused by the table's check.
+
+## 7. Why people delete their accounts
+The web page (milojulo.co.in/delete-account) and the app can record a reason when someone deletes their
+account. The rows name nobody. To see the counts:
+
+```sql
+select reason, count(*) from public.deletion_reasons group by reason order by count(*) desc;
+select created_at, reason, note from public.deletion_reasons where note is not null order by created_at desc;
+```

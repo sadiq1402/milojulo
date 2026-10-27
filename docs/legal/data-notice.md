@@ -86,8 +86,11 @@ to protect someone from serious harm.
 
 ## Deleting your account
 
-Delete it in the app: Settings → Delete account. If you no longer have the app, write to
-support@milojulo.co.in from the email address you sign in with and we will delete it for you.
+Delete it in the app (Me → Settings → Delete account) or on the web at
+[milojulo.co.in/delete-account](https://milojulo.co.in/delete-account), where you sign in with the same
+email code and can tell us why you are leaving (optional; we keep the answer without your name or email).
+If neither works, write to support@milojulo.co.in from the email address you sign in with and we will
+delete it for you.
 
 You disappear from Discover, chats, Activities and Circles immediately. Within about an hour, a job
 deletes your photos and chat media from storage and then the account itself; your profile,

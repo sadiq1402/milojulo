@@ -1,0 +1,111 @@
+<h1>Delete your account</h1>
+<p>You can delete your MiloJulo account and its data here, without the app. In the app it's under
+<strong>Me → Settings → Delete account</strong>.</p>
+
+<h2>What happens</h2>
+<ul>
+  <li><strong>At once:</strong> your profile disappears from Discover, Activities and Circles, and your location is
+    erased.</li>
+  <li><strong>Within about an hour:</strong> your profile, photos, prompts, chats, chat media and sign-in are
+    deleted for good.</li>
+  <li><strong>Kept for a while:</strong> anything that was reported to us (and a copy of reported photos or
+    media) is kept for 90 days as evidence, then deleted. Records we must keep by law are kept only as long
+    as the law requires.</li>
+</ul>
+<p>This can't be undone. You can sign up again later with the same email, as a new account.</p>
+
+<form id="email-step" class="step">
+  <h2>1. Your email</h2>
+  <p>We'll send a 6-digit code to the email you use for MiloJulo.</p>
+  <label for="email">Email address</label>
+  <input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+  <button type="submit">Send code</button>
+</form>
+
+<form id="code-step" class="step" hidden>
+  <h2>2. The code</h2>
+  <p id="code-help">Enter the 6-digit code we sent you.</p>
+  <label for="code">Code</label>
+  <input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+  <button type="submit">Continue</button>
+</form>
+
+<form id="reason-step" class="step" hidden>
+  <h2>3. Why are you leaving?</h2>
+  <p>Optional, but it helps us. We keep your answer without your name or email.</p>
+  <fieldset>
+    <label><input type="radio" name="reason" value="not_useful"> It wasn't useful for me</label>
+    <label><input type="radio" name="reason" value="no_one_nearby"> Not enough people near me</label>
+    <label><input type="radio" name="reason" value="met_someone"> I met someone, or found what I was looking for</label>
+    <label><input type="radio" name="reason" value="privacy"> Privacy concerns</label>
+    <label><input type="radio" name="reason" value="safety"> I didn't feel safe</label>
+    <label><input type="radio" name="reason" value="too_many_notifications"> Too many notifications</label>
+    <label><input type="radio" name="reason" value="taking_a_break"> I'm taking a break</label>
+    <label><input type="radio" name="reason" value="other"> Something else</label>
+  </fieldset>
+  <label for="note">Anything else you'd like to tell us? (optional)</label>
+  <textarea id="note" maxlength="500" rows="4"></textarea>
+  <label class="confirm"><input id="confirm" type="checkbox" required> I understand my account and data will be
+    deleted and this can't be undone.</label>
+  <button type="submit" class="danger">Delete my account</button>
+</form>
+
+<div id="done" class="step" hidden>
+  <h2>Your account is being deleted</h2>
+  <p>Your data will be gone within about an hour, and the app will sign you out. Thank you for trying MiloJulo.</p>
+</div>
+
+<p id="error" class="error" role="alert" hidden></p>
+<p class="small">Trouble? Write to <a href="mailto:support@milojulo.co.in">support@milojulo.co.in</a> from the
+  email on your account and we'll delete it for you.</p>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+  // Public values: the same project URL and publishable key the app ships.
+  const supabase = createClient('https://rezavwgigxkkjycpfvkd.supabase.co',
+    'sb_publishable_4JWjKB1D-0ZGHWGzLcGZdQ_-uVAsERj', { auth: { persistSession: false } });
+
+  const $ = id => document.getElementById(id);
+  const show = id => { for (const s of document.querySelectorAll('.step')) s.hidden = s.id !== id; };
+  const fail = message => { $('error').textContent = message; $('error').hidden = !message; };
+  const busy = (form, on) => { for (const b of form.querySelectorAll('button')) b.disabled = on; };
+  let email = '';
+
+  $('email-step').addEventListener('submit', async e => {
+    e.preventDefault(); fail(''); busy(e.target, true);
+    email = $('email').value.trim().toLowerCase();
+    // Never creates an account: an unknown email gets the same answer, so the page can't be used to
+    // find out who has one.
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    busy(e.target, false);
+    if (error && !/signups not allowed|user not found/i.test(error.message)) {
+      return fail(/rate|seconds/i.test(error.message)
+        ? 'Please wait a minute before asking for another code.'
+        : "We couldn't send a code just now. Please try again in a moment.");
+    }
+    $('code-help').textContent = `If ${email} has a MiloJulo account, we've sent it a 6-digit code. It can take a minute.`;
+    show('code-step'); $('code').focus();
+  });
+
+  $('code-step').addEventListener('submit', async e => {
+    e.preventDefault(); fail(''); busy(e.target, true);
+    const { error } = await supabase.auth.verifyOtp({ email, token: $('code').value.trim(), type: 'email' });
+    busy(e.target, false);
+    if (error) return fail("That code didn't work. Check it, or go back and ask for a new one.");
+    show('reason-step');
+  });
+
+  $('reason-step').addEventListener('submit', async e => {
+    e.preventDefault(); fail(''); busy(e.target, true);
+    const note = $('note').value.trim() || null;
+    // A note with no reason picked still counts, as "something else".
+    const reason = document.querySelector('input[name=reason]:checked')?.value ?? (note ? 'other' : null);
+    const { error } = await supabase.rpc('delete_account', { reason, note });
+    busy(e.target, false);
+    if (error && !/already being deleted/.test(error.message)) {
+      return fail("We couldn't delete your account just now. Please try again, or write to support@milojulo.co.in.");
+    }
+    await supabase.auth.signOut();
+    show('done');
+  });
+</script>
