@@ -58,15 +58,6 @@ export function usePromptQuestions() {
   });
 }
 
-// Closed Areas too, for an Activity that still sits in one.
-export function useAllAreas() {
-  return useQuery({
-    queryKey: catalogKeys.areas,
-    queryFn: fetchAreas,
-    staleTime: Infinity,
-  });
-}
-
 export function useTagList() {
   return useQuery({
     queryKey: catalogKeys.tags,

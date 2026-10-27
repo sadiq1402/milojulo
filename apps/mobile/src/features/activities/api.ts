@@ -65,6 +65,10 @@ const refusals: Record<string, { message: string; field?: ActivityField }> = {
   'join the circle to post to it': {
     message: 'Join this Circle before posting an Activity to it.',
   },
+  'turn on location to post an activity': {
+    message:
+      "Turn on location to post an activity: it's placed where you are, so people nearby can find it.",
+  },
 };
 
 function refusal(error: { message: string }): ActivityError {
@@ -83,7 +87,7 @@ export function toBoardActivity(row: ActivityRow): BoardActivity {
     hostName: row.host_name,
     title: row.title,
     type: row.type,
-    areaId: row.area_id,
+    distanceBand: row.distance_band ?? null,
     startsAt: row.starts_at,
     endsAt: row.ends_at ?? null,
     capacity: row.capacity,
@@ -155,7 +159,6 @@ export async function postActivity(fields: ActivityFields): Promise<string> {
   const { data, error } = await supabase.rpc('post_activity', {
     title: fields.title.trim(),
     type: fields.type,
-    area_id: fields.areaId,
     starts_at: fields.startsAt,
     ends_at: fields.endsAt ?? undefined,
     capacity: fields.capacity,
@@ -181,7 +184,6 @@ export async function updateActivity(
     capacity: changes.capacity,
     starts_at: changes.startsAt,
     ends_at: changes.endsAt ?? undefined,
-    area_id: changes.areaId,
     venue_detail: changes.venueDetail?.trim(),
   });
   if (error) {

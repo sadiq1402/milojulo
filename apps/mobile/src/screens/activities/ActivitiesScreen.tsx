@@ -23,10 +23,10 @@ import {
   useStillListed,
 } from '../../features/activities/queries';
 import { useSession } from '../../features/auth/SessionProvider';
-import { useAreaNames } from '../../features/catalog/queries';
 import { useMyDiscoverState } from '../../features/discover/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, sizes, spacing } from '../../theme';
+import { NeedsLocation } from '../shared/NeedsLocation';
 import { PausedNotice } from '../shared/PausedNotice';
 import { ActivityCard } from './ActivityCard';
 import { MeetPrompts } from './MeetPrompts';
@@ -51,7 +51,6 @@ export function ActivitiesScreen() {
     }, [refetch]),
   );
   const me = useMyDiscoverState(useSession().session!.user.id);
-  const areas = useAreaNames();
   const rows: Row[] = groupBoard(listed ?? []).flatMap(section => [
     { kind: 'heading' as const, when: section.when },
     ...section.activities.map(activity => ({
@@ -79,6 +78,11 @@ export function ActivitiesScreen() {
             alsoRefresh={activityKeys.all}
           />
         </View>
+      ) : me.data?.hasLocation === false ? (
+        <NeedsLocation
+          title="Activities need your location"
+          body="MiloJulo shows Activities within the distance you choose, measured from where you are."
+        />
       ) : board.isError ? (
         <View style={styles.padded}>
           {/* The prompts don't depend on the board, so a failed board still shows them. */}
@@ -138,7 +142,6 @@ export function ActivitiesScreen() {
             ) : (
               <ActivityCard
                 activity={item.activity}
-                areaName={areas.data?.[item.activity.areaId] ?? ''}
                 onPress={() =>
                   navigation.navigate('ActivityDetail', {
                     activityId: item.activity.id,

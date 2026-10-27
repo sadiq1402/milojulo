@@ -29,7 +29,6 @@ const today = () => indiaParts(new Date()).dateKey;
 const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   title: 'Sinhagad trek',
   type: 'outdoors',
-  areaId: 'baner',
   startsAt: indiaInstant(addDays(today(), 14), 6 * 60),
   endsAt: indiaInstant(addDays(today(), 14), 10 * 60),
   capacity: 6,

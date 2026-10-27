@@ -43,7 +43,6 @@ function expectedWhen(startsAt: string): StartsWhen {
 const fields = (overrides: Partial<ActivityFields> = {}): ActivityFields => ({
   title: 'Badminton doubles',
   type: 'sports',
-  areaId: 'baner',
   startsAt: indiaInstant(addDays(today(), 14), 19 * 60),
   endsAt: indiaInstant(addDays(today(), 14), 21 * 60),
   capacity: 4,
@@ -88,7 +87,7 @@ test('a posted Activity is on the board with its details, grouped by the databas
     hostName: 'Asha',
     title: 'Badminton doubles',
     type: 'sports',
-    areaId: 'baner',
+    distanceBand: '<2 km',
     capacity: 4,
     spotsLeft: 4,
     description: 'All levels welcome.',
@@ -120,7 +119,6 @@ test('the host sees the venue; another Member gets the details without it', asyn
   const { data: theirs, error } = await ravi.client.rpc('post_activity', {
     title: 'Board games night',
     type: 'games',
-    area_id: 'wakad',
     starts_at: fields().startsAt,
     venue_detail: 'Ravi’s flat, Wakad',
   });
@@ -128,7 +126,7 @@ test('the host sees the venue; another Member gets the details without it', asyn
   expect(await fetchActivity(theirs!)).toMatchObject({
     hostName: 'Ravi',
     title: 'Board games night',
-    areaId: 'wakad',
+    distanceBand: '<2 km',
     isMine: false,
     venueDetail: null,
   });
@@ -169,7 +167,7 @@ test('the host edits only what changed; an empty venue clears it', async () => {
     title: 'Sinhagad sunrise trek',
     capacity: 6,
     description: 'All levels welcome.',
-    areaId: 'baner',
+    distanceBand: '<2 km',
     venueDetail: null,
   });
   await expect(

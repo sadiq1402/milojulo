@@ -41,7 +41,8 @@ export type BoardActivity = {
   hostName: string;
   title: string;
   type: ActivityType;
-  areaId: string;
+  // How far it is from me, as a band like `~3 km`; null when I have no fresh location.
+  distanceBand: string | null;
   startsAt: string;
   endsAt: string | null;
   capacity: number;
@@ -103,10 +104,10 @@ export type MyJoinRequest = {
   createdAt: string;
 };
 
+// No place: an Activity is placed where the host is when posting, and never moves.
 export type ActivityFields = {
   title: string;
   type: ActivityType;
-  areaId: string;
   startsAt: string;
   endsAt: string | null;
   capacity: number;
@@ -122,7 +123,6 @@ export type ActivityChanges = Partial<Omit<ActivityFields, 'type'>>;
 export type ActivityField =
   | 'title'
   | 'type'
-  | 'areaId'
   | 'startsAt'
   | 'endsAt'
   | 'capacity'
@@ -138,15 +138,14 @@ export class ActivityError extends Error {
 
 export type BoardSection = { when: StartsWhen; activities: BoardActivity[] };
 
-// Tonight, This weekend, Later, soonest first; empty groups left out.
+// Tonight, This weekend, Later; empty groups left out. Within a group the server's order
+// stands (start day, then nearest, then start time).
 export function groupBoard(activities: BoardActivity[]): BoardSection[] {
   const order: StartsWhen[] = ['tonight', 'this_weekend', 'later'];
   return order
     .map(when => ({
       when,
-      activities: activities
-        .filter(a => a.startsWhen === when)
-        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
+      activities: activities.filter(a => a.startsWhen === when),
     }))
     .filter(section => section.activities.length > 0);
 }
@@ -162,17 +161,15 @@ export function spotsLeftLabel(spotsLeft: number): string {
 export const fieldMessages = {
   title: 'Give your Activity a title.',
   type: 'Pick a type.',
-  areaId: 'Pick an Area.',
   startsAt: 'Pick a start time that is still to come.',
   endsAt: 'The end has to be after the start.',
   capacity: `Spots must be between ${minSpots} and ${maxSpots}.`,
 } as const;
 
-// Google Maps searches the venue text the host typed; the Area and city narrow it down.
-export function directionsUrl(venue: string, areaName: string): string {
-  const destination = [venue, areaName, 'Pune'].filter(Boolean).join(', ');
+// Google Maps searches the venue text the host typed, as is.
+export function directionsUrl(venue: string): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    destination,
+    venue,
   )}`;
 }
 
