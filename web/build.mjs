@@ -5,6 +5,8 @@ const out = new URL('./dist', import.meta.url).pathname;
 const legal = new URL('../docs/legal/', import.meta.url).pathname;
 mkdirSync(out, { recursive: true });
 const pages = [['terms', 'Terms of Use'], ['community-guidelines', 'Community Guidelines'], ['data-notice', 'Data Notice']];
+// The top bar and home page also link the deletion page, which isn't built from docs/legal.
+const menu = [...pages, ['delete-account', 'Delete account']];
 const css = `:root{--orchid:#CC2E86;--violet:#7B4DFF;--ink:#2B1233;--secondary:#6D5876;--ground:#FFF7FB;--card:#FFFFFF;--line:#F3DDEA;--tint:#FFE3F1}
 *{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:16px/24px Figtree,system-ui,sans-serif}
 header{max-width:760px;margin:0 auto;padding:24px 20px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -25,11 +27,11 @@ button{display:block;width:100%;height:52px;margin-top:20px;border:0;border-radi
 button:disabled{opacity:.6}button.danger{background:#C62828}
 .error{color:#C62828;font-weight:600}.small{color:var(--secondary);font-size:14px}
 hr{border:0;border-top:1px solid var(--line);margin:24px 0}footer{max-width:760px;margin:0 auto 32px;padding:0 20px;color:var(--secondary);font-size:14px}`;
-const shell = (title, slug, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} · MiloJulo</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><header><a class="brand" href="/">Milo<span>Julo</span></a><nav>${pages.map(([s, t]) => `<a href="/${s}"${s === slug ? ' aria-current="page"' : ''}>${t}</a>`).join('')}</nav></header><main>${body}</main><footer>MiloJulo · Find your people. · <a href="mailto:support@milojulo.co.in">support@milojulo.co.in</a></footer></body></html>`;
+const shell = (title, slug, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} · MiloJulo</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><header><a class="brand" href="/">Milo<span>Julo</span></a><nav>${menu.map(([s, t]) => `<a href="/${s}"${s === slug ? ' aria-current="page"' : ''}>${t}</a>`).join('')}</nav></header><main>${body}</main><footer>MiloJulo · Find your people. · <a href="mailto:support@milojulo.co.in">support@milojulo.co.in</a></footer></body></html>`;
 const r = new marked.Renderer(); const t = r.table.bind(r); r.table = x => `<div class="table">${t(x)}</div>`;
 for (const [slug, title] of pages) {
   const md = readFileSync(`${legal}${slug}.md`, 'utf8').replace(/\]\(\.\/([a-z-]+)\.md(#[^)]*)?\)/g, (_, s, h = '') => `](/${s}${h})`);
   writeFileSync(`${out}/${slug}.html`, shell(title, slug, marked.parse(md, { renderer: r })));
 }
 writeFileSync(`${out}/delete-account.html`, shell('Delete your account', 'delete-account', readFileSync(new URL('./delete-account.html', import.meta.url), 'utf8')));
-writeFileSync(`${out}/index.html`, shell('Find your people', '', `<h1>Find your people.</h1><p>MiloJulo helps you meet people near you who want the same thing you do: friends, activity partners, a date, or people to work with. The app is in beta.</p><ul>${pages.map(([s, t]) => `<li><a href="/${s}">${t}</a></li>`).join('')}</ul>`));
+writeFileSync(`${out}/index.html`, shell('Find your people', '', `<h1>Find your people.</h1><p>MiloJulo helps you meet people near you who want the same thing you do: friends, activity partners, a date, or people to work with. The app is in beta.</p><ul>${menu.map(([s, t]) => `<li><a href="/${s}">${t}</a></li>`).join('')}</ul><p>Want to leave? You can <a href="/delete-account">delete your account and data</a> here, without the app.</p>`));
