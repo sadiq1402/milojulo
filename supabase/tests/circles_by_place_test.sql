@@ -16,7 +16,7 @@ language sql as $$ insert into ids values ($1, $2) returning v $$;
 
 -- b1 views from Baner (default 10 km range); c1 has no fresh point.
 select pg_temp.create_visible_member(pg_temp.m(s)) from unnest(array['b1', 'c1']) s;
-select pg_temp.place(pg_temp.m('c1'), 18.559, 73.787, interval '8 days');
+select pg_temp.place(pg_temp.m('c1'), 18.559, 73.787, interval '31 days');
 
 -- ============ Admin create / edit ============
 select pg_temp.act_as_admin(pg_temp.m('ad'));

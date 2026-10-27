@@ -130,7 +130,7 @@ A small admin-created community tied to one place (a place name and a centre poi
 _Avoid_: Group, community (as a noun for this concept)
 
 **Member Location**:
-The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. Taken anywhere in the world, at most one update an hour, no history, deleted with the account (decision 40). Ignored once older than 7 days: a Member without a fresh one is not discoverable and sees an empty Discover until they share their location again (`has_fresh_location()`, #203).
+The latest point from a Member's phone, moved by a fixed random offset of a few hundred metres; never shown or readable, only used to measure distance. Taken anywhere in the world, at most one update an hour, no history, deleted with the account (decision 40). Ignored once older than 30 days: a Member without a fresh one is not discoverable and sees an empty Discover until they share their location again (`has_fresh_location()`, #203).
 _Avoid_: Location history, GPS, exact location (in product copy); Service Region, city box, Pune box (retired: there is no region or city boundary any more, #203); Area, neighbourhood, zone (retired: the 55-neighbourhood catalog is gone and nothing stands in for a missing Member Location, #203)
 
 **Discover Range**:

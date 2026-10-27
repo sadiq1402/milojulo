@@ -26,7 +26,7 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 | Email, Verify code (gettingIn/EmailScreen, OtpScreen; Email, Otp) | auth | auth.users | Supabase Auth email OTP only |
 | Age and consent (gettingIn/AgeConsentScreen; AgeConsent) | `consent_documents` (newest per kind with effective_at ≤ now) | `accept_consents(birth_date, document_ids)`: creates the profile row with date_of_birth, and the three consents | Reject under 18; a refusal leaves no profile. Never expose DOB to others; expose age only |
 | Reconsent (gettingIn/ReconsentScreen; no mockup) | `needs_reconsent()`, `consent_documents` | `accept_consents()` | Shown when a current document is not accepted or was withdrawn; offers Delete account |
-| Location (location/LocationScreens; Location, LocationOff) | none | `set_location(lat, lng)` | Member Location (decision 40); without a point from the last 7 days the Member is not in Discover either way (#203) |
+| Location (location/LocationScreens; Location, LocationOff) | none | `set_location(lat, lng)` | Member Location (decision 40); without a point from the last 30 days the Member is not in Discover either way (#203) |
 | Profile basics (profileSetup/BasicsStep; Setup1Basics) | none | `profiles.display_name` (direct update) | First name only |
 | Photos (profileSetup/PhotosStep; Setup2Photos) | `photos` (own: id, position; not hidden or removed) | media fn (`photo-upload`, `photo-confirm`, `photo-delete`); `move_photo(photo_id, new_position)` | 2 to 4 photos, 4:5; position 1 is the cover |
 | Prompts (profileSetup/PromptsStep; Setup3Prompts) | `prompt_questions`, own `profile_prompts` | `profile_prompts` insert/update (question, answer up to 140 chars) | Two answers required |

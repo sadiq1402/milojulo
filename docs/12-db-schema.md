@@ -73,7 +73,7 @@ Not built yet: a disposable-email blocklist table and signup hook (#71).
 | `banned_at`, `banned_reason` | |
 | `deleted_at` | set by `delete_account()`; hides the Member at once until the purge runs |
 
-**`member_locations`** (decision 40, docs/adr/0003): `user_id pk` → profiles, `point geography(Point)` (the phone's latest point moved by the offset; GiST index), `offset_m`, `offset_azimuth` (drawn once: 200 to 500 m, random direction), `updated_at`. RLS on, no policies: nobody reads or writes it directly, owner and admins included. Any point on Earth is taken (no Service Regions since #203). A point not updated in the last 7 days is ignored, and a Member with no fresh point is not a Discover candidate and sees an empty feed; there is no fallback.
+**`member_locations`** (decision 40, docs/adr/0003): `user_id pk` → profiles, `point geography(Point)` (the phone's latest point moved by the offset; GiST index), `offset_m`, `offset_azimuth` (drawn once: 200 to 500 m, random direction), `updated_at`. RLS on, no policies: nobody reads or writes it directly, owner and admins included. Any point on Earth is taken (no Service Regions since #203). A point not updated in the last 30 days is ignored, and a Member with no fresh point is not a Discover candidate and sees an empty feed; there is no fallback.
 
 **`completed_erasures`** (#96): `member_id pk` (no foreign key, so it survives the cascade), `requested_at`, `completed_at`, `objects_deleted`. Admins select; written only by `record_erasure()` (service role, the `account-purge` function).
 
@@ -203,8 +203,8 @@ Business functions:
 | `pending_evidence_copies(batch, skip)`, `mark_evidence_copied(report_ids)` | service role only (`copy-evidence`): reports whose evidence copy is still to be made, oldest first, with the source and the key to copy it to; marking them returns the originals nothing points at any more, for the job to delete (#160) |
 | `erasure_queue()`, `erasure_media_keys(member)`, `record_erasure(member, requested_at, objects_deleted)` | service role only (`account-purge`): Members with a pending erasure request, oldest first; the R2 keys to delete (see `delete_account()`); the `completed_erasures` row |
 | `set_location(lat, lng)` | the caller's Member Location, anywhere on Earth; not executable by anon. Refuses `create your profile first` (no profile, or deleted), `that location is not valid` (a null coordinate, or latitude outside -90..90 / longitude outside -180..180), `you can update your location once an hour` |
-| `member_point(member)` | internal (no client role): the Member's offset point if updated in the last 7 days, else null; for Discover and Dating distance |
-| `has_fresh_location()` | authenticated only: true when the caller has a Member Location updated in the last 7 days; false sends the app to its turn-location-on screen (Discover is empty without one) |
+| `member_point(member)` | internal (no client role): the Member's offset point if updated in the last 30 days, else null; for Discover and Dating distance |
+| `has_fresh_location()` | authenticated only: true when the caller has a Member Location updated in the last 30 days; false sends the app to its turn-location-on screen (Discover is empty without one) |
 | `within_range(owner, other)` | internal: true only when both Members have a fresh point and other is within owner's `discover_range_km` |
 | `fits_dating_preferences(seeker, candidate)` | internal: candidate's gender and age fit seeker's preferences and the two fresh points are within seeker's `pref_max_km`; false when either has no fresh point |
 | `discover_modes(viewer, member)`, `discover_modes(viewer, member)`, `discover_pair(viewer, member)`, `distance_band(m)`, `mode_phrase(mode)` | internal (no client role): Discover's rules, shared by `discover_feed`, `get_profile`, `match_reason` and `shares_photos_with` (photo links follow Discover) |
