@@ -12,7 +12,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
 import type { MyJoinRequest } from '../src/features/activities/model';
-import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation } from '../src/features/chat/api';
 import { chatKeys } from '../src/features/chat/queries';
@@ -20,7 +19,6 @@ import type { Mode } from '../src/features/modes';
 import * as requests from '../src/features/requests/api';
 import { navigationRef } from '../src/navigation/navigationRef';
 import { SendRequestSheet } from '../src/screens/requests/SendRequestSheet';
-import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 const member = jest.requireMock<
@@ -102,7 +100,6 @@ const isha = conversation({
 
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
-  jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ wakad: 'Wakad' }));
   jest
     .mocked(chat.fetchConversations)
     .mockResolvedValue([rohan, anaya, meera, isha]);

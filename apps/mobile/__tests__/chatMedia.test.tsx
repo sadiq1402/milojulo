@@ -2,14 +2,12 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { NativeModules, Platform } from 'react-native';
 import * as account from '../src/features/account/api';
 import * as activities from '../src/features/activities/api';
-import * as catalog from '../src/features/catalog/api';
 import * as chat from '../src/features/chat/api';
 import type { Conversation, Message } from '../src/features/chat/api';
 import * as capture from '../src/features/chat/capture';
 import * as media from '../src/features/chat/media';
 import { chatKeys } from '../src/features/chat/queries';
 import type { OutgoingMedia } from '../src/features/chat/media';
-import { areas } from '../test/catalog';
 import { renderApp, sessionFor } from '../test/render';
 
 const member = jest.requireMock<
@@ -126,7 +124,6 @@ const picked: OutgoingMedia = {
 beforeEach(() => {
   jest.mocked(account.fetchAccountStage).mockResolvedValue('member');
   jest.mocked(activities.fetchMyJoinRequests).mockResolvedValue([]);
-  jest.mocked(catalog.fetchAreas).mockResolvedValue(areas({ baner: 'Baner' }));
   jest.mocked(chat.fetchConversations).mockResolvedValue([isha]);
   jest
     .mocked(chat.fetchMessages)

@@ -20,11 +20,12 @@ import {
   useJoinCircle,
   useLeaveCircle,
 } from '../../features/circles/queries';
-import { useAreaNames, useTagNames } from '../../features/catalog/queries';
+import { useTagNames } from '../../features/catalog/queries';
 import type { MemberParams } from '../../navigation/types';
 import { colors, layout, radius, shadow, spacing } from '../../theme';
 import { ActivityCard } from '../activities/ActivityCard';
 import { MemberAvatar } from '../shared/MemberAvatar';
+import { DistanceBand } from './DistanceBand';
 
 type Props = NativeStackScreenProps<MemberParams, 'CircleDetail'>;
 
@@ -89,12 +90,12 @@ function CircleBody({
   onOpenActivity: (activityId: string) => void;
   onOpenMember: (memberId: string) => void;
 }) {
-  const areas = useAreaNames();
   const tags = useTagNames();
   return (
     <ScrollView contentContainerStyle={styles.body}>
       <View style={styles.tags}>
-        <Tag label={areas.data?.[circle.areaId] ?? ''} />
+        <Tag label={circle.placeName} />
+        <DistanceBand band={circle.distanceBand} />
         <Tag label={tags.data?.[circle.tagId] ?? ''} />
         {circle.iAmMember ? <Tag label="Joined" tone="match" /> : null}
       </View>
@@ -268,7 +269,12 @@ const styles = StyleSheet.create({
     paddingBottom: layout.sectionGap,
     gap: layout.blockGap,
   },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xxs },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.xxs,
+  },
   section: { gap: spacing.sm },
   action: {
     backgroundColor: colors.card,

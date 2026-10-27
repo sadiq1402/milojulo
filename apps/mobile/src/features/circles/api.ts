@@ -23,7 +23,8 @@ function refusal(error: { message: string }, table: Record<string, string>) {
   return new Error(table[error.message] ?? fallback);
 }
 
-// Active Circles, visible caller only (empty otherwise); joined ones first, then by name.
+// Active Circles within my Discover Range plus every one I joined (only those without a fresh
+// location); visible caller only (empty otherwise); joined ones first, then by name.
 export async function fetchCircles(): Promise<Circle[]> {
   const { data, error } = await supabase.rpc('browse_circles');
   if (error) {
@@ -93,18 +94,20 @@ export async function leaveCircle(circleId: string): Promise<void> {
 type CircleRow = {
   circle_id: string;
   name: string;
-  area_id: string;
+  place_name: string;
   tag_id: number;
   description: string | null;
   member_count: number;
   i_am_member: boolean;
+  distance_band: string | null;
 };
 
 function toCircle(row: CircleRow): Circle {
   return {
     id: row.circle_id,
     name: row.name,
-    areaId: row.area_id,
+    placeName: row.place_name,
+    distanceBand: row.distance_band ?? null,
     tagId: row.tag_id,
     description: row.description ?? null,
     memberCount: row.member_count,

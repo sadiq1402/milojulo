@@ -4,22 +4,24 @@ import { Button, Icon, Text } from '../../components';
 import { useTurnOnLocation } from '../../features/location/LocationGate';
 import { colors, layout, radius, spacing } from '../../theme';
 
-// A screen that shows nothing without a fresh location (Discover, the Activity Board).
+// A screen that shows nothing without a fresh location (Discover, the Activity Board), or,
+// inline in a list that already has its margins, little (Circles: joined ones only).
 export function NeedsLocation({
   title,
   body,
+  inline = false,
 }: {
   title: string;
   body: string;
+  inline?: boolean;
 }) {
   const { turnOn, busy } = useTurnOnLocation();
-  return (
-    <View style={styles.padded}>
-      <EmptyState title={title} body={body}>
-        <Button label="Turn on location" onPress={turnOn} loading={busy} />
-      </EmptyState>
-    </View>
+  const block = (
+    <EmptyState title={title} body={body}>
+      <Button label="Turn on location" onPress={turnOn} loading={busy} />
+    </EmptyState>
   );
+  return inline ? block : <View style={styles.padded}>{block}</View>;
 }
 
 export function EmptyState({
