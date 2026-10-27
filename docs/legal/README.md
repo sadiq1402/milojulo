@@ -1,12 +1,17 @@
 # Legal documents
 
-Drafts of the three documents a Member accepts before using MiloJulo. They are written from what
-the product actually does (docs/04-safety-compliance.md, docs/12-db-schema.md and the decision
-log), in plain language.
+The three documents a Member accepts before using MiloJulo: Terms of Use, Community Guidelines and
+the Data Notice (privacy policy). They are written from what the product actually does
+(docs/04-safety-compliance.md, docs/12-db-schema.md and the decision log), in plain language.
 
-**These are drafts, not legal advice, and no lawyer has seen them** (docs/09). They are here so
-the app stops asking people to accept documents they cannot read, and so a lawyer has something
-concrete to review rather than a blank page.
+**These are final texts written from research, not from a lawyer's review.** They follow the
+structure of comparable apps' public documents (Bumble, Hinge, Aisle, Timeleft) and the published
+requirements of India's DPDP Act 2023 and DPDP Rules 2025, the IT (Intermediary Guidelines) Rules
+2021, GDPR basics, and Google Play's and Apple's user-generated-content rules. They are not legal
+advice. No lawyer has seen them.
+
+Placeholders the founder fills before publishing: `[Grievance Officer name]`, `[Legal entity name]`
+and `[Postal address]`; the `grievance@milojulo.co.in` mailbox must exist.
 
 ## How they reach the app
 
@@ -31,7 +36,10 @@ document changes with them:
 |---|---|
 | What is collected at sign-up or in a profile | Data Notice, "What we collect" |
 | Retention of chat media or report evidence | Data Notice, "How long we keep things" (decisions 17, 62) |
-| How location is stored or shown | Data Notice, "Where you are" (decision 40) |
+| How location is stored or shown | Data Notice, "Where you are" (decisions 40, 66) |
 | Takedown, ban or report handling | Community Guidelines, "What we do about it" (decision 56) |
 | Casual, or anything about adult content | Terms, "Being 18 or over"; Guidelines, "Casual" (decision 33) |
 | Processors (Supabase, Cloudflare, Resend, FCM) | Data Notice, "Who else handles your data" |
+| The web deletion page ships (#98) | Terms, "Ending it"; Data Notice, "Deleting your account" |
+| Grievance Officer or timelines | Terms, "Grievance Officer"; Data Notice, "Grievance Officer" |
+| How fresh a Member Location must be | Data Notice, "Where you are" (decision 66) |
