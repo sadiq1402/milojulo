@@ -64,6 +64,18 @@ export async function placeDetails(
   };
 }
 
+export const pinAddressFailed = "We couldn't find the nearest address.";
+
+// The nearest address to a dropped pin (#249); empty where Google has none.
+export async function pinAddress(lat: number, lng: number): Promise<string> {
+  const { address } = await invokePlaces<{ address: string }>({
+    action: 'reverse',
+    lat,
+    lng,
+  });
+  return address;
+}
+
 // The suggestion's main text cut into plain and matched parts, for highlighting.
 export function highlightParts(
   suggestion: Pick<PlaceSuggestion, 'mainText' | 'matches'>,

@@ -26,6 +26,7 @@ import {
   spacing,
   textStyles,
 } from '../../theme';
+import { PinMapScreen } from './PinMapScreen';
 
 export const searchDelayMs = 300;
 const minSearchLength = 2;
@@ -51,6 +52,7 @@ export function PlaceField({ value, typedVenue, onChange, error }: Props) {
   const [token, setToken] = useState(newSessionToken);
   const [picking, setPicking] = useState<string | null>(null);
   const [pickFailed, setPickFailed] = useState<string | null>(null);
+  const [pinning, setPinning] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(text.trim()), searchDelayMs);
@@ -81,6 +83,14 @@ export function PlaceField({ value, typedVenue, onChange, error }: Props) {
     } finally {
       setPicking(null);
     }
+  };
+
+  const choosePin = (place: Venue) => {
+    onChange(place);
+    setPinning(false);
+    setSearching(false);
+    setText('');
+    setQuery('');
   };
 
   if (!searching && chosen) {
@@ -131,7 +141,7 @@ export function PlaceField({ value, typedVenue, onChange, error }: Props) {
           <ActivityIndicator size="small" color={colors.orchid} />
         ) : null}
       </View>
-      {suggestions.length > 0 ? (
+      {query.length >= minSearchLength ? (
         <View style={styles.list}>
           {suggestions.map((s, i) => (
             <Pressable
@@ -171,16 +181,47 @@ export function PlaceField({ value, typedVenue, onChange, error }: Props) {
               ) : null}
             </Pressable>
           ))}
-          <Text
-            variant="caption"
-            color={colors.secondary}
-            style={styles.google}
+          {/* Always last: for a ground, a gate or a corner Google doesn't list (#249). */}
+          <Pressable
+            onPress={() => setPinning(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Not listed? Drop a pin on the map"
+            style={({ pressed }) => [
+              styles.row,
+              styles.pinRow,
+              suggestions.length > 0 && styles.divided,
+              pressed && styles.pressed,
+            ]}
           >
-            Results from Google
-          </Text>
+            <Icon name="pin" size={22} color={colors.orchid} />
+            <View style={styles.fill}>
+              <Text style={[styles.rowName, styles.pinText]}>
+                Not listed? Drop a pin on the map
+              </Text>
+              <Text style={styles.rowAddress} color={colors.secondary}>
+                For a ground, a gate or a corner with no name
+              </Text>
+            </View>
+          </Pressable>
+          {suggestions.length > 0 ? (
+            <Text
+              variant="caption"
+              color={colors.secondary}
+              style={styles.google}
+            >
+              Results from Google
+            </Text>
+          ) : null}
         </View>
       ) : null}
       <FieldError message={failed ?? error} />
+      {pinning ? (
+        <PinMapScreen
+          visible
+          onClose={() => setPinning(false)}
+          onUse={choosePin}
+        />
+      ) : null}
     </View>
   );
 }
@@ -250,6 +291,8 @@ const styles = StyleSheet.create({
   },
   divided: { borderTopWidth: 1, borderTopColor: colors.line },
   pressed: { backgroundColor: colors.tint },
+  pinRow: { backgroundColor: colors.selected },
+  pinText: { color: colors.orchidDark },
   rowName: {
     ...textStyles.bodySmall,
     fontSize: 15,
