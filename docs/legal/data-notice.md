@@ -35,7 +35,7 @@ the last. No Member, and no part of the app, can read that point. It is used onl
 database to work out distances, and what anyone sees is a rounded band, such as "under 2 km" or
 "about 5 km".
 
-If your location has not been updated in the last 7 days, or you do not allow it, you do not
+If your location has not been updated in the last 30 days, or you do not allow it, you do not
 appear in Discover and Discover shows you nobody; your chats keep working. The point is deleted
 when you delete your account.
 
