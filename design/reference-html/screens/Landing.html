@@ -36,18 +36,22 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .fr{background:#CFF1E5;color:#0B4A3E}.ac{background:#FFF1B8;color:#2B1233}.nw{background:#D6ECFF;color:#1F4E79}.dt{background:#FFE3F1;color:#8E1F60}.cs{background:#E3D4FF;color:#4B2BB8}.ci{background:#FBEAF3;color:#4A2F55}
 
 
-/* two figures come together into the logo as the page scrolls (--p from 0 to 1) */
-.duo{--p:0;--e:calc(1 - (1 - var(--p)) * (1 - var(--p)));position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:.16}
+/* two figures walk together into the logo */
+.duo{position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:.16}
 .stage{position:relative;width:min(78vmin,620px);aspect-ratio:434/401}
 .stage img{position:absolute;display:block;max-width:none}
 .duo .l,.duo .r{top:0;width:50%}
-.duo .l{left:0;translate:calc((1 - var(--e)) * -45vw) 0}
-.duo .r{right:0;translate:calc((1 - var(--e)) * 45vw) 0}
-/* heart and glow arrive over the last stretch */
-.duo .h{--q:clamp(0, (var(--p) - .75) * 4, 1);left:35.6%;top:0;width:29.7%;opacity:var(--q);scale:calc(.6 + .4 * var(--q));translate:0 calc((1 - var(--q)) * 30%)}
-.duo .m{--g:clamp(0, (var(--p) - .9) * 10, 1);inset:0;width:100%;opacity:var(--g);filter:drop-shadow(0 0 calc(var(--g) * 18px) rgba(204,46,134,.45))}
+.duo .l{left:0;animation:walk-l 3.2s cubic-bezier(.45,0,.15,1) both}
+.duo .r{right:0;animation:walk-r 3.2s cubic-bezier(.45,0,.15,1) both}
+.duo .h{left:35.6%;top:0;width:29.7%;animation:pop 1.4s 2.6s cubic-bezier(.2,.7,.2,1) both}
+.duo .m{inset:0;width:100%;opacity:0;animation:reveal 2.4s 3.6s ease-in-out both}
+@keyframes walk-l{0%{translate:-45vw 0;opacity:0}25%{opacity:1}100%{translate:0 0;opacity:1}}
+@keyframes walk-r{0%{translate:45vw 0;opacity:0}25%{opacity:1}100%{translate:0 0;opacity:1}}
+@keyframes pop{0%{scale:.6;translate:0 30%;opacity:0}100%{scale:1;translate:0 0;opacity:1}}
+@keyframes reveal{0%{opacity:0;filter:drop-shadow(0 0 0 rgba(204,46,134,0))}100%{opacity:1;filter:drop-shadow(0 0 18px rgba(204,46,134,.45))}}
 .top,main,footer{position:relative;z-index:1}
 .top{z-index:10}
+@media (prefers-reduced-motion:reduce){.duo .l,.duo .r,.duo .h{animation:none}.duo .m{animation:none;opacity:1}}
 
 /* header */
 .top{position:sticky;top:0;z-index:10;background:rgba(255,247,251,.9);backdrop-filter:blur(10px)}
@@ -323,22 +327,5 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   </div>
 </footer>
 
-<script>
-(() => {
-  const duo = document.querySelector('.duo');
-  let queued = false;
-  const update = () => {
-    queued = false;
-    const max = document.documentElement.scrollHeight - innerHeight;
-    // they meet a little before the bottom, at the closing waitlist band
-    const p = max > 0 ? Math.min(scrollY / (max * 0.85), 1) : 1;
-    duo.style.setProperty('--p', p.toFixed(4));
-  };
-  const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
-  addEventListener('scroll', queue, { passive: true });
-  addEventListener('resize', queue);
-  update();
-})();
-</script>
 </body>
 </html>
