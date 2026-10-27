@@ -42,6 +42,7 @@ jest.mock('../src/features/activities/places', () => ({
   ...jest.requireActual('../src/features/activities/places'),
   searchPlaces: jest.fn(),
   placeDetails: jest.fn(),
+  pinAddress: jest.fn(),
 }));
 jest.mock('../src/features/auth/api');
 jest.mock('../src/features/catalog/api');
@@ -725,6 +726,113 @@ describe('posting an Activity', () => {
       await choosePlace();
     }
   }
+
+  const pune = { lat: 18.5204, lng: 73.8567 };
+  const sus = { latitude: 18.5362, longitude: 73.7804 };
+
+  // Searches, then taps the always-last row that opens the map (#249).
+  async function openPinMap() {
+    await fireEvent.changeText(
+      screen.getByLabelText('Search for the place'),
+      'nets',
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', {
+        name: 'Not listed? Drop a pin on the map',
+      }),
+    );
+    await screen.findByText('Press and hold the pin to move it');
+  }
+
+  test('dropping a pin: the map opens where the host is and the nearest address follows each drag', async () => {
+    jest.spyOn(device, 'currentPosition').mockResolvedValue(pune);
+    jest
+      .mocked(places.pinAddress)
+      .mockImplementation(async lat =>
+        lat === sus.latitude ? 'Sus Rd, Pashan, Pune' : 'Shivajinagar, Pune',
+      );
+    jest.mocked(places.searchPlaces).mockResolvedValue([]);
+    await openCreate();
+    await openPinMap();
+    expect(
+      await screen.findByText('Near Shivajinagar, Pune'),
+    ).toBeOnTheScreen();
+    expect(places.pinAddress).toHaveBeenCalledWith(pune.lat, pune.lng);
+
+    await fireEvent(screen.getByTestId('spot-pin'), 'dragEnd', {
+      nativeEvent: { coordinate: sus },
+    });
+    expect(
+      await screen.findByText('Near Sus Rd, Pashan, Pune'),
+    ).toBeOnTheScreen();
+    expect(places.pinAddress).toHaveBeenLastCalledWith(
+      sus.latitude,
+      sus.longitude,
+    );
+  });
+
+  test('dropping a pin: an address that fails to load can be tried again', async () => {
+    jest.spyOn(device, 'currentPosition').mockRejectedValue(new Error('off'));
+    jest
+      .mocked(places.pinAddress)
+      .mockRejectedValueOnce(new Error(places.placeSearchFailed))
+      .mockResolvedValue('Shivajinagar, Pune');
+    await openCreate();
+    await openPinMap();
+    expect(await screen.findByText(places.pinAddressFailed)).toBeOnTheScreen();
+    // No position from the phone: the map opens on Pune.
+    expect(places.pinAddress).toHaveBeenCalledWith(pune.lat, pune.lng);
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Try finding the address again' }),
+    );
+    expect(
+      await screen.findByText('Near Shivajinagar, Pune'),
+    ).toBeOnTheScreen();
+  });
+
+  test('dropping a pin: the spot needs a name, then fills Where and posts its point without a place id', async () => {
+    jest.spyOn(device, 'currentPosition').mockResolvedValue(pune);
+    jest.mocked(places.pinAddress).mockResolvedValue('Sus Rd, Pashan, Pune');
+    await openCreate();
+    await nameAndType(false);
+    await openPinMap();
+    await fireEvent(screen.getByTestId('spot-pin'), 'dragEnd', {
+      nativeEvent: { coordinate: sus },
+    });
+    await screen.findByText('Near Sus Rd, Pashan, Pune');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Use this spot' }),
+    );
+    expect(screen.getByText('Give this spot a name.')).toBeOnTheScreen();
+
+    await fireEvent.changeText(
+      screen.getByLabelText('Name this spot'),
+      ' Nets behind the ground ',
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Use this spot' }),
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'Change the place: Nets behind the ground',
+      }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Sus Rd, Pashan, Pune')).toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    expect(activities.postActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        place: {
+          name: 'Nets behind the ground',
+          address: 'Sus Rd, Pashan, Pune',
+          placeId: null,
+          lat: sus.latitude,
+          lng: sus.longitude,
+        },
+      }),
+    );
+  });
 
   test('a new Activity ends two hours after it starts', async () => {
     await openCreate();

@@ -165,6 +165,18 @@ test('posting without a place is refused under Where', async () => {
   });
 });
 
+test('a pin dropped on the map is a place without a Google place id', async () => {
+  const pin = {
+    name: 'Nets behind the ground, gate 2',
+    address: 'Sus Rd, Pashan, Pune, Maharashtra 411021, India',
+    placeId: null,
+    lat: 18.5362,
+    lng: 73.7804,
+  };
+  const id = await postActivity(fields({ title: 'Net practice', place: pin }));
+  expect((await fetchActivity(id))?.venue).toEqual(pin);
+});
+
 test('refusals come back as friendly copy tied to their field', async () => {
   await expect(postActivity(fields({ title: '   ' }))).rejects.toMatchObject({
     message: 'Give your Activity a title.',

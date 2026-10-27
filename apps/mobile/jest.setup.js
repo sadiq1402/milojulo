@@ -133,3 +133,20 @@ jest.mock('./src/features/push/messaging', () => ({
 
 // Realtime doesn't run under Jest; tests drive the Member channel through its manual mock.
 jest.mock('./src/features/live/memberChannel');
+
+// The Google Map (#249) is native; a View stands in, and tests fire the marker's dragEnd.
+jest.mock('react-native-maps', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const MapView = React.forwardRef((props, ref) => {
+    React.useImperativeHandle(ref, () => ({ animateToRegion: () => {} }));
+    return React.createElement(View, props);
+  });
+  const Marker = props => React.createElement(View, props);
+  return {
+    __esModule: true,
+    default: MapView,
+    Marker,
+    PROVIDER_GOOGLE: 'google',
+  };
+});

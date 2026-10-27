@@ -79,6 +79,12 @@ const glyphs = {
       <Circle cx="12" cy="10" r="2.3" />
     </>
   ),
+  locate: (
+    <>
+      <Circle cx="12" cy="12" r="4" />
+      <Path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+    </>
+  ),
   discover: (
     <>
       <Circle cx="12" cy="12" r="9" />

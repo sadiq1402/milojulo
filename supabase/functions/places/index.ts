@@ -1,4 +1,5 @@
-// Place search (#248): Google Places API (New) autocomplete and details for an Activity's venue. The
+// Place search (#248): Google Places API (New) autocomplete and details for an Activity's venue, and
+// Geocoding for the address nearest a dropped pin (#249). The
 // rules live in handler.ts; this file only wires in Supabase, the key and fetch.
 import { createClient } from '@supabase/supabase-js';
 import { createHandler } from './handler.ts';

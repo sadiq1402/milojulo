@@ -30,6 +30,7 @@
     "react-native-compressor": "^2.0.3",
     "react-native-image-crop-picker": "^0.52.0",
     "react-native-keyboard-controller": "^1.22.8",
+    "react-native-maps": "^1.29.11",
     "react-native-nitro-modules": "^0.37.1",
     "react-native-nitro-sound": "^0.2.20",
     "react-native-reanimated": "^4.7.1",

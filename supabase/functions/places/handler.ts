@@ -1,4 +1,5 @@
-// Place search for an Activity's venue (#248, decision 70) through Google Places API (New). The key
+// Place search for an Activity's venue (#248, decision 70) through Google Places API (New), and
+// the nearest address to a dropped pin (#249) through the Geocoding API. The key
 // stays here; the phone only sends what the host typed and gets back names, addresses and points.
 
 export interface Deps {
@@ -22,6 +23,7 @@ export type Suggestion = {
 export type Place = { placeId: string; name: string; address: string; lat: number; lng: number };
 
 const GOOGLE = 'https://places.googleapis.com/v1';
+const GEOCODE = 'https://maps.googleapis.com/maps/api/geocode/json';
 const BIAS_RADIUS_M = 50_000;
 const MAX_INPUT = 200;
 const SESSION_TOKEN = /^[A-Za-z0-9_-]{1,100}$/;
@@ -123,9 +125,33 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     return { placeId: place.id ?? placeId, name, address: place.formattedAddress ?? '', lat, lng };
   }
 
+  // The nearest address to a pin the host dropped (#249), through the Geocoding API.
+  async function reverse(_me: string, body: Record<string, unknown>) {
+    const { lat, lng } = body;
+    if (
+      typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng) ||
+      Math.abs(lat) > 90 || Math.abs(lng) > 180
+    ) {
+      throw new HttpError(400, 'send a valid point');
+    }
+    const query = new URLSearchParams({ latlng: `${lat},${lng}`, region: 'in', language: 'en', key: deps.apiKey });
+    const reply = await google(`${GEOCODE}?${query}`, { method: 'GET' }) as {
+      status?: string;
+      results?: { formatted_address?: string }[];
+      error_message?: string;
+    };
+    if (reply.status === 'ZERO_RESULTS') return { address: '' };
+    if (reply.status !== 'OK') {
+      log(`places: Geocoding answered ${reply.status}: ${reply.error_message ?? ''}`);
+      throw unavailable();
+    }
+    return { address: reply.results?.find((r) => r.formatted_address)?.formatted_address ?? '' };
+  }
+
   const actions: Record<string, (me: string, body: Record<string, unknown>) => Promise<unknown>> = {
     autocomplete,
     details,
+    reverse,
   };
 
   return async (req) => {

@@ -181,3 +181,48 @@ Deno.test('Google errors are logged and answered as one retryable error', async 
   });
   assertEquals((await down.call({ action: 'details', placeId: 'ChIJx', sessionToken: TOKEN })).status, 502);
 });
+
+Deno.test('reverse is for signed-in callers with a valid point', async () => {
+  const f = setup();
+  assertEquals((await f.call({ action: 'reverse', lat: 18.5, lng: 73.8 }, null)).status, 401);
+  for (const bad of [{}, { lat: '18.5', lng: 73.8 }, { lat: 91, lng: 73.8 }, { lat: 18.5, lng: -181 }]) {
+    const res = await f.call({ action: 'reverse', ...bad });
+    assertEquals(res.status, 400);
+    assertEquals(await res.json(), { error: 'send a valid point' });
+  }
+  assertEquals(f.sent, []);
+});
+
+Deno.test('reverse asks Geocoding for the nearest address to the pin', async () => {
+  const f = setup({
+    reply: () =>
+      googleJson({
+        status: 'OK',
+        results: [{ formatted_address: 'Sus Rd, Pashan, Pune, Maharashtra 411021, India' }, {
+          formatted_address: 'Pune',
+        }],
+      }),
+  });
+  const res = await f.call({ action: 'reverse', lat: 18.5362, lng: 73.7804 });
+  assertEquals(res.status, 200);
+  assertEquals(await res.json(), { address: 'Sus Rd, Pashan, Pune, Maharashtra 411021, India' });
+  const [s] = f.sent;
+  const url = new URL(s.url);
+  assertEquals(url.origin + url.pathname, 'https://maps.googleapis.com/maps/api/geocode/json');
+  assertEquals(url.searchParams.get('latlng'), '18.5362,73.7804');
+  assertEquals(url.searchParams.get('key'), 'test-key');
+  assertEquals(url.searchParams.get('region'), 'in');
+  assertEquals(s.method, 'GET');
+});
+
+Deno.test('reverse answers an empty address where Google has none, and a retryable error when it fails', async () => {
+  const none = setup({ reply: () => googleJson({ status: 'ZERO_RESULTS', results: [] }) });
+  assertEquals(await (await none.call({ action: 'reverse', lat: 0, lng: 0 })).json(), { address: '' });
+
+  const denied = setup({ reply: () => googleJson({ status: 'REQUEST_DENIED', error_message: 'not allowed' }) });
+  const res = await denied.call({ action: 'reverse', lat: 18.5, lng: 73.8 });
+  assertEquals(res.status, 502);
+  assertEquals(await res.json(), { error: 'place search is unavailable; try again' });
+  assertEquals(denied.logs.length, 1);
+  assertEquals(denied.logs[0].includes('test-key'), false);
+});

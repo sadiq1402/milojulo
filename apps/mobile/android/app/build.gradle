@@ -74,6 +74,15 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// The Google Maps key (#249) is never committed: a -PMAPS_API_KEY property, the MAPS_API_KEY
+// environment variable, or MAPS_API_KEY in the git-ignored local.properties. Empty builds still work.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+def mapsApiKey = findProperty('MAPS_API_KEY') ?: System.getenv('MAPS_API_KEY') ?: localProperties.getProperty('MAPS_API_KEY', '')
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -86,6 +95,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        manifestPlaceholders["mapsApiKey"] = mapsApiKey
     }
     signingConfigs {
         debug {
