@@ -153,6 +153,9 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 <div class="bubbles" aria-hidden="true">
   <div class="bub" data-r="210" style="background:var(--tint)"><div class="bub" data-r="36" style="background:var(--butter)"></div></div>
   <div class="bub" data-r="110" style="background:var(--lilac-soft)"><div class="bub" data-r="22" style="background:var(--lilac)"></div></div>
+  <div class="bub" data-r="70" style="background:var(--butter-soft)"></div>
+  <div class="bub" data-r="64" style="background:#CFF1E5"></div>
+  <div class="bub" data-r="76" style="background:#D6ECFF"></div>
 </div>
 
 <header class="top">
@@ -316,25 +319,24 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 
 <script>
 (() => {
-  const outers = [...document.querySelectorAll('.bubbles > .bub')];
   const small = () => innerWidth < 600 ? 0.6 : 1;
   const rand = (a, b) => a + Math.random() * (b - a);
-  const dir = () => { const a = rand(0, Math.PI * 2); return [Math.cos(a), Math.sin(a)]; };
-  const items = outers.map((el, i) => {
+  const dir = s => { const a = rand(0, Math.PI * 2); return [Math.cos(a) * s, Math.sin(a) * s]; };
+  const starts = [[0.75, 0.25], [0.15, 0.75], [0.45, 0.6], [0.85, 0.8], [0.3, 0.2]];
+  const items = [...document.querySelectorAll('.bubbles > .bub')].map((el, i) => {
     const inEl = el.querySelector('.bub');
-    const [dx, dy] = dir(), [ix, iy] = dir();
-    return { el, inEl, R0: +el.dataset.r, r0: +inEl.dataset.r,
-      x: i ? innerWidth * 0.15 : innerWidth * 0.7, y: i ? innerHeight * 0.75 : innerHeight * 0.2,
-      vx: dx * rand(28, 42), vy: dy * rand(28, 42), ix: 0, iy: 0, ivx: ix * rand(30, 50), ivy: iy * rand(30, 50) };
+    const [vx, vy] = dir(rand(28, 44)), [ivx, ivy] = dir(rand(30, 50));
+    return { el, inEl, R0: +el.dataset.r, r0: inEl ? +inEl.dataset.r : 0,
+      x: innerWidth * starts[i][0], y: innerHeight * starts[i][1], vx, vy, ix: 0, iy: 0, ivx, ivy };
   });
   const size = () => items.forEach(b => {
     b.R = b.R0 * small(); b.r = b.r0 * small();
     b.el.style.width = b.el.style.height = 2 * b.R + 'px';
-    b.inEl.style.width = b.inEl.style.height = 2 * b.r + 'px';
+    if (b.inEl) b.inEl.style.width = b.inEl.style.height = 2 * b.r + 'px';
   });
   const draw = () => items.forEach(b => {
     b.el.style.transform = `translate(${b.x - b.R}px,${b.y - b.R}px)`;
-    b.inEl.style.transform = `translate(${b.R + b.ix - b.r}px,${b.R + b.iy - b.r}px)`;
+    if (b.inEl) b.inEl.style.transform = `translate(${b.R + b.ix - b.r}px,${b.R + b.iy - b.r}px)`;
   });
   size(); draw();
   addEventListener('resize', size);
@@ -351,6 +353,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
       if (b.x > W - m) { b.x = W - m; b.vx = -Math.abs(b.vx); }
       if (b.y < m) { b.y = m; b.vy = Math.abs(b.vy); }
       if (b.y > H - m) { b.y = H - m; b.vy = -Math.abs(b.vy); }
+      if (!b.inEl) continue;
       // inner bubble reflects off the outer bubble's rim
       b.ix += b.ivx * dt; b.iy += b.ivy * dt;
       const lim = b.R - b.r, d = Math.hypot(b.ix, b.iy);
@@ -359,6 +362,19 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
         if (dot > 0) { b.ivx -= 2 * dot * nx; b.ivy -= 2 * dot * ny; }
         b.ix = nx * lim; b.iy = ny * lim;
       }
+    }
+    // outer bubbles collide elastically, mass by area
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const a = items[i], c = items[j];
+      const dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy) || 1, min = a.R + c.R;
+      if (d >= min) continue;
+      const nx = dx / d, ny = dy / d, ma = a.R * a.R, mc = c.R * c.R;
+      const push = (min - d) / (ma + mc);
+      a.x -= nx * push * mc; a.y -= ny * push * mc; c.x += nx * push * ma; c.y += ny * push * ma;
+      const rel = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
+      if (rel <= 0) continue;
+      const k = 2 * rel / (ma + mc);
+      a.vx -= k * mc * nx; a.vy -= k * mc * ny; c.vx += k * ma * nx; c.vy += k * ma * ny;
     }
     draw(); requestAnimationFrame(step);
   };
