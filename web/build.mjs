@@ -1,5 +1,5 @@
 // Builds milojulo.co.in from docs/legal/ (Cloudflare Pages runs `npm run build` and serves dist/).
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
 import { marked } from 'marked';
 const out = new URL('./dist', import.meta.url).pathname;
 const legal = new URL('../docs/legal/', import.meta.url).pathname;
@@ -34,4 +34,6 @@ for (const [slug, title] of pages) {
   writeFileSync(`${out}/${slug}.html`, shell(title, slug, marked.parse(md, { renderer: r })));
 }
 writeFileSync(`${out}/delete-account.html`, shell('Delete your account', 'delete-account', readFileSync(new URL('./delete-account.html', import.meta.url), 'utf8')));
-writeFileSync(`${out}/index.html`, shell('Find your people', '', `<h1>Find your people.</h1><p>MiloJulo helps you meet people near you who want the same thing you do: friends, activity partners, a date, or people to work with. The app is in beta.</p><ul>${menu.map(([s, t]) => `<li><a href="/${s}">${t}</a></li>`).join('')}</ul><p>Want to leave? You can <a href="/delete-account">delete your account and data</a> here, without the app.</p>`));
+// The landing page carries its own head and styles, so it is copied as is, with its images.
+cpSync(new URL('./index.html', import.meta.url), `${out}/index.html`);
+cpSync(new URL('./assets', import.meta.url), `${out}/assets`, { recursive: true });

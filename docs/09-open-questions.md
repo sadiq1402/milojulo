@@ -14,7 +14,7 @@
 - [x] **Firebase project** for FCM and the Android `google-services.json`: done with push (#36); the Android package is `co.in.milojulo` and CI writes the file from a secret (apps/mobile/README.md).
 - [ ] **Bot check on sign-up (#70):** the Cloudflare Turnstile site key and secret, and how to show the widget in a React Native CLI app (a WebView component is a native dependency).
 - [ ] **Disposable-email blocklist (#71):** whether the check runs in a Supabase Auth hook or in `accept_consents()`, and where the domain list comes from and how it stays current.
-- [x] **Web account deletion page (#98):** decided 2026-10-25 (decision 61): one static page on milojulo.co.in (Cloudflare Pages), email OTP through Supabase Auth, then `delete_account()`. Not built yet (#98); still needs the Turnstile keys from #70.
+- [x] **Web account deletion page (#98):** decided 2026-10-25 (decision 61): one static page on milojulo.co.in (Cloudflare Pages), email OTP through Supabase Auth, then `delete_account()`. Built: milojulo.co.in/delete-account (#98); Turnstile waits on #70.
 - [ ] **Catalog content:** the full ~40 interest and activity tags (14 seeded), the prompt questions (2 seeded) and the final industries (12 provisional). The banned-terms list starts empty for admins to fill.
 - [ ] **Data copy requests:** `request_data_copy()` queues a request, but nothing fulfils it. Decide how a copy is produced and sent, and in what time.
 
