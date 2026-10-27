@@ -41,7 +41,7 @@ Screens are in apps/mobile/src/screens; what each one calls is in apps/mobile/sr
 | Chat (chat/ChatScreen; Chat) | `messages` (not removed); `connection_members` (last_read_at, muted); `connection_mode_changes`; `chat_media_state(connection_id)`; `get_profile()` for the header; media fn (`chat-urls`) | `messages` insert (client id); `connection_members.last_read_at`, `muted`; `set_media_consent()`; `propose_mode_change()`, `respond_mode_change()`; media fn (`chat-upload`, `chat-confirm`); `close_connection()`, `block_user()`; "We met": `submit_meetup_feedback()` | Shows activity_card messages, but nothing in the app or database creates them yet. Typing is not built |
 | Activities (activities/ActivitiesScreen, MeetPrompts; Activities) | `activity_board()`: host name and photo, title, distance_band, starts_at, spots_left, starts_when, circle_name, visible_until (only Activities within the Discover Range; none without a fresh location, then `has_fresh_location()` shows the no-location state); `pending_meetup_feedback()` | none | Grouped by starts_when in the server's order (start day, nearest, start time); the board drops each Activity at visible_until |
 | Joined (activities/JoinedScreen; no mockup) | `joined_activities()` | none | The caller's waiting and accepted Join Requests |
-| Activity (activities/ActivityDetailScreen; ActivityDetail) | `get_activity(activity_id)` (venue_detail only for host and accepted joiners); host: `activity_join_requests(activity_id)` | `join_activity_request()`, `withdraw_activity_request()`, host: `respond_activity_request()`, `cancel_activity()` | |
+| Activity (activities/ActivityDetailScreen; ActivityDetail) | `get_activity(activity_id)` (venue_detail for everyone who may read it, decision 69); host: `activity_join_requests(activity_id)` | `join_activity_request()`, `withdraw_activity_request()`, host: `respond_activity_request()`, `cancel_activity()` | |
 | New activity (activities/CreateActivityScreen; CreateActivity) | `browse_circles()` (circle picker) | `post_activity(title, type, starts_at, ends_at, capacity, description, venue_detail, circle_id)` | Placed at the host's location; refused without a fresh one. Expires automatically (pg_cron `expire-activities`) |
 | Edit activity (activities/EditActivityScreen; no mockup) | `get_activity()` | `update_activity(...)` | Locked once someone is accepted: only description and more spots |
 | Circles (circles/CirclesScreen; Circles) | `browse_circles()`: name, place_name, tag, description, member_count, i_am_member, distance_band (Circles within the Discover Range plus every joined one; joined only and no band without a fresh location, then `has_fresh_location()` shows the no-location block) | none | The app shows member counts |
@@ -69,7 +69,7 @@ New columns:
 - photos: position, is_primary, width, height.
 - connections: responded_at, closed_at, closed_by, closed_reason; unique pair constraint on (least(a,b), greatest(a,b)); per-participant last_read_at.
 - messages: type, media_duration_ms, media_width, media_height, media_mime, activity_id.
-- activities: description, venue_detail (participants only), circle_id, capacity, starts_at, ends_at.
+- activities: description, venue_detail, circle_id, capacity, starts_at, ends_at.
 - activity_requests: requested_at, responded_at, cancelled status.
 - reports: evidence (snapshot of reported content), internal_note, handled_at.
 - circles: created_by, created_at.

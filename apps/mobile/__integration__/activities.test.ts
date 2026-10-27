@@ -106,7 +106,7 @@ test('a posted Activity is on the board with its details, grouped by the databas
   expect(byId(later)).not.toHaveProperty('venueDetail');
 });
 
-test('the host sees the venue; another Member gets the details without it', async () => {
+test('the host and another Member both see the venue', async () => {
   const mine = await postActivity(fields({ title: 'Evening ride' }));
   expect(await fetchActivity(mine)).toMatchObject({
     title: 'Evening ride',
@@ -128,7 +128,7 @@ test('the host sees the venue; another Member gets the details without it', asyn
     title: 'Board games night',
     distanceBand: '<2 km',
     isMine: false,
-    venueDetail: null,
+    venueDetail: 'Ravi’s flat, Wakad',
   });
   expect((await fetchBoard()).some(a => a.id === theirs)).toBe(true);
 });
