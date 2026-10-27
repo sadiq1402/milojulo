@@ -57,6 +57,12 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .top,main,footer{position:relative;z-index:1}
 .top{z-index:10}
 
+/* blue live dot on the hero pill */
+.live{position:relative;width:8px;height:8px;border-radius:50%;background:#2E8BFF;margin-right:8px;box-shadow:0 0 6px 1px rgba(46,139,255,.8)}
+.live::after{content:'';position:absolute;inset:0;border-radius:50%;background:#2E8BFF;animation:ping 1.8s ease-out infinite}
+@keyframes ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.live::after{animation:none;opacity:0}}
+
 /* header */
 .top{position:sticky;top:0;z-index:10;background:rgba(255,247,251,.9);backdrop-filter:blur(10px)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
@@ -201,7 +207,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 <section class="hero">
   <div class="wrap grid">
     <div>
-      <span class="eyebrow">Beta opening soon</span>
+      <span class="eyebrow"><i class="live" aria-hidden="true"></i>Beta opening soon</span>
       <h1 class="disp">Find your people.</h1>
       <p class="lead">A coffee buddy, a badminton partner, a date, or someone in your industry. Say what you're looking for, see people near you who fit, and actually go meet them.</p>
       <form class="form inline" id="join" data-waitlist>
