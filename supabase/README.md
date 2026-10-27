@@ -54,14 +54,19 @@ npx supabase functions deploy media --project-ref <ref>
 - `send-meet-nudges` (daily, 05:30 UTC = 11:00 India time, #50): SQL only (`send_meet_nudges()`); its pushes go through `push_queue` like any other.
 - `retry-queued-pushes` (every 5 minutes, #167): SQL only (`retry_queued_pushes()`); hands pushes still queued after a minute to the push function again (same Vault secrets) and drops ones an hour old.
 
-**Vault secrets (founder, once per project):** the two purge jobs and push dispatch read the project URL and service role key from Vault, so neither is in git. In the dashboard SQL editor of the hosted project:
+**Vault secrets (founder, once per project):** the purge jobs, evidence copies and push dispatch read the project URL and the call secret from Vault, so neither is in git. The call secret is a random string shared with the four functions as `DISPATCH_SECRET`; it is ours, not a Supabase key, so rotating Supabase's keys never breaks these calls. (Its Vault entry keeps the old name `service_role_key`.) Generate one, set it on the functions, then in Vault:
+
+```bash
+openssl rand -hex 32 > ~/dispatch-secret.txt && chmod 600 ~/dispatch-secret.txt
+printf 'DISPATCH_SECRET=%s\n' "$(cat ~/dispatch-secret.txt)" > /tmp/d.env && npx supabase secrets set --env-file /tmp/d.env && rm /tmp/d.env
+```
 
 ```sql
 select vault.create_secret('https://<project-ref>.supabase.co', 'project_url');
-select vault.create_secret('<service role key>', 'service_role_key');
+select vault.create_secret('<the call secret>', 'service_role_key');
 ```
 
-To change one later: `select vault.update_secret((select id from vault.secrets where name = 'service_role_key'), '<new key>');`. Without them the jobs' URL is null and the request fails without doing anything.
+To change it later: set the new `DISPATCH_SECRET` first, then `select vault.update_secret((select id from vault.secrets where name = 'service_role_key'), '<new secret>');`. Without these the calls fail: a missing URL does nothing, a mismatched secret gets `401 service role only` in `net._http_response`.
 
 If the nightly purge seems not to run, check `select * from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'purge-chat-media') order by start_time desc limit 5;` (did the job run and queue the request), then `net._http_response` (the HTTP status) and the `purge-chat-media` function logs in the dashboard.
 

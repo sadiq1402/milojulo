@@ -55,4 +55,4 @@ const storage = createR2({
   now: () => new Date(),
 });
 
-Deno.serve(createHandler({ serviceRoleKey, db, storage }));
+Deno.serve(createHandler({ callSecret: env('DISPATCH_SECRET'), db, storage }));

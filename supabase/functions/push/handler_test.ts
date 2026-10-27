@@ -19,7 +19,7 @@ function setup(opts: { tokens?: string[]; push?: QueuedPush | null; fcm?: (token
   const deletedTokens: string[] = [];
   const deletedPushes: number[] = [];
   const handler = createHandler({
-    serviceRoleKey: KEY,
+    callSecret: KEY,
     projectId: 'milojulo-test',
     accessToken: async () => 'oauth-token',
     db: {

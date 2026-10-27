@@ -13,7 +13,8 @@ export interface Db {
 }
 
 export interface Deps {
-  serviceRoleKey: string;
+  // The shared secret the database sends when it calls this function (DISPATCH_SECRET; Vault holds the same).
+  callSecret: string;
   projectId: string;
   accessToken(): Promise<string>;
   db: Db;
@@ -44,7 +45,7 @@ export function createHandler(deps: Deps) {
   const log = deps.log ?? console.error;
   return async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') return json(405, { error: 'use POST' });
-    if (req.headers.get('Authorization') !== `Bearer ${deps.serviceRoleKey}`) {
+    if (req.headers.get('Authorization') !== `Bearer ${deps.callSecret}`) {
       return json(401, { error: 'service role only' });
     }
     const id = (await req.json().catch(() => null))?.id;
