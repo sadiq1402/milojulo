@@ -1,6 +1,6 @@
 begin;
 \ir helpers/act_as.psql
-select plan(65);
+select plan(68);
 
 -- d1 hosts; d2 browses. Both hold only Friends.
 select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000d1');
@@ -39,6 +39,10 @@ select throws_ok($$ select pg_temp.post('   ') $$, 'P0001', 'an activity needs a
   'a blank title is refused');
 select throws_ok($$ select pg_temp.post(starts => now() - interval '1 minute') $$, 'P0001',
   'an activity must start in the future', 'a start in the past is refused');
+select lives_ok($$ select pg_temp.post(starts => now() + interval '89 days') $$,
+  'an Activity may start 89 days ahead');
+select throws_ok($$ select pg_temp.post(starts => now() + interval '92 days') $$, 'P0001',
+  'an activity can start at most 90 days ahead', 'a start more than 90 days ahead is refused');
 select throws_ok($$ select public.post_activity('Run', 'outdoors', now() + interval '1 day',
                                                  now() + interval '1 day') $$, 'P0001',
   'an activity must end after it starts', 'an end that is not after the start is refused');
@@ -299,6 +303,8 @@ select throws_ok($$ select pg_temp.change(title => ' ') $$, 'P0001', 'an activit
   'a change to a blank title is refused');
 select throws_ok($$ select pg_temp.change(starts => now() - interval '1 hour') $$, 'P0001',
   'an activity must start in the future', 'moving the start into the past is refused');
+select throws_ok($$ select pg_temp.change(starts => now() + interval '92 days') $$, 'P0001',
+  'an activity can start at most 90 days ahead', 'moving the start more than 90 days ahead is refused');
 select throws_ok($$ select pg_temp.change(ends => now() + interval '1 day') $$, 'P0001',
   'an activity must end after it starts', 'an end before the kept start is refused');
 select throws_ok($$ select pg_temp.change(capacity => 21::smallint) $$, 'P0001',

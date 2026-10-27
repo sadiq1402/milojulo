@@ -37,6 +37,7 @@ import {
   indiaParts,
   lastStartMinutes,
   minutesStep,
+  shortDate,
 } from '../../features/activities/time';
 import {
   colors,
@@ -46,6 +47,7 @@ import {
   fontFamily,
   fonts,
 } from '../../theme';
+import { DatePickerSheet } from './DatePickerSheet';
 
 export type FormValues = {
   title: string;
@@ -180,9 +182,9 @@ export function ActivityForm({
 
   const todayKey = indiaParts(new Date()).dateKey;
   const days = dayOptions(todayKey);
-  if (!days.includes(values.day)) {
-    days.unshift(values.day);
-  }
+  // A day past the quick chips shows on the Pick a date chip.
+  const pickedDay = days.includes(values.day) ? null : values.day;
+  const [picking, setPicking] = useState(false);
   const minCapacity = locked ? initial.capacity : minSpots;
   // The database keeps a set end when sent null, so an edit can't remove one.
   const canRemoveEnd = !editing || initial.length === null;
@@ -294,7 +296,21 @@ export function ActivityForm({
                 onPress={() => set({ day })}
               />
             ))}
+            <Chip
+              label={pickedDay ? shortDate(pickedDay) : 'Pick a date'}
+              icon="calendar"
+              dashed
+              selected={pickedDay !== null}
+              onPress={() => setPicking(true)}
+            />
           </ChipField>
+          <DatePickerSheet
+            visible={picking}
+            todayKey={todayKey}
+            initial={values.day < todayKey ? todayKey : values.day}
+            onPick={day => set({ day })}
+            onClose={() => setPicking(false)}
+          />
           <View style={styles.field} {...anchor('startsAt')}>
             <Stepper
               label="Start time"

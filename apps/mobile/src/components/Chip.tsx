@@ -15,6 +15,8 @@ type Props = {
   opensPicker?: boolean;
   // An orchid-outlined chip that leads somewhere (All areas), with a chevron.
   action?: boolean;
+  // An orchid dashed edge: a way into more choices (Pick a date).
+  dashed?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   // Shown after the label, such as a Shared tag.
@@ -29,6 +31,7 @@ export function Chip({
   icon,
   opensPicker = false,
   action = false,
+  dashed = false,
   accessibilityLabel,
   accessibilityHint,
   badge,
@@ -37,6 +40,8 @@ export function Chip({
     ? colors.white
     : action
     ? colors.orchid
+    : dashed
+    ? colors.orchidDark
     : tint?.fg ?? colors.ink;
   return (
     <Pressable
@@ -50,6 +55,7 @@ export function Chip({
         styles.chip,
         tint && { backgroundColor: tint.bg, borderColor: tint.bg },
         action && styles.action,
+        dashed && styles.dashed,
         selected && styles.selected,
       ]}
     >
@@ -87,8 +93,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'flex-start',
   },
-  selected: { backgroundColor: colors.orchid, borderColor: colors.orchid },
+  selected: {
+    backgroundColor: colors.orchid,
+    borderColor: colors.orchid,
+    borderStyle: 'solid',
+  },
   action: { borderColor: colors.orchid },
+  dashed: { borderColor: colors.orchid, borderStyle: 'dashed' },
   label: { fontFamily: fontFamily(fonts.text, '500') },
   bold: { fontFamily: fontFamily(fonts.text, '700') },
 });

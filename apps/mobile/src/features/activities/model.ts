@@ -162,6 +162,7 @@ export const fieldMessages = {
   title: 'Give your Activity a title.',
   type: 'Pick a type.',
   startsAt: 'Pick a start time that is still to come.',
+  tooFarAhead: 'Pick a day up to 90 days from today.',
   endsAt: 'The end has to be after the start.',
   capacity: `Spots must be between ${minSpots} and ${maxSpots}.`,
 } as const;

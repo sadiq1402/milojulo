@@ -9,6 +9,11 @@ import {
   formatWhen,
   indiaParts,
   indiaInstant,
+  addMonths,
+  lastPickableDay,
+  monthGrid,
+  monthTitle,
+  shortDate,
 } from '../src/features/activities/time';
 
 // 2026-10-12 is a Monday. 20:00 UTC is 01:30 the next day in India.
@@ -62,6 +67,41 @@ test('day chips are Today, Tomorrow, then five weekdays', () => {
     'Sunday',
   ]);
   expect(dayLabel('2026-10-24', '2026-10-12')).toBe('Sat 24 Oct');
+});
+
+test('a date can be picked up to 90 days ahead', () => {
+  expect(lastPickableDay('2026-10-27')).toBe('2027-01-25');
+});
+
+test('a month grid starts its weeks on Monday', () => {
+  // 1 Nov 2026 is a Sunday, so six blanks lead.
+  const grid = monthGrid('2026-11');
+  expect(grid.slice(0, 7)).toEqual([
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    '2026-11-01',
+  ]);
+  expect(grid[grid.length - 1]).toBe('2026-11-30');
+  expect(grid.filter(Boolean)).toHaveLength(30);
+  // 1 Feb 2027 is a Monday: no blanks.
+  expect(monthGrid('2027-02')[0]).toBe('2027-02-01');
+});
+
+test('a short date names the weekday, day and month', () => {
+  expect(shortDate('2026-11-14')).toBe('Sat 14 Nov');
+});
+
+test('months step across a year', () => {
+  expect(addMonths('2026-12', 1)).toBe('2027-01');
+  expect(addMonths('2027-01', -1)).toBe('2026-12');
+});
+
+test('a month reads as its name and year', () => {
+  expect(monthTitle('2027-01')).toBe('January 2027');
 });
 
 test('times read as a 12-hour clock', () => {

@@ -150,6 +150,14 @@ test('refusals come back as friendly copy tied to their field', async () => {
     message: 'The end has to be after the start.',
     field: 'endsAt',
   });
+  await expect(
+    postActivity(
+      fields({ startsAt: minutesFromNow(92 * 24 * 60), endsAt: null }),
+    ),
+  ).rejects.toMatchObject({
+    message: 'Pick a day up to 90 days from today.',
+    field: 'startsAt',
+  });
   await expect(postActivity(fields({ capacity: 21 }))).rejects.toMatchObject({
     message: 'Spots must be between 1 and 20.',
     field: 'capacity',
