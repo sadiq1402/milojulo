@@ -24,6 +24,8 @@
 :root{--ground:#FFF7FB;--card:#fff;--ink:#2B1233;--sub:#6D5876;--line:#F3DDEA;--orchid:#CC2E86;--orchid-dark:#8E1F60;--tint:#FFE3F1;--tint-strong:#FFC6E0;--butter:#FFE27A;--butter-soft:#FFF1B8;--lilac:#C8B6FF;--lilac-soft:#E3D4FF;--violet:#7B4DFF;--field:#E9CFE0;--selected:#FFF1F8}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+/* anchors stop clear of the sticky header instead of sliding under it */
+[id]{scroll-margin-top:96px}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;font-size:16px;line-height:24px;overflow-x:hidden}
 .disp{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;font-weight:700;letter-spacing:-0.02em}
 a{color:var(--orchid)}
@@ -38,7 +40,13 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .card{background:var(--card);border-radius:24px;box-shadow:0 8px 24px rgba(142,31,96,.08);padding:16px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 24px;border-radius:26px;border:0;font:inherit;font-weight:700;font-size:16px;line-height:20px;cursor:pointer;text-decoration:none}
 .btn.pri{background:var(--orchid);color:#fff;box-shadow:0 10px 22px rgba(204,46,134,.28)}
-.btn.pri:active{background:var(--orchid-dark)}
+.btn{transition:transform .12s ease,box-shadow .12s ease,background-color .15s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.btn.pri:hover{background:#B8277A;box-shadow:0 12px 26px rgba(204,46,134,.34)}
+.btn:active{transform:scale(.96)}
+.btn.pri:active{background:var(--orchid-dark);box-shadow:0 4px 10px rgba(204,46,134,.24)}
+.btn:focus-visible{outline:3px solid var(--violet);outline-offset:3px}
+.btn:disabled{opacity:.7;cursor:progress;transform:none}
+@media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
 .btn.sec{background:#fff;color:var(--ink);border:1px solid var(--field)}
 .tag{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:14px;font-size:12px;line-height:16px;font-weight:600;white-space:nowrap}
 .fr{background:#CFF1E5;color:#0B4A3E}.ac{background:#FFF1B8;color:#2B1233}.nw{background:#D6ECFF;color:#1F4E79}.dt{background:#FFE3F1;color:#8E1F60}.cs{background:#E3D4FF;color:#4B2BB8}.ci{background:#FBEAF3;color:#4A2F55}
@@ -400,6 +408,18 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
     });
   }
 })();
+</script>
+<script>
+document.addEventListener('touchstart', () => {}, { passive: true });
+// The header button scrolls to the form only if it isn't on screen, then puts the cursor in the email field.
+document.querySelector('.top .btn').addEventListener('click', e => {
+  const form = document.getElementById('join');
+  if (!form || form.hidden) return;
+  e.preventDefault();
+  const r = form.getBoundingClientRect();
+  if (r.top < 80 || r.bottom > innerHeight) form.scrollIntoView({ block: 'center' });
+  form.querySelector('input[type=email]').focus({ preventScroll: true });
+});
 </script>
 </body>
 </html>
