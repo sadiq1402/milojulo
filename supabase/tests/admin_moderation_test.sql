@@ -98,7 +98,7 @@ insert into public.messages (id, connection_id, sender_id, type, body, created_a
   (pg_temp.keep('c2msg', gen_random_uuid()), pg_temp.id('chat'), pg_temp.m('c2'), 'text', 'Something nasty', now());
 select pg_temp.create_visible_member(pg_temp.m('c3'));
 select pg_temp.as_member('c3');
-select pg_temp.keep('c3act', public.post_activity('Evening badminton', 'sports', 'baner',
+select pg_temp.keep('c3act', public.post_activity('Evening badminton', 'sports',
   now() + interval '2 days', null, 4::smallint, 'Bring a racket', null));
 reset role;
 select pg_temp.keep('c1photo1', (select id from public.photos where user_id = pg_temp.m('c1') and position = 1));
@@ -198,7 +198,7 @@ reset role;
 -- Takedown closes the open Reports on its target. c4 hosts a reported Activity.
 select pg_temp.create_visible_member(pg_temp.m('c4'));
 select pg_temp.as_member('c4');
-select pg_temp.keep('c4act', public.post_activity('Late chai', 'food_chai', 'baner',
+select pg_temp.keep('c4act', public.post_activity('Late chai', 'food_chai',
   now() + interval '2 days', null, 4::smallint, 'Chai and talk', null));
 reset role;
 select pg_temp.report_as('a1', 'activity', pg_temp.id('c4act'));
@@ -219,7 +219,7 @@ insert into public.photos (user_id, object_key, position, uploaded_at)
 values (pg_temp.m('c6'), pg_temp.m('c6') || '/3.jpg', 3, now());
 select pg_temp.keep('c6photo3', (select id from public.photos where user_id = pg_temp.m('c6') and position = 3));
 select pg_temp.as_member('c6');
-select pg_temp.keep('c6act', public.post_activity('Sunday trek', 'outdoors', 'baner',
+select pg_temp.keep('c6act', public.post_activity('Sunday trek', 'outdoors',
   now() + interval '3 days', null, 6::smallint, 'Sinhagad at dawn', null));
 reset role;
 select pg_temp.report_as(r, k, t)
@@ -272,20 +272,20 @@ select pg_temp.as_member('e1');
 select pg_temp.keep('e1b3', public.send_request(pg_temp.m('b3'), 'friends'));
 reset role;
 select pg_temp.as_member('d1');
-select pg_temp.keep('d1act', public.post_activity('Board games', 'games', 'baner',
+select pg_temp.keep('d1act', public.post_activity('Board games', 'games',
   now() + interval '2 days', null, 6::smallint, 'Catan night', null));
 reset role;
 select pg_temp.as_member('e1');
 select pg_temp.keep('e1req', public.join_activity_request(pg_temp.id('d1act')));
-select pg_temp.keep('e1act', public.post_activity('Cycling', 'sports', 'baner',
+select pg_temp.keep('e1act', public.post_activity('Cycling', 'sports',
   now() + interval '2 days', null, 4::smallint, 'Morning ride', null));
 reset role;
 -- An Activity e1 hosted that has already run, and one of d1's e1 went to; both still 'open' because
 -- the expiry job hasn't run. Postgres fixtures: posting refuses a start in the past.
-insert into public.activities (id, host_id, title, type, area_id, starts_at, ends_at, capacity)
-values (pg_temp.keep('e1past', gen_random_uuid()), pg_temp.m('e1'), 'Past ride', 'sports', 'baner',
+insert into public.activities (id, host_id, title, type, place, starts_at, ends_at, capacity)
+values (pg_temp.keep('e1past', gen_random_uuid()), pg_temp.m('e1'), 'Past ride', 'sports', 'SRID=4326;POINT(73.787 18.559)',
         now() - interval '3 hours', now() - interval '1 hour', 4),
-       (pg_temp.keep('d1past', gen_random_uuid()), pg_temp.m('d1'), 'Past games', 'games', 'baner',
+       (pg_temp.keep('d1past', gen_random_uuid()), pg_temp.m('d1'), 'Past games', 'games', 'SRID=4326;POINT(73.787 18.559)',
         now() - interval '3 hours', now() - interval '1 hour', 4);
 insert into public.activity_requests (id, activity_id, requester_id, status, responded_at)
 values (pg_temp.keep('e1pastreq', gen_random_uuid()), pg_temp.id('d1past'), pg_temp.m('e1'), 'accepted', now() - interval '1 day');

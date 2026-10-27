@@ -10,7 +10,7 @@ select pg_temp.create_visible_member('00000000-0000-0000-0000-0000000000d2');
 create function pg_temp.post(title varchar default 'Badminton', starts timestamptz default now() + interval '2 days')
 returns uuid
 language sql as $$
-  select public.post_activity(title, 'sports', 'baner', starts);
+  select public.post_activity(title, 'sports', starts);
 $$;
 
 create function pg_temp.board_ids() returns setof uuid
@@ -28,24 +28,24 @@ select results_eq('select pg_temp.board_ids()', 'select id from posted',
 
 -- Posting
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
-select lives_ok($$ select public.post_activity('Chai and chess', 'games', 'wakad', now() + interval '1 day',
+select lives_ok($$ select public.post_activity('Chai and chess', 'games', now() + interval '1 day',
                                                 now() + interval '1 day 2 hours', 20::smallint,
                                                 'Bring a board', 'Cafe Goodluck, upstairs') $$,
   'a Visible Member posts an Activity with every detail');
-select lives_ok($$ select public.post_activity('Run', 'outdoors', 'baner', now() + interval '1 day',
+select lives_ok($$ select public.post_activity('Run', 'outdoors', now() + interval '1 day',
                                                 capacity => 1::smallint) $$,
   'an Activity may have a single spot');
 select throws_ok($$ select pg_temp.post('   ') $$, 'P0001', 'an activity needs a title',
   'a blank title is refused');
 select throws_ok($$ select pg_temp.post(starts => now() - interval '1 minute') $$, 'P0001',
   'an activity must start in the future', 'a start in the past is refused');
-select throws_ok($$ select public.post_activity('Run', 'outdoors', 'baner', now() + interval '1 day',
+select throws_ok($$ select public.post_activity('Run', 'outdoors', now() + interval '1 day',
                                                  now() + interval '1 day') $$, 'P0001',
   'an activity must end after it starts', 'an end that is not after the start is refused');
-select throws_ok($$ select public.post_activity('Run', 'outdoors', 'baner', now() + interval '1 day',
+select throws_ok($$ select public.post_activity('Run', 'outdoors', now() + interval '1 day',
                                                  capacity => 0::smallint) $$, 'P0001',
   'spots must be between 1 and 20', 'zero spots are refused');
-select throws_ok($$ select public.post_activity('Run', 'outdoors', 'baner', now() + interval '1 day',
+select throws_ok($$ select public.post_activity('Run', 'outdoors', now() + interval '1 day',
                                                  capacity => 21::smallint) $$, 'P0001',
   'spots must be between 1 and 20', 'more than 20 spots are refused');
 
@@ -73,8 +73,8 @@ update public.activities set hidden_at = now() where hidden_at is null;
 create function pg_temp.seed(host uuid, starts interval, ends interval default null, title varchar default 'Seeded')
 returns uuid
 language sql as $$
-  insert into public.activities (host_id, title, type, area_id, starts_at, ends_at, capacity)
-  values (host, title, 'sports', 'baner', now() + starts, now() + ends, 3)
+  insert into public.activities (host_id, title, type, place, starts_at, ends_at, capacity)
+  values (host, title, 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + starts, now() + ends, 3)
   returning id;
 $$;
 
@@ -163,21 +163,21 @@ $$;
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d4');
 create temp table labelled as
-  select 'tonight' as expected, public.post_activity('Now', 'sports', 'baner', now() + interval '1 second') as id
+  select 'tonight' as expected, public.post_activity('Now', 'sports', now() + interval '1 second') as id
   union all
   select case when dow = 7 then 'later' else 'this_weekend' end,
-         public.post_activity('Weekend', 'sports', 'baner',
+         public.post_activity('Weekend', 'sports',
                               pg_temp.india_noon(case when dow = 7 then 6 else 7 - dow end))
   from india
   union all
   select case when dow < 6 then 'this_weekend' else 'later' end,
-         public.post_activity('Saturday', 'sports', 'baner',
+         public.post_activity('Saturday', 'sports',
                               pg_temp.india_noon(case when dow < 6 then 6 - dow else 14 end))
   from india
   union all
-  select 'later', public.post_activity('Monday', 'sports', 'baner', pg_temp.india_noon(8 - dow)) from india
+  select 'later', public.post_activity('Monday', 'sports', pg_temp.india_noon(8 - dow)) from india
   union all
-  select 'later', public.post_activity('Fortnight', 'sports', 'baner', pg_temp.india_noon(14));
+  select 'later', public.post_activity('Fortnight', 'sports', pg_temp.india_noon(14));
 
 select set_eq('select b.id, b.starts_when from public.activity_board() b join labelled l using (id)',
   'select id, expected from labelled',
@@ -186,7 +186,7 @@ select set_eq('select b.id, b.starts_when from public.activity_board() b join la
 -- One Activity: d1 hosts, with a venue that only the host reads.
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 create temp table mine as
-  select public.post_activity('Trek', 'outdoors', 'baner', pg_temp.india_noon(14),
+  select public.post_activity('Trek', 'outdoors', pg_temp.india_noon(14),
                               venue_detail => 'Gate 2, Sinhagad base') as id;
 grant select on mine to authenticated, anon;
 
@@ -229,8 +229,8 @@ update public.activities set hidden_at = null where id = pg_temp.mine();
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 select throws_ok('select * from public.activities', '42501', null, 'a host cannot read Activities directly');
 select throws_ok('select * from public.activity_venues', '42501', null, 'a host cannot read venues directly');
-select throws_ok($$ insert into public.activities (host_id, title, type, area_id, starts_at, capacity)
-                    values ('00000000-0000-0000-0000-0000000000d1', 'Sneaky', 'games', 'baner', now() + interval '1 day', 2) $$,
+select throws_ok($$ insert into public.activities (host_id, title, type, place, starts_at, capacity)
+                    values ('00000000-0000-0000-0000-0000000000d1', 'Sneaky', 'games', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 2) $$,
   '42501', null, 'an Activity cannot be inserted directly');
 select throws_ok($$ update public.activities set status = 'open' $$, '42501', null,
   'an Activity cannot be updated directly');
@@ -260,30 +260,30 @@ select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 -- Changing an Activity: nulls keep a field, an empty description or venue clears it.
 create function pg_temp.change(
   title varchar default null, description varchar default null, capacity smallint default null,
-  starts timestamptz default null, ends timestamptz default null, area text default null,
+  starts timestamptz default null, ends timestamptz default null,
   venue varchar default null, activity uuid default pg_temp.mine()
 ) returns void
 language sql as $$
-  select public.update_activity(activity, title, description, capacity, starts, ends, area, venue);
+  select public.update_activity(activity, title, description, capacity, starts, ends, venue);
 $$;
 
 create function pg_temp.details() returns table (title varchar, description varchar, capacity smallint,
-  starts_at timestamptz, ends_at timestamptz, area_id text, venue_detail varchar)
+  starts_at timestamptz, ends_at timestamptz, venue_detail varchar)
 language sql as $$
-  select title, description, capacity, starts_at, ends_at, area_id, venue_detail from public.get_activity(pg_temp.mine());
+  select title, description, capacity, starts_at, ends_at, venue_detail from public.get_activity(pg_temp.mine());
 $$;
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 select pg_temp.change('Night trek', 'Torches needed', 6::smallint, now() + interval '2 days',
-                      now() + interval '2 days 5 hours', 'wakad', 'Gate 3');
+                      now() + interval '2 days 5 hours', 'Gate 3');
 select results_eq('select * from pg_temp.details()',
   $$ values ('Night trek'::varchar, 'Torches needed'::varchar, 6::smallint, now() + interval '2 days',
-             now() + interval '2 days 5 hours', 'wakad'::text, 'Gate 3'::varchar) $$,
+             now() + interval '2 days 5 hours', 'Gate 3'::varchar) $$,
   'the host changes every detail of an open Activity');
 select pg_temp.change();
 select results_eq('select * from pg_temp.details()',
   $$ values ('Night trek'::varchar, 'Torches needed'::varchar, 6::smallint, now() + interval '2 days',
-             now() + interval '2 days 5 hours', 'wakad'::text, 'Gate 3'::varchar) $$,
+             now() + interval '2 days 5 hours', 'Gate 3'::varchar) $$,
   'nulls leave every detail as it was');
 select pg_temp.change(description => '', venue => '');
 select results_eq('select description, venue_detail from pg_temp.details()',
@@ -315,7 +315,7 @@ select pg_temp.act_as_member('00000000-0000-0000-0000-0000000000d1');
 select throws_ok($$ select pg_temp.change(title => 'Again', activity => (select id from seeded where name = 'soon')) $$,
   'P0001', 'no activity to change', 'an Activity that is no longer open cannot change');
 select pg_temp.act_as_anon();
-select throws_ok($$ select public.update_activity(pg_temp.mine(), 'x', null, null, null, null, null, null) $$,
+select throws_ok($$ select public.update_activity(pg_temp.mine(), 'x', null, null, null, null, null) $$,
   '42501', null, 'a signed-out visitor cannot change an Activity');
 
 -- Cancelling

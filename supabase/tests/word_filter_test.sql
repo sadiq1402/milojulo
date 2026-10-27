@@ -102,14 +102,14 @@ select throws_ok(
 
 select pg_temp.as_member('a1');
 select throws_ok(
-  $$ select public.post_activity('Rascal run', 'sports', 'baner', now() + interval '2 days') $$,
+  $$ select public.post_activity('Rascal run', 'sports', now() + interval '2 days') $$,
   'that wording isn''t allowed; please change it', 'a matching Activity title is rejected');
 select throws_ok(
-  $$ select public.post_activity('Evening run', 'sports', 'baner', now() + interval '2 days',
+  $$ select public.post_activity('Evening run', 'sports', now() + interval '2 days',
                                  null, 4::smallint, 'No dirty word please') $$,
   'that wording isn''t allowed; please change it', 'a matching Activity description is rejected');
 select lives_ok(
-  $$ select pg_temp.keep('act', public.post_activity('Evening run', 'sports', 'baner',
+  $$ select pg_temp.keep('act', public.post_activity('Evening run', 'sports',
        now() + interval '2 days', null, 4::smallint, 'Easy pace')) $$,
   'a clean Activity is accepted');
 select throws_ok(

@@ -5,10 +5,10 @@ select plan(2);
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004801');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004802');
 
-insert into public.activities (host_id, title, type, area_id, starts_at, ends_at, capacity) values
-  ('00000000-0000-0000-0000-000000004801', 'with an end', 'sports', 'baner',
+insert into public.activities (host_id, title, type, place, starts_at, ends_at, capacity) values
+  ('00000000-0000-0000-0000-000000004801', 'with an end', 'sports', 'SRID=4326;POINT(73.787 18.559)',
    '2030-01-15 19:00+05:30', '2030-01-15 21:30+05:30', 4),
-  ('00000000-0000-0000-0000-000000004801', 'no end given', 'sports', 'baner',
+  ('00000000-0000-0000-0000-000000004801', 'no end given', 'sports', 'SRID=4326;POINT(73.787 18.559)',
    '2030-01-15 19:00+05:30', null, 4);
 
 select pg_temp.act_as_member('00000000-0000-0000-0000-000000004802');

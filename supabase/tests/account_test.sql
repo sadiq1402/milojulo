@@ -80,7 +80,7 @@ insert into ids select 'circle', public.admin_create_circle('Trekkers', 'baner',
 reset role;
 select pg_temp.as_member('a1');
 select public.join_circle(pg_temp.id('circle'));
-select public.post_activity('Trek', 'sports', 'baner', now() + interval '1 day');
+select public.post_activity('Trek', 'sports', now() + interval '1 day');
 select pg_temp.as_member('b1');
 select public.join_circle(pg_temp.id('circle'));
 reset role;
@@ -168,10 +168,10 @@ insert into ids select 'cd', pg_temp.accepted_pair(pg_temp.m('c1'), pg_temp.m('d
 select pg_temp.as_member('c1');
 insert into public.messages (id, connection_id, type, body) values (gen_random_uuid(), pg_temp.id('cd'), 'text', 'Before I go');
 select public.join_circle(pg_temp.id('circle'));
-insert into ids select 'c1act', public.post_activity('Chess', 'games', 'baner', now() + interval '1 day');
+insert into ids select 'c1act', public.post_activity('Chess', 'games', now() + interval '1 day');
 select pg_temp.as_member('d1');
 select public.join_circle(pg_temp.id('circle'));
-insert into ids select 'd1act', public.post_activity('Run', 'sports', 'baner', now() + interval '1 day');
+insert into ids select 'd1act', public.post_activity('Run', 'sports', now() + interval '1 day');
 select public.join_activity_request(pg_temp.id('c1act'));
 select pg_temp.as_member('c1');
 select public.join_activity_request(pg_temp.id('d1act'));
@@ -217,7 +217,7 @@ reset role;
 -- A Member who withdrew consent, as a Paused one: c2 shares a Connection with c3 and asked to join c3's Activity.
 insert into ids select 'hk', pg_temp.accepted_pair(pg_temp.m('c3'), pg_temp.m('c2'));
 select pg_temp.as_member('c3');
-insert into ids select 'h1act', public.post_activity('Swim', 'sports', 'baner', now() + interval '1 day');
+insert into ids select 'h1act', public.post_activity('Swim', 'sports', now() + interval '1 day');
 select pg_temp.as_member('c2');
 select public.join_activity_request(pg_temp.id('h1act'));
 select public.withdraw_consent(pg_temp.doc('data_notice'));

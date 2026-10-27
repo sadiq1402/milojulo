@@ -165,8 +165,8 @@ update public.profiles set notify_messages = true where id = pg_temp.m('f2');
 -- Join Requests
 
 delete from public.push_queue;
-insert into public.activities (host_id, title, type, area_id, starts_at, capacity)
-values (pg_temp.m('f3'), 'Sunday trek', 'sports', 'baner', now() + interval '2 days', 3)
+insert into public.activities (host_id, title, type, place, starts_at, capacity)
+values (pg_temp.m('f3'), 'Sunday trek', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '2 days', 3)
 returning id as act \gset
 select pg_temp.act_as_member(pg_temp.m('f2'));
 select public.join_activity_request(:'act') as req \gset

@@ -89,10 +89,10 @@ select pg_temp.keep('b1photo', (select id from public.photos where user_id = pg_
 
 -- c5 hosts an Activity; b1 hosts one too.
 select pg_temp.as_member('c5');
-select pg_temp.keep('c5act', public.post_activity('Evening badminton', 'sports', 'baner',
+select pg_temp.keep('c5act', public.post_activity('Evening badminton', 'sports',
   now() + interval '2 days', null, 4::smallint, 'Bring a racket', null));
 select pg_temp.as_member('b1');
-select pg_temp.keep('b1act', public.post_activity('Chai walk', 'food_chai', 'baner',
+select pg_temp.keep('b1act', public.post_activity('Chai walk', 'food_chai',
   now() + interval '2 days', null, 4::smallint, null, null));
 reset role;
 
@@ -226,11 +226,11 @@ select results_eq(
   'the message evidence holds body, sender, media key and type, and sent at');
 select results_eq(
   format($$ select target_user_id, evidence->>'title', evidence->>'description', evidence->>'type',
-                  evidence->>'area_id', evidence->>'host_id', evidence ? 'starts_at'
+                  evidence->>'host_id', evidence ? 'starts_at', evidence ? 'area_id'
            from public.reports where target_id = %L $$, pg_temp.id('c5act')),
-  format($$ values (%L::uuid, 'Evening badminton', 'Bring a racket', 'sports', 'baner', %L, true) $$,
+  format($$ values (%L::uuid, 'Evening badminton', 'Bring a racket', 'sports', %L, true, false) $$,
          pg_temp.m('c5'), pg_temp.m('c5')),
-  'the Activity evidence holds title, description, type, Area, start and host');
+  'the Activity evidence holds title, description, type, start and host, and no Area');
 
 -- A Block either way does not stop a report.
 select pg_temp.as_member('b2');

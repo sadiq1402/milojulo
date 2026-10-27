@@ -7,12 +7,12 @@ select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004301');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004302');
 select pg_temp.create_visible_member('00000000-0000-0000-0000-000000004303');
 
-insert into public.activities (id, host_id, title, type, area_id, starts_at, capacity) values
-  ('00000000-0000-0000-0000-0000000043a1', '00000000-0000-0000-0000-000000004301', 'waiting', 'sports', 'baner', now() + interval '1 day', 4),
-  ('00000000-0000-0000-0000-0000000043a2', '00000000-0000-0000-0000-000000004301', 'going', 'sports', 'baner', now() + interval '1 day', 4),
-  ('00000000-0000-0000-0000-0000000043a3', '00000000-0000-0000-0000-000000004301', 'declined', 'sports', 'baner', now() + interval '1 day', 4),
-  ('00000000-0000-0000-0000-0000000043a4', '00000000-0000-0000-0000-000000004301', 'only 03 asked', 'sports', 'baner', now() + interval '1 day', 4),
-  ('00000000-0000-0000-0000-0000000043a5', '00000000-0000-0000-0000-000000004301', 'not asked', 'sports', 'baner', now() + interval '1 day', 4);
+insert into public.activities (id, host_id, title, type, place, starts_at, capacity) values
+  ('00000000-0000-0000-0000-0000000043a1', '00000000-0000-0000-0000-000000004301', 'waiting', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 4),
+  ('00000000-0000-0000-0000-0000000043a2', '00000000-0000-0000-0000-000000004301', 'going', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 4),
+  ('00000000-0000-0000-0000-0000000043a3', '00000000-0000-0000-0000-000000004301', 'declined', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 4),
+  ('00000000-0000-0000-0000-0000000043a4', '00000000-0000-0000-0000-000000004301', 'only 03 asked', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 4),
+  ('00000000-0000-0000-0000-0000000043a5', '00000000-0000-0000-0000-000000004301', 'not asked', 'sports', 'SRID=4326;POINT(73.787 18.559)', now() + interval '1 day', 4);
 insert into public.activity_requests (activity_id, requester_id, status) values
   ('00000000-0000-0000-0000-0000000043a1', '00000000-0000-0000-0000-000000004302', 'requested'),
   ('00000000-0000-0000-0000-0000000043a2', '00000000-0000-0000-0000-000000004302', 'accepted'),
