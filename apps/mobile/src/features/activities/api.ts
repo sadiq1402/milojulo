@@ -45,6 +45,10 @@ const refusals: Record<string, { message: string; field?: ActivityField }> = {
     message: fieldMessages.startsAt,
     field: 'startsAt',
   },
+  'an activity can start at most 90 days ahead': {
+    message: fieldMessages.tooFarAhead,
+    field: 'startsAt',
+  },
   'an activity must end after it starts': {
     message: fieldMessages.endsAt,
     field: 'endsAt',

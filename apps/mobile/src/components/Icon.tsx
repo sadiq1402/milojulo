@@ -40,6 +40,12 @@ const glyphs = {
   ),
   play: <Path d="M8 5.5v13l11-6.5z" />,
   pause: <Path d="M8 5v14M16 5v14" />,
+  calendar: (
+    <>
+      <Rect x="4" y="5" width="16" height="15" rx="3" />
+      <Path d="M4 10h16M9 3v4M15 3v4" />
+    </>
+  ),
   calendarCheck: (
     <>
       <Rect x="4" y="5" width="16" height="15" rx="3" />

@@ -52,9 +52,59 @@ export function addDays(dateKey: string, days: number): string {
     .slice(0, 10);
 }
 
-// Today, tomorrow and the five days after: how far ahead the form lets a Member post.
+// The quick day chips: today, tomorrow and the five days after. Later days come from the calendar.
 export function dayOptions(todayKey: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(todayKey, i));
+}
+
+// The database refuses a start further ahead than this, by the calendar in India.
+export const maxDaysAhead = 90;
+
+export function lastPickableDay(todayKey: string): string {
+  return addDays(todayKey, maxDaysAhead);
+}
+
+// A month ("2026-11") as weeks from Monday: null for the blanks before its first day.
+export function monthGrid(monthKey: string): (string | null)[] {
+  const first = new Date(`${monthKey}-01T00:00:00Z`);
+  const lead = (first.getUTCDay() + 6) % 7;
+  const length = new Date(
+    Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  return [
+    ...Array<null>(lead).fill(null),
+    ...Array.from(
+      { length },
+      (_, i) => `${monthKey}-${String(i + 1).padStart(2, '0')}`,
+    ),
+  ];
+}
+
+const monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+export function monthTitle(monthKey: string): string {
+  const [year, month] = monthKey.split('-').map(Number);
+  return `${monthNames[month - 1]} ${year}`;
+}
+
+export function addMonths(monthKey: string, months: number): string {
+  const [year, month] = monthKey.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1 + months, 1))
+    .toISOString()
+    .slice(0, 7);
 }
 
 export function dayLabel(dateKey: string, todayKey: string): string {
@@ -70,7 +120,13 @@ export function dayLabel(dateKey: string, todayKey: string): string {
   if (ahead > 1 && ahead < 7) {
     return weekday;
   }
-  return `${weekday.slice(0, 3)} ${date.getUTCDate()} ${
+  return shortDate(dateKey);
+}
+
+// "Sat 14 Nov".
+export function shortDate(dateKey: string): string {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  return `${weekdays[date.getUTCDay()].slice(0, 3)} ${date.getUTCDate()} ${
     months[date.getUTCMonth()]
   }`;
 }

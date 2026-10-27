@@ -513,6 +513,48 @@ describe('posting an Activity', () => {
     expect(activities.fetchActivity).toHaveBeenCalledWith('new-activity');
   });
 
+  test('a date beyond the next week is picked from a calendar', async () => {
+    await openCreate();
+    await fireEvent.changeText(
+      screen.getByLabelText("What's the plan?"),
+      'Sinhagad trek',
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Outdoors' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Pick a date' }));
+    expect(screen.getByText('October 2026')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Next month' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Sat 14 Nov' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Use Sat 14 Nov' }),
+    );
+    expect(screen.getByRole('button', { name: 'Sat 14 Nov' })).toBeSelected();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Post Activity' }),
+    );
+    const minutes = defaultStart().minutes;
+    expect(activities.postActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startsAt: indiaInstant('2026-11-14', minutes),
+      }),
+    );
+  });
+
+  test('the calendar offers days up to 90 ahead and none before today', async () => {
+    await openCreate();
+    await fireEvent.press(screen.getByRole('button', { name: 'Pick a date' }));
+    expect(
+      screen.getByRole('button', { name: 'Previous month' }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tue 13 Oct' })).toBeDisabled();
+    for (let i = 0; i < 3; i++) {
+      await fireEvent.press(screen.getByRole('button', { name: 'Next month' }));
+    }
+    expect(screen.getByText('January 2027')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tue 12 Jan' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Wed 13 Jan' })).toBeDisabled();
+  });
+
   test('the time and length move in 30-minute steps, and spots stay between 1 and 20', async () => {
     await openCreate();
     const start = defaultStart();
