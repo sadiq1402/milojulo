@@ -1,0 +1,11 @@
+{
+  "name": "milojulo-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "marked": "14.1.4"
+  }
+}
