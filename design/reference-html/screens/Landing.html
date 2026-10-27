@@ -55,7 +55,13 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .ok{display:none;background:#CFF1E5;color:#0B4A3E;border-radius:20px;padding:12px 16px;font-weight:600}
 .stickers{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
 .stickers .tag{height:32px;padding:0 12px;font-size:13px;box-shadow:0 4px 12px rgba(142,31,96,.08)}
-.stickers .tag:nth-child(odd){transform:rotate(-3deg)}.stickers .tag:nth-child(even){transform:rotate(2deg)}
+.stickers .tag{animation:bob 3.2s ease-in-out infinite}
+.stickers .tag:nth-child(odd){rotate:-3deg}.stickers .tag:nth-child(even){rotate:2deg;animation-duration:3.8s}
+.stickers .tag:nth-child(2){animation-delay:-.6s}.stickers .tag:nth-child(3){animation-delay:-1.4s}.stickers .tag:nth-child(4){animation-delay:-2.1s}.stickers .tag:nth-child(5){animation-delay:-2.8s}
+.stickers .tag:hover{animation-play-state:paused;scale:1.08}
+.float{animation:bob 4.5s ease-in-out infinite}.float+.float{animation-delay:-2s;animation-duration:5s}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -6px}}
+@media (prefers-reduced-motion:reduce){.stickers .tag,.float{animation:none}}
 
 /* phone */
 .phone{width:300px;margin:0 auto;background:#fff;border-radius:40px;padding:12px;box-shadow:0 24px 60px rgba(142,31,96,.18);position:relative}
@@ -124,7 +130,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 
 <header class="top">
   <div class="wrap">
-    <a class="brand disp" href="#"><img src="../../brand/logo-orchid.png" alt=""><span>Milo<b>Julo</b></span></a>
+    <a class="brand disp" href="#"><img src="../../../apps/mobile/src/assets/brand/mark@3x.png" alt=""><span>Milo<b>Julo</b></span></a>
     <a class="btn pri" href="#join">Join the waitlist</a>
   </div>
 </header>
@@ -156,7 +162,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
       <div class="phone" role="img" aria-label="The Discover screen in the MiloJulo app">
         <div class="screen">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <img src="../../brand/logo-orchid.png" alt="" style="height:28px"><span class="disp" style="font-size:20px">Same Vibe</span><span style="width:28px"></span>
+            <img src="../../../apps/mobile/src/assets/brand/mark@3x.png" alt="" style="height:28px"><span class="disp" style="font-size:20px">Same Vibe</span><span style="width:28px"></span>
           </div>
           <div class="fcard">
             <div class="photo disp">A<span class="tag ac" style="top:12px;right:12px">Activities</span><span class="tag" style="left:12px;bottom:12px;background:#fff;color:var(--ink)">~3 km</span></div>
@@ -167,8 +173,8 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
           </div>
         </div>
       </div>
-      <div class="float" style="left:0;top:30%;transform:rotate(-4deg)">🏸 Badminton · Sat 7am<br><span style="color:var(--sub);font-weight:500">2 spots left</span></div>
-      <div class="float" style="right:0;top:-8px;transform:rotate(3deg);background:var(--butter)">Same vibe ✨</div>
+      <div class="float" style="left:0;top:30%;rotate:-4deg">🏸 Badminton · Sat 7am<br><span style="color:var(--sub);font-weight:500">2 spots left</span></div>
+      <div class="float" style="right:0;top:-8px;rotate:3deg;background:var(--butter)">Same vibe ✨</div>
     </div>
   </div>
 </section>
@@ -266,7 +272,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
 
 <footer>
   <div class="wrap">
-    <a class="brand disp" href="#"><img src="../../brand/logo-orchid.png" alt=""><span>Milo<b>Julo</b></span></a>
+    <a class="brand disp" href="#"><img src="../../../apps/mobile/src/assets/brand/mark@3x.png" alt=""><span>Milo<b>Julo</b></span></a>
     <nav aria-label="Legal">
       <a href="/terms">Terms</a><a href="/community-guidelines">Community Guidelines</a><a href="/data-notice">Data Notice</a><a href="/delete-account">Delete account</a><a href="mailto:support@milojulo.co.in">support@milojulo.co.in</a>
     </nav>
