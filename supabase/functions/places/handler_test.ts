@@ -2,7 +2,7 @@ import { assertEquals } from '@std/assert';
 import { createHandler } from './handler.ts';
 
 const ASHA = '00000000-0000-0000-0000-0000000000a1';
-const TOKEN = '6f1c2b0e-8a4d-4c1e-9f7a-2d3b4c5e6f70';
+const TOKEN = 'session-one';
 
 type Sent = { url: string; method: string; headers: Headers; body: unknown };
 
