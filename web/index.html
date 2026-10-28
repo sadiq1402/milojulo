@@ -97,6 +97,12 @@ h3{font-family:'Figtree',system-ui,sans-serif;font-weight:600;font-size:17px;lin
 .inp{height:52px;border:1px solid var(--field);border-radius:26px;background:#fff;padding:0 20px;font:inherit;font-size:16px;color:var(--ink);width:100%}
 .inp:focus{outline:2px solid var(--orchid);outline-offset:1px}
 .hp{position:absolute;left:-9999px}
+.want{flex:1 1 100%;border:0;margin:4px 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.want legend{width:100%;padding:0;margin-bottom:6px;font-size:14px;line-height:20px;font-weight:600;color:var(--ink)}
+.want label{position:relative;display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:20px;border:1px solid var(--field);background:#fff;font-size:14px;line-height:20px;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.want input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.want label:has(:checked){background:#FFE3F1;border-color:var(--orchid);color:#8E1F60;font-weight:600}
+.want label:has(:focus-visible){outline:3px solid var(--violet);outline-offset:2px}
 .note{font-size:13px;line-height:18px;color:var(--sub);margin:4px 0 0 20px}
 .err{color:#C62828;font-weight:600;font-size:14px;margin:4px 0 0 20px}
 .ok{display:none;background:#CFF1E5;color:#0B4A3E;border-radius:20px;padding:12px 16px;font-weight:600}
@@ -394,7 +400,19 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   // The Apps Script web app (web/waitlist). If it is ever emptied, the form says sign-ups open soon.
   const WAITLIST_URL = 'https://script.google.com/macros/s/AKfycbztiNmMgUVI6me0A3EJqwp6ybnINQR4edV3KT2cqBRIAyDhn2SOTh8ca6yOOEEw2jCKJw/exec';
   const okFor = form => form.id === 'join' ? 'ok1' : 'ok2';
+  const MODES = ['Friends', 'Activities', 'Dating', 'Serious', 'Casual', 'Networking'];
+  // Where the visitor came from (?utm_source=instagram, or ?ref=<creator>), saved with the sign-up.
+  const params = new URLSearchParams(location.search);
+  const source = (params.get('utm_source') || params.get('ref') || '').slice(0, 60);
   for (const form of document.querySelectorAll('form[data-waitlist]')) {
+    const want = document.createElement('fieldset');
+    want.className = 'want';
+    want.innerHTML = '<legend>What are you looking for? (optional)</legend>' +
+      MODES.map(m => `<label><input type="checkbox" name="modes" value="${m}">${m}</label>`).join('');
+    form.querySelector('.hp').before(want);
+    const src = document.createElement('input');
+    src.type = 'hidden'; src.name = 'source'; src.value = source;
+    form.append(src);
     const err = document.createElement('p');
     err.className = 'err'; err.setAttribute('role', 'alert'); err.hidden = true;
     form.append(err);
