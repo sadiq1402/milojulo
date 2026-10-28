@@ -400,7 +400,7 @@ footer nav a{color:var(--ink);text-decoration:none;font-size:14px;min-height:48p
   // The Apps Script web app (web/waitlist). If it is ever emptied, the form says sign-ups open soon.
   const WAITLIST_URL = 'https://script.google.com/macros/s/AKfycbztiNmMgUVI6me0A3EJqwp6ybnINQR4edV3KT2cqBRIAyDhn2SOTh8ca6yOOEEw2jCKJw/exec';
   const okFor = form => form.id === 'join' ? 'ok1' : 'ok2';
-  const MODES = ['Friends', 'Activities', 'Dating', 'Serious', 'Casual', 'Networking'];
+  const MODES = ['Friends', 'Activities', 'Dating', 'Serious', 'Networking'];
   // Where the visitor came from (?utm_source=instagram, or ?ref=<creator>), saved with the sign-up.
   const params = new URLSearchParams(location.search);
   const source = (params.get('utm_source') || params.get('ref') || '').slice(0, 60);
