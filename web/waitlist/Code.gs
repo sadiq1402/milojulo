@@ -4,7 +4,7 @@
 const SHEET = 'Waitlist';
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const HEADER = ['Joined', 'Email', 'City', 'Modes', 'Source'];
-const MODES = ['Friends', 'Activities', 'Dating', 'Serious', 'Casual', 'Networking'];
+const MODES = ['Friends', 'Activities', 'Dating', 'Serious', 'Networking'];
 
 function doPost(e) {
   const p = (e && e.parameter) || {};
