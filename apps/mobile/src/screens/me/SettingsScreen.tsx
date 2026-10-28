@@ -58,8 +58,8 @@ export function SettingsScreen({ navigation }: Props) {
           />
         </List>
         <Text variant="bodySmall" color={colors.secondary}>
-          While you're paused, nobody new sees you in Discover, Activities or
-          Circles. Your existing chats carry on.
+          While you're paused, nobody new sees you in Discover or Activities.
+          Your existing chats carry on.
         </Text>
         {pause.isError ? <ErrorText text={pause.error.message} /> : null}
       </Section>
