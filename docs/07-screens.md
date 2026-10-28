@@ -2,7 +2,7 @@
 
 Static HTML mockups: design/reference-html/screens/*.dc.html (45 files: 44 phone screens at 390 x 844, plus Admin, a web page). Read them for exact styling. Live canvas (private): https://claude.ai/artifact/CUiLCrHKpSmoQ8SSF6aY7x
 
-The app is in apps/mobile/src/screens; routes are in apps/mobile/src/navigation (RootNavigator.tsx picks signed out, onboarding, re-consent or Member; MemberNavigator.tsx holds the five tabs and the screens pushed over them). "Route" below is the navigator's screen name.
+The app is in apps/mobile/src/screens; routes are in apps/mobile/src/navigation (RootNavigator.tsx picks signed out, onboarding, re-consent or Member; MemberNavigator.tsx holds the four tabs (Circles is hidden, decision 72) and the screens pushed over them). "Route" below is the navigator's screen name.
 
 ## Built screens
 

@@ -15,7 +15,6 @@ import { JoinedScreen } from '../screens/activities/JoinedScreen';
 import { EditActivityScreen } from '../screens/activities/EditActivityScreen';
 import { ChatScreen } from '../screens/chat/ChatScreen';
 import { CircleDetailScreen } from '../screens/circles/CircleDetailScreen';
-import { CirclesScreen } from '../screens/circles/CirclesScreen';
 import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { InboxScreen } from '../screens/inbox/InboxScreen';
 import { ConsentSettingsScreen } from '../screens/account/ConsentSettingsScreen';
@@ -37,7 +36,6 @@ const Tabs = createBottomTabNavigator();
 const tabs: TabItem[] = [
   { key: 'Discover', label: 'Discover', icon: 'discover' },
   { key: 'Activities', label: 'Activities', icon: 'activities' },
-  { key: 'Circles', label: 'Circles', icon: 'circles' },
   { key: 'Inbox', label: 'Inbox', icon: 'inbox' },
   { key: 'Me', label: 'Me', icon: 'me' },
 ];
@@ -73,14 +71,13 @@ function MainTabs() {
     >
       <Tabs.Screen name="Discover" component={DiscoverScreen} />
       <Tabs.Screen name="Activities" component={ActivitiesScreen} />
-      <Tabs.Screen name="Circles" component={CirclesScreen} />
       <Tabs.Screen name="Inbox" component={InboxScreen} />
       <Tabs.Screen name="Me" component={MeScreen} />
     </Tabs.Navigator>
   );
 }
 
-// A Member's app: the five tabs, with chats, profiles and other full screens pushed over them.
+// A Member's app: the four tabs, with chats, profiles and other full screens pushed over them.
 export function MemberNavigator() {
   return (
     <>
